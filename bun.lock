@@ -309,6 +309,29 @@
         "convex": "^1.24.8",
       },
     },
+    "packages/lunchtable-tcg-ai": {
+      "name": "@lunchtable-tcg/ai",
+      "version": "0.1.0",
+      "devDependencies": {
+        "convex": "^1.31.6",
+        "convex-helpers": "^0.1.77",
+        "typescript": "^5.7.3",
+      },
+      "peerDependencies": {
+        "convex": "^1.24.8",
+      },
+    },
+    "packages/lunchtable-tcg-branding": {
+      "name": "@lunchtable-tcg/branding",
+      "version": "0.1.0",
+      "devDependencies": {
+        "convex": "^1.31.6",
+        "typescript": "^5.7.3",
+      },
+      "peerDependencies": {
+        "convex": "^1.24.8",
+      },
+    },
     "packages/lunchtable-tcg-cards": {
       "name": "@lunchtable-tcg/cards",
       "version": "0.1.0",
@@ -320,11 +343,35 @@
         "convex": "^1.24.8",
       },
     },
+    "packages/lunchtable-tcg-content": {
+      "name": "@lunchtable-tcg/content",
+      "version": "0.1.0",
+      "devDependencies": {
+        "convex": "^1.31.6",
+        "convex-helpers": "^0.1.77",
+        "typescript": "^5.7.3",
+      },
+      "peerDependencies": {
+        "convex": "^1.24.8",
+      },
+    },
     "packages/lunchtable-tcg-economy": {
       "name": "@lunchtable-tcg/economy",
       "version": "0.1.0",
       "devDependencies": {
         "convex": "^1.31.6",
+        "typescript": "^5.7.3",
+      },
+      "peerDependencies": {
+        "convex": "^1.24.8",
+      },
+    },
+    "packages/lunchtable-tcg-email": {
+      "name": "@lunchtable-tcg/email",
+      "version": "0.1.0",
+      "devDependencies": {
+        "convex": "^1.31.6",
+        "convex-helpers": "^0.1.77",
         "typescript": "^5.7.3",
       },
       "peerDependencies": {
@@ -370,6 +417,18 @@
         "convex": "^1.24.8",
       },
     },
+    "packages/lunchtable-tcg-payments": {
+      "name": "@lunchtable-tcg/payments",
+      "version": "0.1.0",
+      "devDependencies": {
+        "convex": "^1.31.6",
+        "convex-helpers": "^0.1.77",
+        "typescript": "^5.7.3",
+      },
+      "peerDependencies": {
+        "convex": "^1.24.8",
+      },
+    },
     "packages/lunchtable-tcg-progression": {
       "name": "@lunchtable-tcg/progression",
       "version": "0.1.0",
@@ -378,6 +437,28 @@
         "convex-test": "^0.0.38",
         "typescript": "^5.7.3",
         "vitest": "^3.2.4",
+      },
+      "peerDependencies": {
+        "convex": "^1.24.8",
+      },
+    },
+    "packages/lunchtable-tcg-referrals": {
+      "name": "@lunchtable-tcg/referrals",
+      "version": "0.1.0",
+      "devDependencies": {
+        "convex": "^1.31.6",
+        "typescript": "^5.7.3",
+      },
+      "peerDependencies": {
+        "convex": "^1.24.8",
+      },
+    },
+    "packages/lunchtable-tcg-seasons": {
+      "name": "@lunchtable-tcg/seasons",
+      "version": "0.1.0",
+      "devDependencies": {
+        "convex": "^1.31.6",
+        "typescript": "^5.7.3",
       },
       "peerDependencies": {
         "convex": "^1.24.8",
@@ -396,6 +477,42 @@
         "convex": "^1.24.8",
       },
     },
+    "packages/lunchtable-tcg-story": {
+      "name": "@lunchtable-tcg/story",
+      "version": "0.1.0",
+      "devDependencies": {
+        "convex": "^1.31.6",
+        "convex-helpers": "^0.1.77",
+        "typescript": "^5.7.3",
+      },
+      "peerDependencies": {
+        "convex": "^1.24.8",
+      },
+    },
+    "packages/lunchtable-tcg-streaming": {
+      "name": "@lunchtable-tcg/streaming",
+      "version": "0.1.0",
+      "devDependencies": {
+        "convex": "^1.31.6",
+        "convex-helpers": "^0.1.77",
+        "typescript": "^5.7.3",
+      },
+      "peerDependencies": {
+        "convex": "^1.24.8",
+      },
+    },
+    "packages/lunchtable-tcg-token": {
+      "name": "@lunchtable-tcg/token",
+      "version": "0.1.0",
+      "devDependencies": {
+        "convex": "^1.31.6",
+        "convex-helpers": "^0.1.77",
+        "typescript": "^5.7.3",
+      },
+      "peerDependencies": {
+        "convex": "^1.24.8",
+      },
+    },
     "packages/lunchtable-tcg-tournaments": {
       "name": "@lunchtable-tcg/tournaments",
       "version": "0.1.0",
@@ -409,6 +526,17 @@
         "convex": "^1.24.8",
       },
     },
+    "packages/lunchtable-tcg-treasury": {
+      "name": "@lunchtable-tcg/treasury",
+      "version": "0.1.0",
+      "devDependencies": {
+        "convex": "^1.31.6",
+        "typescript": "^5.7.3",
+      },
+      "peerDependencies": {
+        "convex": "^1.24.8",
+      },
+    },
     "packages/lunchtable-tcg-wager": {
       "name": "@lunchtable-tcg/wager",
       "version": "0.1.0",
@@ -417,6 +545,17 @@
         "convex-test": "^0.0.38",
         "typescript": "^5.7.3",
         "vitest": "^3.2.4",
+      },
+      "peerDependencies": {
+        "convex": "^1.24.8",
+      },
+    },
+    "packages/lunchtable-tcg-webhooks": {
+      "name": "@lunchtable-tcg/webhooks",
+      "version": "0.1.0",
+      "devDependencies": {
+        "convex": "^1.31.6",
+        "typescript": "^5.7.3",
       },
       "peerDependencies": {
         "convex": "^1.24.8",
@@ -1026,9 +1165,17 @@
 
     "@lunchtable-tcg/admin": ["@lunchtable-tcg/admin@workspace:packages/lunchtable-tcg-admin"],
 
+    "@lunchtable-tcg/ai": ["@lunchtable-tcg/ai@workspace:packages/lunchtable-tcg-ai"],
+
+    "@lunchtable-tcg/branding": ["@lunchtable-tcg/branding@workspace:packages/lunchtable-tcg-branding"],
+
     "@lunchtable-tcg/cards": ["@lunchtable-tcg/cards@workspace:packages/lunchtable-tcg-cards"],
 
+    "@lunchtable-tcg/content": ["@lunchtable-tcg/content@workspace:packages/lunchtable-tcg-content"],
+
     "@lunchtable-tcg/economy": ["@lunchtable-tcg/economy@workspace:packages/lunchtable-tcg-economy"],
+
+    "@lunchtable-tcg/email": ["@lunchtable-tcg/email@workspace:packages/lunchtable-tcg-email"],
 
     "@lunchtable-tcg/guilds": ["@lunchtable-tcg/guilds@workspace:packages/lunchtable-tcg-guilds"],
 
@@ -1036,13 +1183,29 @@
 
     "@lunchtable-tcg/marketplace": ["@lunchtable-tcg/marketplace@workspace:packages/lunchtable-tcg-marketplace"],
 
+    "@lunchtable-tcg/payments": ["@lunchtable-tcg/payments@workspace:packages/lunchtable-tcg-payments"],
+
     "@lunchtable-tcg/progression": ["@lunchtable-tcg/progression@workspace:packages/lunchtable-tcg-progression"],
+
+    "@lunchtable-tcg/referrals": ["@lunchtable-tcg/referrals@workspace:packages/lunchtable-tcg-referrals"],
+
+    "@lunchtable-tcg/seasons": ["@lunchtable-tcg/seasons@workspace:packages/lunchtable-tcg-seasons"],
 
     "@lunchtable-tcg/social": ["@lunchtable-tcg/social@workspace:packages/lunchtable-tcg-social"],
 
+    "@lunchtable-tcg/story": ["@lunchtable-tcg/story@workspace:packages/lunchtable-tcg-story"],
+
+    "@lunchtable-tcg/streaming": ["@lunchtable-tcg/streaming@workspace:packages/lunchtable-tcg-streaming"],
+
+    "@lunchtable-tcg/token": ["@lunchtable-tcg/token@workspace:packages/lunchtable-tcg-token"],
+
     "@lunchtable-tcg/tournaments": ["@lunchtable-tcg/tournaments@workspace:packages/lunchtable-tcg-tournaments"],
 
+    "@lunchtable-tcg/treasury": ["@lunchtable-tcg/treasury@workspace:packages/lunchtable-tcg-treasury"],
+
     "@lunchtable-tcg/wager": ["@lunchtable-tcg/wager@workspace:packages/lunchtable-tcg-wager"],
+
+    "@lunchtable-tcg/webhooks": ["@lunchtable-tcg/webhooks@workspace:packages/lunchtable-tcg-webhooks"],
 
     "@lunchtable/mcp-server": ["@lunchtable/mcp-server@workspace:packages/mcp-server"],
 

@@ -1,0 +1,17 @@
+/* eslint-disable */
+/**
+ * Generated data model types.
+ *
+ * THIS CODE IS AUTOMATICALLY GENERATED.
+ *
+ * To regenerate, run `npx convex dev`.
+ * @module
+ */
+
+import type { DataModelFromSchemaDefinition } from "convex/server";
+import type schema from "../schema.js";
+
+/**
+ * The data model for this Convex component.
+ */
+export type DataModel = DataModelFromSchemaDefinition<typeof schema>;
