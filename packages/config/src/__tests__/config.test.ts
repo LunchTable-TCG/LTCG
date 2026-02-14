@@ -5,7 +5,7 @@ describe("defineConfig", () => {
   it("returns defaults with no overrides", () => {
     const config = defineConfig({});
     expect(config.game.name).toBe("LunchTable TCG");
-    expect(config.economy.startingCurrency).toBe(500);
+    expect(config.economy.startingGold).toBe(500);
   });
 
   it("overrides top-level fields", () => {
@@ -24,10 +24,10 @@ describe("defineConfig", () => {
 
   it("overrides economy values", () => {
     const config = defineConfig({
-      economy: { ...DEFAULT_LTCG_CONFIG.economy, startingCurrency: 1000 },
+      economy: { ...DEFAULT_LTCG_CONFIG.economy, startingGold: 1000 },
     });
-    expect(config.economy.startingCurrency).toBe(1000);
-    expect(config.economy.packPrice).toBe(100); // preserved
+    expect(config.economy.startingGold).toBe(1000);
+    expect(config.economy.startingGems).toBe(100); // preserved
   });
 
   it("merges progression XP settings", () => {
@@ -68,5 +68,28 @@ describe("defineConfig", () => {
     });
     expect(config.theme.brand).toBe("CustomTCG");
     expect(config.theme.palette.primary).toBe("#ff0000");
+  });
+
+  it("covers all config sections", () => {
+    const config = defineConfig({});
+    expect(config.competitive.elo.defaultRating).toBe(1000);
+    expect(config.marketplace.platformFeePercent).toBe(0.05);
+    expect(config.social.spectator.maxPerGame).toBe(100);
+    expect(config.economy.variantBaseRates.foil).toBe(1000);
+    expect(config.economy.pityThresholds.legendary).toBe(500);
+    expect(config.progression.xp.basePerLevel).toBe(100);
+  });
+
+  it("deep merges competitive overrides", () => {
+    const config = defineConfig({
+      competitive: {
+        elo: { defaultRating: 1500, kFactor: 32, ratingFloor: 0 },
+        rankThresholds: { Bronze: 0, Silver: 1500, Gold: 1700, Platinum: 1900, Diamond: 2100, Master: 2300, Legend: 2500 },
+      },
+    });
+    expect(config.competitive.elo.defaultRating).toBe(1500);
+    expect(config.competitive.rankThresholds.Silver).toBe(1500);
+    // Other sections unchanged
+    expect(config.economy.startingGold).toBe(500);
   });
 });
