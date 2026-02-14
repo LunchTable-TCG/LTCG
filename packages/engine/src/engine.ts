@@ -5,6 +5,7 @@ import type { GameState, PlayerView, Seat, BoardCard, SpellTrapCard } from "./ty
 import type { EngineConfig } from "./types/config.js";
 import { DEFAULT_CONFIG } from "./types/config.js";
 import { nextPhase, opponentSeat } from "./rules/phases.js";
+import { decideSummon, decideSetMonster, decideFlipSummon, evolveSummon } from "./rules/summoning.js";
 
 export interface EngineOptions {
   config?: Partial<EngineConfig>;
@@ -229,7 +230,22 @@ function decide(state: GameState, command: Command, seat: Seat): EngineEvent[] {
       break;
     }
 
-    // TODO: Handle other commands (SUMMON, SET_MONSTER, ACTIVATE_SPELL, etc.)
+    case "SUMMON": {
+      events.push(...decideSummon(state, seat, command));
+      break;
+    }
+
+    case "SET_MONSTER": {
+      events.push(...decideSetMonster(state, seat, command));
+      break;
+    }
+
+    case "FLIP_SUMMON": {
+      events.push(...decideFlipSummon(state, seat, command));
+      break;
+    }
+
+    // TODO: Handle other commands (ACTIVATE_SPELL, etc.)
     default:
       break;
   }
@@ -266,7 +282,14 @@ function evolve(state: GameState, events: EngineEvent[]): GameState {
         newState.winReason = event.reason;
         break;
 
-      // TODO: Handle other events (CARD_DRAWN, MONSTER_SUMMONED, etc.)
+      case "MONSTER_SUMMONED":
+      case "MONSTER_SET":
+      case "FLIP_SUMMONED":
+      case "CARD_SENT_TO_GRAVEYARD":
+        newState = evolveSummon(newState, event);
+        break;
+
+      // TODO: Handle other events (CARD_DRAWN, etc.)
       default:
         break;
     }
