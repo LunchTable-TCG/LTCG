@@ -1502,4 +1502,50 @@ export class LTCGApiClient {
   getX402Config(): X402Config | null {
     return this.x402Config;
   }
+
+  // ============================================================================
+  // Admin Endpoints
+  // ============================================================================
+
+  /**
+   * Get the current game configuration.
+   */
+  async getGameConfig(): Promise<Record<string, unknown>> {
+    return this.request<Record<string, unknown>>(
+      API_ENDPOINTS.ADMIN_GET_CONFIG,
+      { method: "GET" },
+    );
+  }
+
+  /**
+   * Update game configuration at runtime.
+   */
+  async updateGameConfig(
+    updates: Record<string, unknown>,
+    updatedBy?: string,
+  ): Promise<Record<string, unknown>> {
+    return this.request<Record<string, unknown>>(
+      API_ENDPOINTS.ADMIN_UPDATE_CONFIG,
+      {
+        method: "PUT",
+        body: JSON.stringify({ updates, updatedBy }),
+      },
+    );
+  }
+
+  /**
+   * Seed card definitions into the database.
+   * Cards should already be converted to ConvexCardRow format.
+   */
+  async seedCards(
+    cards: Array<Record<string, unknown>>,
+  ): Promise<{ seeded: number; total: number }> {
+    return this.request<{ seeded: number; total: number }>(
+      API_ENDPOINTS.ADMIN_SEED_CARDS,
+      {
+        method: "POST",
+        body: JSON.stringify({ cards }),
+      },
+    );
+  }
 }

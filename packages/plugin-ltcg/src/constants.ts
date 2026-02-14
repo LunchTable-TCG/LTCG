@@ -84,6 +84,11 @@ export const API_ENDPOINTS = {
   CHAT_SEND: "/api/agents/chat/send",
   CHAT_MESSAGES: "/api/agents/chat/messages",
   CHAT_ONLINE_USERS: "/api/agents/chat/online-users",
+
+  // Admin
+  ADMIN_GET_CONFIG: "/api/admin/config",
+  ADMIN_UPDATE_CONFIG: "/api/admin/config",
+  ADMIN_SEED_CARDS: "/api/admin/seed-cards",
 } as const;
 
 /**
