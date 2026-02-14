@@ -609,7 +609,7 @@ describe("LTCGApiClient", () => {
         lobbyId: "lobby123",
         status: "active",
         currentTurn: "host",
-        phase: "main1",
+        phase: "main",
         turnNumber: 3,
         currentTurnPlayer: "player1",
         isMyTurn: true,
@@ -625,7 +625,7 @@ describe("LTCGApiClient", () => {
         hand: [],
         hasNormalSummoned: false,
         canChangePosition: [],
-        // Legacy fields for compatibility
+        // Player zone data
         hostPlayer: {
           playerId: "player1",
           lifePoints: 8000,
@@ -657,7 +657,7 @@ describe("LTCGApiClient", () => {
 
       // Check that critical fields are present after normalization
       expect(result.gameId).toEqual("game123");
-      expect(result.phase).toEqual("main1");
+      expect(result.phase).toEqual("main");
       expect(result.turnNumber).toEqual(3);
       expect(result.status).toEqual("active");
       expect(mockFetch).toHaveBeenCalledWith(
@@ -673,9 +673,9 @@ describe("LTCGApiClient", () => {
     it("should get available actions", async () => {
       const actions = {
         gameId: "game123",
-        phase: "main1",
+        phase: "main",
         actions: [
-          { type: "summon", description: "Summon monster" },
+          { type: "summon", description: "Summon stereotype" },
           { type: "end_turn", description: "End turn" },
         ],
       };
@@ -1155,8 +1155,8 @@ describe("LTCGApiClient", () => {
         {
           cardId: "card1",
           name: "Blazing Drake",
-          type: "creature",
-          description: "A fierce fire-breathing creature",
+          type: "stereotype",
+          description: "A fierce fire-breathing stereotype",
           abilities: [],
         },
       ];
@@ -1203,7 +1203,7 @@ describe("LTCGApiClient", () => {
       const card = {
         cardId: "card123",
         name: "Infernal God Dragon",
-        type: "creature",
+        type: "stereotype",
         cost: 10,
         attack: 4000,
         defense: 3500,

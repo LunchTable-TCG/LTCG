@@ -25,7 +25,7 @@ type PlaystyleType = "aggressive" | "defensive" | "control" | "balanced" | "unkn
  */
 interface CardPlayRecord {
   cardName: string;
-  cardType: "creature" | "spell" | "trap" | "equipment";
+  cardType: "stereotype" | "spell" | "trap" | "class";
   turnPlayed: number;
   phase: string;
   wasEffective: boolean;
@@ -272,12 +272,12 @@ function extractCardsPlayed(events: GameEvent[]): CardPlayRecord[] {
   for (const event of events) {
     if (event.eventType === "summon" || event.eventType === "spell_activation") {
       const cardName = event.metadata?.cardName as string;
-      const cardType = event.eventType === "summon" ? "creature" : "spell";
+      const cardType = event.eventType === "summon" ? "stereotype" : "spell";
 
       if (cardName) {
         cards.push({
           cardName,
-          cardType: cardType as "creature" | "spell",
+          cardType: cardType as "stereotype" | "spell",
           turnPlayed: event.turnNumber,
           phase: event.phase,
           wasEffective: true, // Simplified - would need more context
@@ -366,7 +366,7 @@ function determinePlaystyle(
 ): PlaystyleType {
   const aggression = attackPattern.aggressionScore;
   const trapUsage = trapBehavior.trapsSet > 0 ? trapBehavior.holdsTraps : false;
-  const monsterCount = cardsPlayed.filter((c) => c.cardType === "creature").length;
+  const monsterCount = cardsPlayed.filter((c) => c.cardType === "stereotype").length;
   const spellCount = cardsPlayed.filter((c) => c.cardType === "spell").length;
 
   if (aggression >= 0.7 && !trapUsage) {

@@ -2,6 +2,7 @@
  * Game Engine - Phases Module
  *
  * Handles phase transitions within a turn.
+ * LunchTable phases: Draw → Main → Combat → Breakdown Check → End
  */
 
 import { v } from "convex/values";
@@ -14,12 +15,12 @@ import { cleanupLingeringEffects } from "../effectSystem/lingeringEffects";
 import { recordEventHelper } from "../gameEvents";
 
 /**
- * Advance to Battle Phase (Internal)
+ * Advance to Combat Phase (Internal)
  *
  * Internal mutation for API-based phase advancement.
  * Accepts gameId string for story mode support.
  */
-export const advanceToBattlePhaseInternal = internalMutation({
+export const advanceToCombatPhaseInternal = internalMutation({
   args: {
     gameId: v.string(),
     userId: v.id("users"),
@@ -49,10 +50,10 @@ export const advanceToBattlePhaseInternal = internalMutation({
       throw createError(ErrorCode.GAME_NOT_YOUR_TURN);
     }
 
-    // 4. Validate we're in main1
-    if (gameState.currentPhase !== "main1") {
+    // 4. Validate we're in main phase
+    if (gameState.currentPhase !== "main") {
       throw createError(ErrorCode.GAME_INVALID_PHASE, {
-        reason: "Can only enter Battle Phase from Main Phase 1",
+        reason: "Can only enter Combat Phase from Main Phase",
         currentPhase: gameState.currentPhase,
       });
     }
@@ -61,12 +62,12 @@ export const advanceToBattlePhaseInternal = internalMutation({
     const user = await ctx.db.get(args.userId);
     const username = user?.username ?? user?.name ?? "Unknown";
 
-    // 6. Clean up lingering effects that expire when leaving main1
-    await cleanupLingeringEffects(ctx, gameState, "main1", gameState.turnNumber ?? 0);
+    // 6. Clean up lingering effects that expire when leaving main phase
+    await cleanupLingeringEffects(ctx, gameState, "main", gameState.turnNumber ?? 0);
 
-    // 7. Update phase to battle
+    // 7. Update phase to combat
     await ctx.db.patch(gameState._id, {
-      currentPhase: "battle",
+      currentPhase: "combat",
     });
 
     // 8. Record phase change event
@@ -77,10 +78,10 @@ export const advanceToBattlePhaseInternal = internalMutation({
       eventType: "phase_changed",
       playerId: args.userId,
       playerUsername: username,
-      description: `${username} entered Battle Phase`,
+      description: `${username} entered Combat Phase`,
       metadata: {
-        previousPhase: "main1",
-        newPhase: "battle",
+        previousPhase: "main",
+        newPhase: "combat",
       },
     });
 
@@ -91,22 +92,22 @@ export const advanceToBattlePhaseInternal = internalMutation({
       lobbyId: gameState.lobbyId,
       turnNumber: gameState.turnNumber ?? 0,
       playerId: args.userId,
-      additionalData: { previousPhase: "main1", newPhase: "battle" },
+      additionalData: { previousPhase: "main", newPhase: "combat" },
     });
 
     return {
       success: true,
-      phase: "battle",
+      phase: "combat",
     };
   },
 });
 
 /**
- * Advance to Main Phase 2 (Internal)
+ * Advance to Breakdown Check Phase (Internal)
  *
- * Called after Battle Phase to enter Main Phase 2.
+ * Called after Combat Phase to enter Breakdown Check.
  */
-export const advanceToMainPhase2Internal = internalMutation({
+export const advanceToBreakdownCheckInternal = internalMutation({
   args: {
     gameId: v.string(),
     userId: v.id("users"),
@@ -136,10 +137,10 @@ export const advanceToMainPhase2Internal = internalMutation({
       throw createError(ErrorCode.GAME_NOT_YOUR_TURN);
     }
 
-    // 4. Validate we're in battle phase
-    if (gameState.currentPhase !== "battle") {
+    // 4. Validate we're in combat phase
+    if (gameState.currentPhase !== "combat") {
       throw createError(ErrorCode.GAME_INVALID_PHASE, {
-        reason: "Can only enter Main Phase 2 from Battle Phase",
+        reason: "Can only enter Breakdown Check from Combat Phase",
         currentPhase: gameState.currentPhase,
       });
     }
@@ -148,12 +149,12 @@ export const advanceToMainPhase2Internal = internalMutation({
     const user = await ctx.db.get(args.userId);
     const username = user?.username ?? user?.name ?? "Unknown";
 
-    // 6. Clean up lingering effects that expire when leaving battle phase
-    await cleanupLingeringEffects(ctx, gameState, "battle", gameState.turnNumber ?? 0);
+    // 6. Clean up lingering effects that expire when leaving combat phase
+    await cleanupLingeringEffects(ctx, gameState, "combat", gameState.turnNumber ?? 0);
 
-    // 7. Update phase to main2
+    // 7. Update phase to breakdown_check
     await ctx.db.patch(gameState._id, {
-      currentPhase: "main2",
+      currentPhase: "breakdown_check",
     });
 
     // 8. Record phase change event
@@ -164,10 +165,10 @@ export const advanceToMainPhase2Internal = internalMutation({
       eventType: "phase_changed",
       playerId: args.userId,
       playerUsername: username,
-      description: `${username} entered Main Phase 2`,
+      description: `${username} entered Breakdown Check`,
       metadata: {
-        previousPhase: "battle",
-        newPhase: "main2",
+        previousPhase: "combat",
+        newPhase: "breakdown_check",
       },
     });
 
@@ -178,12 +179,12 @@ export const advanceToMainPhase2Internal = internalMutation({
       lobbyId: gameState.lobbyId,
       turnNumber: gameState.turnNumber ?? 0,
       playerId: args.userId,
-      additionalData: { previousPhase: "battle", newPhase: "main2" },
+      additionalData: { previousPhase: "combat", newPhase: "breakdown_check" },
     });
 
     return {
       success: true,
-      phase: "main2",
+      phase: "breakdown_check",
     };
   },
 });

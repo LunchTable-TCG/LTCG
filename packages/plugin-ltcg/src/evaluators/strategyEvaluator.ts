@@ -372,7 +372,7 @@ function evaluateSummon(
 
   const monsterToSummon = hand.find(c => c._id === cardId);
 
-  if (!monsterToSummon || monsterToSummon.cardType !== "creature") {
+  if (!monsterToSummon || monsterToSummon.cardType !== "stereotype") {
     return {
       quality: "TERRIBLE",
       risk: "CRITICAL",
@@ -383,7 +383,7 @@ function evaluateSummon(
   }
 
   // Check if summoning weak monster when stronger one available
-  const monstersInHand = hand.filter((card) => card.cardType === "creature");
+  const monstersInHand = hand.filter((card) => card.cardType === "stereotype");
   const strongestInHand = monstersInHand.reduce((strongest, monster) => {
     return (monster.attack || 0) > (strongest.attack || 0) ? monster : strongest;
   }, monsterToSummon);
@@ -468,7 +468,7 @@ function evaluateEndTurn(
 ): StrategicEvaluation {
   // Check if ending turn without using resources
   const hand = gameState.hand;
-  const monstersInHand = hand.filter((card) => card.cardType === "creature" && (card.cost || 4) <= 4);
+  const monstersInHand = hand.filter((card) => card.cardType === "stereotype" && (card.cost || 4) <= 4);
   const hasNormalSummoned = gameState.hasNormalSummoned;
 
   // If can summon but haven't and board is empty - questionable

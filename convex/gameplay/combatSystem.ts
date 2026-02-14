@@ -105,9 +105,9 @@ export const declareAttack = mutation({
 
     // 5. Validate in Battle Phase
     const currentPhase = gameState.currentPhase;
-    if (currentPhase !== "battle" && currentPhase !== "battle_start") {
+    if (currentPhase !== "combat") {
       throw createError(ErrorCode.GAME_INVALID_MOVE, {
-        reason: "Can only attack during Battle Phase",
+        reason: "Can only attack during Combat Phase",
         currentPhase,
       });
     }
@@ -532,9 +532,9 @@ export const declareAttackWithResponse = mutation({
 
     // 5. Validate in Battle Phase
     const currentPhase = gameState.currentPhase;
-    if (currentPhase !== "battle" && currentPhase !== "battle_start") {
+    if (currentPhase !== "combat") {
       throw createError(ErrorCode.GAME_INVALID_MOVE, {
-        reason: "Can only attack during Battle Phase",
+        reason: "Can only attack during Combat Phase",
         currentPhase,
       });
     }
@@ -1852,9 +1852,9 @@ export const declareAttackInternal = internalMutation({
 
     // 5. Validate in Battle Phase
     const currentPhase = gameState.currentPhase;
-    if (currentPhase !== "battle" && currentPhase !== "battle_start") {
+    if (currentPhase !== "combat") {
       throw createError(ErrorCode.GAME_INVALID_MOVE, {
-        reason: "Can only attack during Battle Phase",
+        reason: "Can only attack during Combat Phase",
         currentPhase,
       });
     }

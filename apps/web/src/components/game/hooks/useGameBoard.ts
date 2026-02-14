@@ -294,7 +294,7 @@ export interface AttackTarget {
  * }
  *
  * // Declare an attack
- * if (isPlayerTurn && phase?.currentPhase === "battle") {
+ * if (isPlayerTurn && phase?.currentPhase === "combat") {
  *   await declareAttack(attackerCardId, targetCardId);
  * }
  *
@@ -315,7 +315,7 @@ export interface AttackTarget {
  * - `chainResponses` - Chain system state for spell/trap chains
  * - `isLoading` - Loading state indicator
  * - `isPlayerTurn` - Boolean indicating if it's the player's turn
- * - `currentPhase` - Current game phase (draw, main1, battle, etc.)
+ * - `currentPhase` - Current game phase (draw, main, combat, etc.)
  * - `isMainPhase` - Boolean for main phase check
  * - `isBattlePhase` - Boolean for battle phase check
  * - `gameEnded` - Boolean indicating if game has ended
@@ -654,11 +654,11 @@ export function useGameBoard(lobbyId: Id<"gameLobbies">, currentPlayerId: Id<"us
   }, [gameState?.currentPhase]);
 
   const isMainPhase = useMemo(() => {
-    return currentPhase === "main1" || currentPhase === "main2";
+    return currentPhase === "main";
   }, [currentPhase]);
 
   const isBattlePhase = useMemo(() => {
-    return currentPhase === "battle";
+    return currentPhase === "combat";
   }, [currentPhase]);
 
   // Loading logic: waiting for lobbyDetails, or if active, waiting for game state
@@ -704,7 +704,7 @@ export function useGameBoard(lobbyId: Id<"gameLobbies">, currentPlayerId: Id<"us
         rarity: card.rarity,
         archetype: card.archetype,
         monsterStats:
-          card.cardType === "creature"
+          card.cardType === "stereotype"
             ? {
                 attack: card.attack,
                 defense: card.defense,
@@ -769,7 +769,7 @@ export function useGameBoard(lobbyId: Id<"gameLobbies">, currentPlayerId: Id<"us
         rarity: card.rarity,
         archetype: card.archetype,
         monsterStats:
-          card.cardType === "creature"
+          card.cardType === "stereotype"
             ? {
                 attack: card.attack,
                 defense: card.defense,
@@ -851,7 +851,7 @@ export function useGameBoard(lobbyId: Id<"gameLobbies">, currentPlayerId: Id<"us
         rarity: card.rarity,
         archetype: card.archetype,
         monsterStats:
-          card.cardType === "creature"
+          card.cardType === "stereotype"
             ? {
                 attack: card.attack,
                 defense: card.defense,

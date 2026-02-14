@@ -18,18 +18,17 @@ export type Rarity = (typeof GAME_CONFIG.RARITIES)[number];
 
 export type Attribute = (typeof GAME_CONFIG.ATTRIBUTES)[number];
 
-/** @deprecated Use Attribute instead */
-export type Element = Attribute;
-
 export type Archetype = (typeof GAME_CONFIG.ARCHETYPES)[number];
-
-export type MonsterType = (typeof GAME_CONFIG.MONSTER_TYPES)[number];
 
 export type SpellType = (typeof GAME_CONFIG.SPELL_TYPES)[number];
 
 export type TrapType = (typeof GAME_CONFIG.TRAP_TYPES)[number];
 
 export type CardVariant = (typeof GAME_CONFIG.VARIANTS)[number];
+
+export type ViceType = (typeof GAME_CONFIG.VICE_TYPES)[number];
+
+export type RankedFormat = (typeof GAME_CONFIG.RANKED_FORMATS)[number];
 
 /**
  * Card representation in the player's hand.
@@ -105,8 +104,8 @@ export interface BackrowCard {
   name: string;
   /** URL to card artwork (optional) */
   imageUrl?: string;
-  /** Type of card (spell or trap only) */
-  cardType: "spell" | "trap";
+  /** Type of card (spell, trap, or class) */
+  cardType: "spell" | "trap" | "class";
   /** Rarity tier */
   rarity: string;
   /** Deck archetype (optional) */

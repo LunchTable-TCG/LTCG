@@ -114,7 +114,7 @@ export function HandCard({
           />
         ) : (
           <div className="w-full h-full bg-linear-to-br from-slate-700 to-slate-800 flex items-center justify-center p-0.5">
-            {card.cardType === "creature" ? (
+            {card.cardType === "stereotype" ? (
               <Sparkles className="w-4 h-4 text-slate-500" />
             ) : card.cardType === "spell" ? (
               <FlaskConical className="w-4 h-4 text-green-500/50" />
@@ -134,7 +134,7 @@ export function HandCard({
       <div
         className={cn(
           "absolute top-5 sm:top-6 right-0.5 px-1 py-0.5 rounded text-[7px] sm:text-[8px] font-bold uppercase",
-          card.cardType === "creature" && "bg-orange-600 text-white",
+          card.cardType === "stereotype" && "bg-orange-600 text-white",
           card.cardType === "spell" && "bg-green-600 text-white",
           card.cardType === "trap" && "bg-purple-600 text-white",
           card.cardType === "field" && "bg-teal-600 text-white"

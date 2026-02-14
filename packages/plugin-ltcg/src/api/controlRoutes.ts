@@ -2,33 +2,16 @@
  * External Control API Routes
  *
  * Provides HTTP endpoints for external systems to command the ElizaOS agent.
- * Enables triggering story mode gameplay, live streaming, and agent control.
+ * Enables triggering story mode gameplay and agent control.
  *
  * Security: Bearer token authentication with rate limiting (10 req/min per IP)
  */
 
 import type { IAgentRuntime, RouteRequest, RouteResponse } from "@elizaos/core";
 import { logger } from "@elizaos/core";
-import { LTCG_PRODUCTION_CONFIG } from "../constants";
 import { validateControlRequest } from "./authMiddleware";
 import { type IPollingService, SERVICE_TYPES } from "../services/types";
 
-type RecentStreamStart = {
-  sessionId: string;
-  status: string;
-  overlayUrl?: string;
-  platform: string;
-  startedAt: number;
-};
-
-const recentStreamStarts = new Map<string, RecentStreamStart>();
-const STREAM_START_DEDUPE_WINDOW_MS = Math.max(
-  5000,
-  Number.parseInt(
-    process.env.LTCG_STREAM_START_DEDUPE_WINDOW_MS || "30000",
-    10,
-  ) || 30000,
-);
 const AGENT_ID_CACHE_TTL_MS = 5 * 60 * 1000;
 let resolvedAgentIdCache: { agentId: string; resolvedAt: number } | null = null;
 let didWarnControlKeyFallback = false;
@@ -146,126 +129,9 @@ async function resolveAgentId(
 }
 
 /**
- * Start streaming to a given platform via the LTCG streaming API.
- *
- * For Retake: fetches RTMP creds from Retake.tv API, passes to backend.
- * For all other platforms: backend resolves creds from its own env vars.
- */
-async function startStreamForPlatform(
-  platform: string,
-  ids: { gameId: string; lobbyId?: string },
-  agentId: string,
-): Promise<{
-  sessionId: string;
-  status: string;
-  overlayUrl?: string;
-  platform: string;
-}> {
-  const { gameId, lobbyId } = ids;
-  const configuredAppUrl =
-    process.env.LTCG_APP_URL ||
-    process.env.NEXT_PUBLIC_APP_URL ||
-    LTCG_PRODUCTION_CONFIG.APP_URL;
-  const appUrl = configuredAppUrl.includes(".convex.site")
-    ? LTCG_PRODUCTION_CONFIG.APP_URL
-    : configuredAppUrl;
-  const ltcgApiKey = process.env.LTCG_API_KEY;
-  const forceRestart = process.env.LTCG_STREAM_FORCE_RESTART === "true";
-  const authHeaders: Record<string, string> = {};
-  if (ltcgApiKey) {
-    authHeaders.Authorization = `Bearer ${ltcgApiKey}`;
-    authHeaders["x-api-key"] = ltcgApiKey;
-  }
-
-  const dedupeKey = `${agentId}:${lobbyId || gameId}:${platform}`;
-  const recentStart = recentStreamStarts.get(dedupeKey);
-  if (
-    recentStart &&
-    Date.now() - recentStart.startedAt < STREAM_START_DEDUPE_WINDOW_MS
-  ) {
-    logger.info(
-      {
-        dedupeKey,
-        sessionId: recentStart.sessionId,
-        windowMs: STREAM_START_DEDUPE_WINDOW_MS,
-      },
-      "Returning deduped recent stream start result",
-    );
-    return {
-      sessionId: recentStart.sessionId,
-      status: recentStart.status,
-      overlayUrl: recentStart.overlayUrl,
-      platform: recentStart.platform,
-    };
-  }
-
-  // For Retake, pass access token and let backend resolve RTMP creds + go-live handshake once.
-  let retakeAccessToken: string | undefined;
-  let streamPlatform = platform;
-
-  if (platform === "retake") {
-    retakeAccessToken =
-      process.env.DIZZY_RETAKE_ACCESS_TOKEN || process.env.RETAKE_ACCESS_TOKEN;
-
-    if (!retakeAccessToken) {
-      throw new Error(
-        "Retake.tv credentials not configured (DIZZY_RETAKE_ACCESS_TOKEN required)",
-      );
-    }
-    streamPlatform = "retake";
-  }
-
-  // Call the LTCG streaming API — backend resolves env-var creds for non-Retake platforms
-  const streamingResponse = await fetch(`${appUrl}/api/streaming/start`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...authHeaders,
-    },
-    body: JSON.stringify({
-      agentId,
-      gameId,
-      lobbyId,
-      streamType: "agent",
-      platform: streamPlatform,
-      ...(retakeAccessToken ? { retakeAccessToken } : {}),
-      streamTitle: "Dizzy plays LTCG",
-      forceRestart,
-    }),
-  });
-
-  if (!streamingResponse.ok) {
-    const errorText = await streamingResponse.text();
-    throw new Error(`LTCG streaming API error: ${errorText}`);
-  }
-
-  const streamingData = await streamingResponse.json();
-  logger.info(
-    { sessionId: streamingData.sessionId, platform },
-    "Stream started via control API",
-  );
-
-  recentStreamStarts.set(dedupeKey, {
-    sessionId: streamingData.sessionId,
-    status: streamingData.status,
-    overlayUrl: streamingData.overlayUrl,
-    platform,
-    startedAt: Date.now(),
-  });
-
-  return {
-    sessionId: streamingData.sessionId,
-    status: streamingData.status,
-    overlayUrl: streamingData.overlayUrl,
-    platform,
-  };
-}
-
-/**
  * POST /ltcg/control/story-mode
  *
  * Trigger story mode gameplay with optional difficulty/chapter selection.
- * Automatically starts streaming if agent has streaming configured.
  *
  * Request body:
  * - difficulty?: "easy" | "medium" | "hard" | "boss" (for quick play)
@@ -281,7 +147,6 @@ async function startStreamForPlatform(
  * - stage: { name: string, number: number }
  * - aiOpponent: string
  * - difficulty?: string
- * - streaming: { autoStartConfigured: boolean, willAutoStart: boolean }
  * - polling: { started: boolean, intervalMs: number }
  */
 async function handleStoryMode(
@@ -367,129 +232,18 @@ async function handleStoryMode(
       "Story battle started",
     );
 
-    // Auto-start streaming if configured
-    const streamingPlatform =
-      (body as { platform?: string }).platform ||
-      process.env.STREAMING_PLATFORM;
-    const autoStart = process.env.STREAMING_AUTO_START !== "false";
-
-    let streamingResult: {
-      sessionId?: string;
-      status?: string;
-      platform?: string;
-      error?: string;
-      skipped?: boolean;
-      reason?: string;
-    } = {
-      error: "No streaming platform configured",
-    };
-
-    const preferBackendAutoStart =
-      process.env.LTCG_PREFER_BACKEND_STREAM_AUTOSTART !== "false";
-    let skipControlAutoStart = false;
-
-    let resolvedAgentId: string | null = null;
-    try {
-      resolvedAgentId = await resolveAgentId(runtime, pollingService);
-    } catch (error) {
-      logger.warn(
-        { error: error instanceof Error ? error.message : String(error) },
-        "Unable to resolve LTCG_AGENT_ID during story-mode start",
-      );
-    }
-
-    if (streamingPlatform && autoStart && preferBackendAutoStart) {
-      if (!resolvedAgentId) {
-        skipControlAutoStart = true;
-        streamingResult = {
-          skipped: true,
-          reason: "backend_autostart_assumed_missing_agent_id",
-          platform: streamingPlatform,
-        };
-      } else {
-        try {
-          const backendStreamingConfig =
-            await client.getStreamingConfig(resolvedAgentId);
-          if (
-            backendStreamingConfig?.enabled &&
-            backendStreamingConfig.autoStart &&
-            backendStreamingConfig.hasStreamKey
-          ) {
-            skipControlAutoStart = true;
-            streamingResult = {
-              skipped: true,
-              reason: "backend_autostart_enabled",
-              platform: backendStreamingConfig.platform || streamingPlatform,
-            };
-            logger.info(
-              {
-                agentId: resolvedAgentId,
-                platform: backendStreamingConfig.platform || streamingPlatform,
-              },
-              "Skipping control-route stream start because backend agent auto-start is enabled",
-            );
-          }
-        } catch (configError) {
-          logger.debug(
-            {
-              error:
-                configError instanceof Error
-                  ? configError.message
-                  : String(configError),
-            },
-            "Failed to inspect backend streaming config; proceeding with control-route auto-start",
-          );
-        }
-      }
-    }
-
-    if (streamingPlatform && autoStart && !skipControlAutoStart) {
-      try {
-        if (!resolvedAgentId) {
-          throw new Error("Unable to resolve LTCG agent ID for stream start");
-        }
-        logger.info(
-          { platform: streamingPlatform, gameId: result.gameId },
-          "Auto-starting stream for story mode",
-        );
-        const streamData = await startStreamForPlatform(
-          streamingPlatform,
-          { gameId: result.gameId, lobbyId: result.lobbyId },
-          resolvedAgentId,
-        );
-        streamingResult = {
-          sessionId: streamData.sessionId,
-          status: streamData.status,
-          platform: streamData.platform,
-        };
-      } catch (streamError) {
-        const msg =
-          streamError instanceof Error
-            ? streamError.message
-            : String(streamError);
-        logger.warn(
-          { error: msg },
-          "Failed to auto-start stream (game will continue without streaming)",
-        );
-        streamingResult = { error: msg };
-      }
-    }
-
     // Start polling with metadata for game-end handling
     pollingService.startPollingGame(result.gameId, {
       stageId: result.stageId,
-      streamingSessionId: streamingResult.sessionId,
     });
     logger.info(
       {
         gameId: result.gameId,
         stageId: result.stageId,
-        sessionId: streamingResult.sessionId,
       },
       "Polling started for story mode game",
     );
 
-    // Return response with streaming info
     res.json({
       success: true,
       gameId: result.gameId,
@@ -499,21 +253,6 @@ async function handleStoryMode(
       stage: result.stage,
       aiOpponent: result.aiOpponent,
       difficulty: result.difficulty || body.difficulty,
-      streaming: streamingResult.error
-        ? { autoStarted: false, error: streamingResult.error }
-        : streamingResult.skipped
-          ? {
-              autoStarted: false,
-              skipped: true,
-              reason: streamingResult.reason,
-              platform: streamingResult.platform,
-            }
-          : {
-              autoStarted: true,
-              sessionId: streamingResult.sessionId,
-              status: streamingResult.status,
-              platform: streamingResult.platform,
-            },
       polling: {
         started: true,
         intervalMs: 1500,
@@ -533,7 +272,6 @@ async function handleStoryMode(
  * Get comprehensive agent status including:
  * - Current game state
  * - Polling status
- * - Streaming configuration
  * - Recent activity
  *
  * Response:
@@ -542,7 +280,6 @@ async function handleStoryMode(
  * - currentGameId: string | null
  * - gameState?: { turnNumber, phase, currentTurn, lifePoints, status }
  * - polling: { active: boolean, intervalMs: number }
- * - streaming: { configured: boolean, autoStart: boolean }
  * - uptime: number (ms)
  */
 async function handleStatus(
@@ -580,10 +317,6 @@ async function handleStatus(
       polling: {
         active: !!currentGameId,
         intervalMs: 1500,
-      },
-      streaming: {
-        note: "Check agent record in Convex for actual streaming configuration",
-        autoStartEnabled: true,
       },
       timestamp: Date.now(),
     };
@@ -839,109 +572,6 @@ async function handleStop(
 }
 
 /**
- * POST /ltcg/control/start-stream
- *
- * Start streaming with LiveKit egress to any supported platform.
- *
- * Request body:
- * - platform?: string (default: STREAMING_PLATFORM env var)
- *   Supported: "pumpfun", "retake", "twitch", "youtube", "kick", "x", or any custom
- * - lobbyId?: string (optional override for current lobby linkage)
- *
- * Response:
- * - success: boolean
- * - sessionId: string
- * - status: string
- * - platform: string
- * - message: string
- */
-async function handleStartStream(
-  req: RouteRequest,
-  res: RouteResponse,
-  runtime: IAgentRuntime,
-) {
-  setCorsHeaders(res);
-
-  try {
-    // Validate authentication FIRST
-    const apiKey = getApiKey();
-    const authError = validateControlRequest(req, apiKey);
-    if (authError) {
-      return sendError(res, 401, authError);
-    }
-
-    const body = (req.body as { platform?: string; lobbyId?: string }) || {};
-    const platform = body.platform || process.env.STREAMING_PLATFORM;
-
-    if (!platform) {
-      return sendError(
-        res,
-        400,
-        "No platform specified. Pass { platform: 'pumpfun' } or set STREAMING_PLATFORM env var.",
-      );
-    }
-
-    logger.info({ platform }, "Control API: Start stream trigger received");
-
-    // Get polling service to check for active game
-    const pollingService = runtime.getService(
-      SERVICE_TYPES.POLLING,
-    ) as unknown as IPollingService | null;
-
-    if (!pollingService) {
-      return sendError(res, 503, "Polling service not available");
-    }
-
-    const currentGameId = pollingService.getCurrentGameId();
-    if (!currentGameId) {
-      return sendError(
-        res,
-        400,
-        "No active game - start a game first before streaming",
-      );
-    }
-
-    let lobbyId = body.lobbyId?.trim() || pollingService.getCurrentLobbyId();
-    if (!lobbyId) {
-      try {
-        const liveState = await pollingService
-          .getClient()
-          ?.getGameState(currentGameId);
-        lobbyId = liveState?.lobbyId || null;
-      } catch (error) {
-        logger.debug(
-          {
-            error: error instanceof Error ? error.message : String(error),
-            gameId: currentGameId,
-          },
-          "Unable to resolve lobbyId during start-stream; continuing with gameId only",
-        );
-      }
-    }
-
-    const agentId = await resolveAgentId(runtime, pollingService);
-    const streamData = await startStreamForPlatform(
-      platform,
-      { gameId: currentGameId, ...(lobbyId ? { lobbyId } : {}) },
-      agentId,
-    );
-
-    res.json({
-      success: true,
-      sessionId: streamData.sessionId,
-      status: streamData.status,
-      platform: streamData.platform,
-      overlayUrl: streamData.overlayUrl,
-      message: `Stream is starting on ${platform}! LiveKit egress is capturing the overlay. It may take 10-15 seconds to go live.`,
-    });
-  } catch (error) {
-    logger.error({ error }, "Error starting stream");
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    sendError(res, 500, `Failed to start stream: ${errorMessage}`);
-  }
-}
-
-/**
  * Control API routes export
  *
  * Note: CORS headers are set in each handler via setCorsHeaders().
@@ -978,11 +608,5 @@ export const controlRoutes = [
     path: "/control/stop",
     type: "POST" as const,
     handler: handleStop,
-  },
-  {
-    name: "ltcg-control-start-stream",
-    path: "/control/start-stream",
-    type: "POST" as const,
-    handler: handleStartStream,
   },
 ];

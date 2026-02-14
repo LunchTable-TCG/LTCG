@@ -535,7 +535,7 @@ export class ConvexRealtimeClient {
       currentTurn: result.currentTurn || "host",
       currentTurnPlayer: result.currentTurnPlayer || "",
       isMyTurn: result.isMyTurn ?? false,
-      phase: result.phase || "main1",
+      phase: result.phase || "main",
       turnNumber: result.turnNumber || 1,
 
       // New format fields

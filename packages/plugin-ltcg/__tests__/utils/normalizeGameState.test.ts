@@ -6,7 +6,7 @@ describe("normalizeGameState", () => {
     const normalized = normalizeGameState({
       gameId: "game_1",
       lobbyId: "lobby_1",
-      phase: "main1",
+      phase: "main",
       turnNumber: 3,
       currentTurnPlayer: "user_me",
       isMyTurn: true,

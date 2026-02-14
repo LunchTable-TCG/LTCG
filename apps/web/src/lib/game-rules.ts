@@ -14,7 +14,7 @@ export const GAME_CONSTANTS = {
   MIN_DECK_SIZE: 30,
   MAX_DECK_SIZE: 60,
   MAX_HAND_SIZE: 7,
-  MAX_FIELD_CREATURES: 5,
+  MAX_FIELD_STEREOTYPES: 5,
   MAX_SPELL_TRAP_ZONES: 5,
   CARDS_DRAWN_PER_TURN: 1,
   NORMAL_SUMMONS_PER_TURN: 1,
@@ -26,7 +26,7 @@ export const GAME_CONSTANTS = {
 // TURN PHASES
 // =============================================================================
 
-export type PhaseId = "draw" | "main1" | "battle" | "main2" | "end";
+export type PhaseId = "draw" | "main" | "combat" | "breakdown_check" | "end";
 
 export interface PhaseInfo {
   id: PhaseId;
@@ -51,56 +51,53 @@ export const TURN_PHASES: PhaseInfo[] = [
     ],
   },
   {
-    id: "main1",
-    name: "Main Phase 1",
-    shortDescription: "Summon creatures, activate spells, set cards.",
+    id: "main",
+    name: "Main Phase",
+    shortDescription: "Summon stereotypes, activate spells, set cards.",
     fullDescription:
-      "Your primary phase for playing cards. You can Normal Summon 1 creature, activate Spell cards, set Traps, change creature positions, and use card effects.",
+      "Your primary phase for playing cards. You can Normal Summon 1 stereotype, activate Spell cards, set Traps, change stereotype positions, and use card effects.",
     allowedActions: [
-      "Normal Summon 1 creature",
-      "Special Summon creatures (no limit)",
+      "Normal Summon 1 stereotype",
+      "Special Summon stereotypes (no limit)",
       "Activate Spell cards",
       "Set Spell/Trap cards face-down",
-      "Change creature positions (once per creature)",
+      "Change stereotype positions (once per stereotype)",
       "Activate card effects",
     ],
     tips: [
       "You can only Normal Summon once per turn, but Special Summons are unlimited.",
-      "Set your Traps before the Battle Phase so they can be activated.",
+      "Set your Traps before the Combat Phase so they can be activated.",
     ],
   },
   {
-    id: "battle",
-    name: "Battle Phase",
-    shortDescription: "Attack with your creatures.",
+    id: "combat",
+    name: "Combat Phase",
+    shortDescription: "Attack with your stereotypes.",
     fullDescription:
-      "Declare attacks with your creatures in Attack Position. Each creature can attack once per turn. You can skip this phase if you don't want to attack.",
+      "Declare attacks with your stereotypes in Attack Position. Each stereotype can attack once per turn. You can skip this phase if you don't want to attack.",
     allowedActions: [
-      "Declare attacks with creatures",
+      "Declare attacks with stereotypes",
       "Activate Quick-Play Spells",
       "Activate Trap cards",
     ],
     tips: [
-      "Creatures summoned this turn can attack (no summoning sickness).",
-      "The turn player cannot conduct a Battle Phase on the very first turn of the game.",
+      "Stereotypes summoned this turn can attack (no summoning sickness).",
+      "The turn player cannot conduct a Combat Phase on the very first turn of the game.",
     ],
   },
   {
-    id: "main2",
-    name: "Main Phase 2",
-    shortDescription: "Additional opportunity to play cards.",
+    id: "breakdown_check",
+    name: "Breakdown Check",
+    shortDescription: "Resolve post-combat effects and cleanup.",
     fullDescription:
-      "A second Main Phase after battle. You can do anything you could do in Main Phase 1, except Normal Summon if you already did.",
+      "After combat, resolve any pending effects and perform cleanup. Cards with breakdown triggers activate here.",
     allowedActions: [
-      "Normal Summon (if you haven't yet)",
-      "Special Summon creatures",
-      "Activate Spell cards",
-      "Set Spell/Trap cards",
-      "Change creature positions",
+      "Resolve breakdown effects",
+      "Activate triggered abilities",
     ],
     tips: [
-      "Use this phase to set up defenses after attacking.",
-      "Good for playing cards you drew during battle.",
+      "Some cards have effects that trigger specifically during the Breakdown Check.",
+      "This is the last chance to use certain effects before the End Phase.",
     ],
   },
   {
@@ -121,7 +118,7 @@ export const TURN_PHASES: PhaseInfo[] = [
 // CARD TYPES
 // =============================================================================
 
-export type CardTypeId = "creature" | "spell" | "trap" | "equipment";
+export type CardTypeId = "stereotype" | "spell" | "trap" | "class";
 
 export interface CardTypeInfo {
   id: CardTypeId;
@@ -135,30 +132,30 @@ export interface CardTypeInfo {
 
 export const CARD_TYPES: CardTypeInfo[] = [
   {
-    id: "creature",
-    name: "Creature",
+    id: "stereotype",
+    name: "Stereotype",
     icon: "👹",
     shortDescription: "Your fighters. Attack and defend with ATK/DEF stats.",
     fullDescription:
-      "Creatures are the backbone of your deck. They have ATK (Attack) and DEF (Defense) stats. Summon them to the field to battle your opponent's creatures or attack directly.",
+      "Stereotypes are the backbone of your deck. They have ATK (Attack) and DEF (Defense) stats. Summon them to the field to battle your opponent's stereotypes or attack directly.",
     howToPlay: [
-      "Normal Summon: Once per turn, summon a creature from your hand.",
+      "Normal Summon: Once per turn, summon a stereotype from your hand.",
       "Level 1-4: No tribute required.",
-      "Level 5-6: Tribute 1 creature you control.",
-      "Level 7+: Tribute 2 creatures you control.",
-      "Attack Position: Vertical, uses ATK for battle.",
-      "Defense Position: Horizontal, uses DEF for battle.",
+      "Level 5-6: Tribute 1 stereotype you control.",
+      "Level 7+: Tribute 2 stereotypes you control.",
+      "Attack Position: Vertical, uses ATK for combat.",
+      "Defense Position: Horizontal, uses DEF for combat.",
     ],
     subtypes: [
-      { name: "Dragon", description: "Powerful flying creatures, often high ATK." },
+      { name: "Dragon", description: "Powerful flying stereotypes, often high ATK." },
       { name: "Spellcaster", description: "Magic users with effect-focused abilities." },
-      { name: "Warrior", description: "Battle-hardened fighters, balanced stats." },
-      { name: "Beast", description: "Wild creatures, often aggressive effects." },
-      { name: "Fiend", description: "Dark creatures with disruptive abilities." },
+      { name: "Warrior", description: "Combat-hardened fighters, balanced stats." },
+      { name: "Beast", description: "Wild stereotypes, often aggressive effects." },
+      { name: "Fiend", description: "Dark stereotypes with disruptive abilities." },
       { name: "Zombie", description: "Undead that can return from the graveyard." },
       { name: "Machine", description: "Mechanical beings with combo potential." },
-      { name: "Aqua", description: "Water-dwelling creatures." },
-      { name: "Pyro", description: "Fire-based creatures with burn effects." },
+      { name: "Aqua", description: "Water-dwelling stereotypes." },
+      { name: "Pyro", description: "Fire-based stereotypes with burn effects." },
     ],
   },
   {
@@ -167,7 +164,7 @@ export const CARD_TYPES: CardTypeInfo[] = [
     icon: "✨",
     shortDescription: "Powerful one-time effects. Activate from your hand.",
     fullDescription:
-      "Spell cards provide powerful effects that can turn the tide of battle. Most Spells can only be activated during your Main Phase, but Quick-Play Spells can be used anytime.",
+      "Spell cards provide powerful effects that can turn the tide of combat. Most Spells can only be activated during your Main Phase, but Quick-Play Spells can be used anytime.",
     howToPlay: [
       "Activate from your hand during Main Phase.",
       "Most Spells go to the Graveyard after resolving.",
@@ -177,11 +174,11 @@ export const CARD_TYPES: CardTypeInfo[] = [
     ],
     subtypes: [
       { name: "Normal", description: "Standard spell, activate during your Main Phase." },
-      { name: "Quick-Play", description: "Can be activated anytime, even during battle." },
+      { name: "Quick-Play", description: "Can be activated anytime, even during combat." },
       { name: "Continuous", description: "Stays on field with ongoing effects." },
       { name: "Field", description: "Affects the entire battlefield for both players." },
-      { name: "Equip", description: "Attaches to a creature to boost it." },
-      { name: "Ritual", description: "Used to summon special Ritual creatures." },
+      { name: "Equip", description: "Attaches to a stereotype to boost it." },
+      { name: "Ritual", description: "Used to summon special Ritual stereotypes." },
     ],
   },
   {
@@ -204,17 +201,17 @@ export const CARD_TYPES: CardTypeInfo[] = [
     ],
   },
   {
-    id: "equipment",
-    name: "Equipment",
+    id: "class",
+    name: "Class",
     icon: "⚔️",
-    shortDescription: "Attach to creatures to boost their power.",
+    shortDescription: "Attach to stereotypes to boost their power.",
     fullDescription:
-      "Equipment cards enhance your creatures by boosting their ATK, DEF, or granting special abilities. When the equipped creature leaves the field, the equipment is destroyed.",
+      "Class cards enhance your stereotypes by boosting their ATK, DEF, or granting special abilities. When the equipped stereotype leaves the field, the class card is destroyed.",
     howToPlay: [
-      "Activate and target a creature you control.",
+      "Activate and target a stereotype you control.",
       "Provides stat boosts or special abilities.",
-      "Destroyed when the equipped creature leaves the field.",
-      "Some equipment can be moved to different creatures.",
+      "Destroyed when the equipped stereotype leaves the field.",
+      "Some class cards can be moved to different stereotypes.",
     ],
   },
 ];
@@ -235,7 +232,7 @@ export interface CombatScenario {
 export const COMBAT_SCENARIOS: CombatScenario[] = [
   {
     name: "ATK vs ATK (Attacker Wins)",
-    description: "Your creature attacks an opponent's creature in Attack Position.",
+    description: "Your stereotype attacks an opponent's stereotype in Attack Position.",
     attackerPosition: "attack",
     defenderPosition: "attack",
     outcome: "Defender destroyed. Opponent takes damage.",
@@ -243,7 +240,7 @@ export const COMBAT_SCENARIOS: CombatScenario[] = [
   },
   {
     name: "ATK vs ATK (Defender Wins)",
-    description: "Your creature attacks but has lower ATK.",
+    description: "Your stereotype attacks but has lower ATK.",
     attackerPosition: "attack",
     defenderPosition: "attack",
     outcome: "Attacker destroyed. You take damage.",
@@ -251,31 +248,31 @@ export const COMBAT_SCENARIOS: CombatScenario[] = [
   },
   {
     name: "ATK vs ATK (Tie)",
-    description: "Both creatures have equal ATK.",
+    description: "Both stereotypes have equal ATK.",
     attackerPosition: "attack",
     defenderPosition: "attack",
-    outcome: "Both creatures destroyed. No damage.",
+    outcome: "Both stereotypes destroyed. No damage.",
     damageFormula: "No damage dealt",
   },
   {
     name: "ATK vs DEF (Attacker Wins)",
-    description: "Your creature attacks a creature in Defense Position.",
+    description: "Your stereotype attacks a stereotype in Defense Position.",
     attackerPosition: "attack",
     defenderPosition: "defense",
     outcome: "Defender destroyed. No damage to opponent.",
-    damageFormula: "No battle damage when attacking DEF position",
+    damageFormula: "No combat damage when attacking DEF position",
   },
   {
     name: "ATK vs DEF (Defender Wins)",
-    description: "Your creature's ATK is lower than defender's DEF.",
+    description: "Your stereotype's ATK is lower than defender's DEF.",
     attackerPosition: "attack",
     defenderPosition: "defense",
-    outcome: "No creatures destroyed. You take damage.",
+    outcome: "No stereotypes destroyed. You take damage.",
     damageFormula: "Damage = Defender DEF - Attacker ATK",
   },
   {
     name: "Direct Attack",
-    description: "No creatures on opponent's field.",
+    description: "No stereotypes on opponent's field.",
     attackerPosition: "attack",
     defenderPosition: "attack",
     outcome: "Attack opponent directly. They take full ATK as damage.",
@@ -313,11 +310,11 @@ export const GAME_ZONES: ZoneInfo[] = [
     capacity: 7,
   },
   {
-    id: "field_creatures",
-    name: "Creature Zones",
-    shortDescription: "Where your creatures are summoned.",
+    id: "field_stereotypes",
+    name: "Stereotype Zones",
+    shortDescription: "Where your stereotypes are summoned.",
     fullDescription:
-      "You can control up to 5 creatures at once. Creatures in Attack Position are placed vertically, Defense Position horizontally.",
+      "You can control up to 5 stereotypes at once. Stereotypes in Attack Position are placed vertically, Defense Position horizontally.",
     capacity: 5,
   },
   {
@@ -333,7 +330,7 @@ export const GAME_ZONES: ZoneInfo[] = [
     name: "Graveyard",
     shortDescription: "Destroyed and used cards go here.",
     fullDescription:
-      "When creatures are destroyed or Spell/Trap cards are used, they go to the Graveyard. Both players can view either Graveyard at any time. Some effects can retrieve cards from here.",
+      "When stereotypes are destroyed or Spell/Trap cards are used, they go to the Graveyard. Both players can view either Graveyard at any time. Some effects can retrieve cards from here.",
   },
   {
     id: "banished",
@@ -378,7 +375,7 @@ export const GLOSSARY: GlossaryTerm[] = [
   },
   {
     term: "Level",
-    definition: "Creature's star level (1-12). Determines tribute requirements for summoning.",
+    definition: "Stereotype's star level (1-12). Determines tribute requirements for summoning.",
     relatedTerms: ["Tribute", "Normal Summon"],
     category: "stats",
   },
@@ -386,7 +383,7 @@ export const GLOSSARY: GlossaryTerm[] = [
   // Actions
   {
     term: "Normal Summon",
-    definition: "Summoning a creature from your hand. Limited to once per turn.",
+    definition: "Summoning a stereotype from your hand. Limited to once per turn.",
     relatedTerms: ["Special Summon", "Tribute"],
     category: "actions",
   },
@@ -398,26 +395,26 @@ export const GLOSSARY: GlossaryTerm[] = [
   },
   {
     term: "Tribute",
-    definition: "Sending your creature to the Graveyard to summon a higher-level creature.",
+    definition: "Sending your stereotype to the Graveyard to summon a higher-level stereotype.",
     relatedTerms: ["Normal Summon", "Level"],
     category: "actions",
   },
   {
     term: "Set",
     definition:
-      "Placing a card face-down. Creatures set in Defense Position, Spells/Traps in Spell Zone.",
+      "Placing a card face-down. Stereotypes set in Defense Position, Spells/Traps in Spell Zone.",
     relatedTerms: ["Face-down", "Flip"],
     category: "actions",
   },
   {
     term: "Flip",
-    definition: "Turning a face-down creature face-up. Triggers Flip Effects.",
+    definition: "Turning a face-down stereotype face-up. Triggers Flip Effects.",
     relatedTerms: ["Set", "Flip Effect"],
     category: "actions",
   },
   {
     term: "Activate",
-    definition: "Using a Spell, Trap, or creature effect.",
+    definition: "Using a Spell, Trap, or stereotype effect.",
     relatedTerms: ["Chain", "Negate"],
     category: "actions",
   },
@@ -450,8 +447,8 @@ export const GLOSSARY: GlossaryTerm[] = [
   },
   {
     term: "Field",
-    definition: "The play area where creatures and Spell/Traps are placed.",
-    relatedTerms: ["Creature Zone", "Spell/Trap Zone"],
+    definition: "The play area where stereotypes and Spell/Traps are placed.",
+    relatedTerms: ["Stereotype Zone", "Spell/Trap Zone"],
     category: "zones",
   },
 
@@ -471,13 +468,13 @@ export const GLOSSARY: GlossaryTerm[] = [
   {
     term: "Direct Attack",
     definition:
-      "Attacking the opponent directly when they have no creatures. Deals full ATK as damage.",
+      "Attacking the opponent directly when they have no stereotypes. Deals full ATK as damage.",
     relatedTerms: ["Battle Damage", "ATK"],
     category: "mechanics",
   },
   {
     term: "Piercing",
-    definition: "Ability to deal battle damage even when attacking Defense Position creatures.",
+    definition: "Ability to deal battle damage even when attacking Defense Position stereotypes.",
     relatedTerms: ["Battle Damage", "Defense Position"],
     category: "mechanics",
   },
@@ -504,7 +501,7 @@ export const GLOSSARY: GlossaryTerm[] = [
   {
     term: "Quick-Play Spell",
     definition:
-      "A Spell that can be activated during either player's turn, even during Battle Phase.",
+      "A Spell that can be activated during either player's turn, even during Combat Phase.",
     relatedTerms: ["Spell", "Spell Speed"],
     category: "card_types",
   },
@@ -522,8 +519,8 @@ export const GLOSSARY: GlossaryTerm[] = [
     category: "card_types",
   },
   {
-    term: "Equip",
-    definition: "A card that attaches to a creature, boosting its stats or granting abilities.",
+    term: "Class",
+    definition: "A card that attaches to a stereotype, boosting its stats or granting abilities.",
     relatedTerms: ["ATK", "DEF"],
     category: "card_types",
   },
@@ -550,7 +547,7 @@ export const ELEMENTS: ElementInfo[] = [
     color: "#ef4444",
     description: "Aggressive element focused on dealing damage quickly.",
     playstyle: "Aggro / Beatdown",
-    strengths: ["High ATK creatures", "Burn damage effects", "Fast wins"],
+    strengths: ["High ATK stereotypes", "Burn damage effects", "Fast wins"],
     starterDeck: "Infernal Dragons",
   },
   {
@@ -566,9 +563,9 @@ export const ELEMENTS: ElementInfo[] = [
     id: "earth",
     name: "Earth",
     color: "#84cc16",
-    description: "Defensive element with sturdy creatures.",
+    description: "Defensive element with sturdy stereotypes.",
     playstyle: "Midrange / Defense",
-    strengths: ["High DEF creatures", "Protection effects", "Resource generation"],
+    strengths: ["High DEF stereotypes", "Protection effects", "Resource generation"],
     starterDeck: "Iron Legion",
   },
   {
@@ -616,27 +613,27 @@ export const TUTORIAL_MOMENTS: TutorialMoment[] = [
   },
   {
     id: 2,
-    phase: "main1",
+    phase: "main",
     trigger: "creature_in_hand",
-    title: "Summoning Creatures",
+    title: "Summoning Stereotypes",
     message:
-      "You have a creature in your hand! Tap it to summon it to the field. You can Normal Summon 1 creature per turn.",
-    highlightElement: "hand_creature",
-    action: "summon_creature",
+      "You have a stereotype in your hand! Tap it to summon it to the field. You can Normal Summon 1 stereotype per turn.",
+    highlightElement: "hand_stereotype",
+    action: "summon_stereotype",
   },
   {
     id: 3,
-    phase: "battle",
+    phase: "combat",
     trigger: "creature_on_field",
-    title: "Battle Phase",
+    title: "Combat Phase",
     message:
-      "Now you can attack! Tap your creature, then tap the enemy you want to attack. If they have no creatures, attack them directly!",
-    highlightElement: "field_creature",
+      "Now you can attack! Tap your stereotype, then tap the enemy you want to attack. If they have no stereotypes, attack them directly!",
+    highlightElement: "field_stereotype",
     action: "declare_attack",
   },
   {
     id: 4,
-    phase: "main1",
+    phase: "main",
     trigger: "spell_in_hand",
     title: "Using Spells",
     message:
@@ -701,15 +698,15 @@ export const TOOLTIPS: Record<string, TooltipDefinition> = {
     id: "phase_indicator",
     target: "phase_indicator",
     title: "Current Phase",
-    body: "Shows which phase of the turn you're in: Draw → Main → Battle → Main 2 → End.",
+    body: "Shows which phase of the turn you're in: Draw → Main → Combat → Breakdown Check → End.",
     learnMoreAnchor: "turn-phases",
   },
-  creature_zone: {
-    id: "creature_zone",
-    target: "creature_zone",
-    title: "Creature Zone",
-    body: "Summon creatures here. You can have up to 5 creatures on your field.",
-    learnMoreAnchor: "creature-zones",
+  stereotype_zone: {
+    id: "stereotype_zone",
+    target: "stereotype_zone",
+    title: "Stereotype Zone",
+    body: "Summon stereotypes here. You can have up to 5 stereotypes on your field.",
+    learnMoreAnchor: "stereotype-zones",
   },
   spell_trap_zone: {
     id: "spell_trap_zone",
@@ -770,12 +767,12 @@ export const TOOLTIPS: Record<string, TooltipDefinition> = {
   },
 
   // Card Types
-  creature_card: {
-    id: "creature_card",
-    target: "creature_card",
-    title: "Creature Card",
+  stereotype_card: {
+    id: "stereotype_card",
+    target: "stereotype_card",
+    title: "Stereotype Card",
     body: "Your fighters! Summon them to attack and defend. Has ATK and DEF stats.",
-    learnMoreAnchor: "creatures",
+    learnMoreAnchor: "stereotypes",
   },
   spell_card: {
     id: "spell_card",
@@ -791,12 +788,12 @@ export const TOOLTIPS: Record<string, TooltipDefinition> = {
     body: "Surprise cards! Set face-down first, then activate when conditions are met.",
     learnMoreAnchor: "traps",
   },
-  equipment_card: {
-    id: "equipment_card",
-    target: "equipment_card",
-    title: "Equipment Card",
-    body: "Attach to your creatures to boost their stats or grant abilities.",
-    learnMoreAnchor: "equipment",
+  class_card: {
+    id: "class_card",
+    target: "class_card",
+    title: "Class Card",
+    body: "Attach to your stereotypes to boost their stats or grant abilities.",
+    learnMoreAnchor: "class",
   },
 
   // Rarities

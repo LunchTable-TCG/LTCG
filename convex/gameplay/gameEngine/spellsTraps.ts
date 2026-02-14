@@ -83,7 +83,7 @@ async function setSpellTrapHandler(
   }
 
   // 4b. Validate in Main Phase (can only set spells/traps during Main Phase)
-  if (gameState.currentPhase !== "main1" && gameState.currentPhase !== "main2") {
+  if (gameState.currentPhase !== "main") {
     throw createError(ErrorCode.GAME_INVALID_PHASE, {
       reason: "Spell/Trap cards can only be set during Main Phase",
     });
@@ -311,7 +311,7 @@ async function activateSpellHandler(
     if (gameState.currentTurnPlayerId !== user.userId) {
       throw createError(ErrorCode.GAME_NOT_YOUR_TURN);
     }
-    if (currentPhase !== "main1" && currentPhase !== "main2") {
+    if (currentPhase !== "main") {
       throw createError(ErrorCode.GAME_INVALID_PHASE, {
         reason: "Equip Spells can only be activated during Main Phase",
       });
@@ -323,7 +323,7 @@ async function activateSpellHandler(
     if (gameState.currentTurnPlayerId !== user.userId) {
       throw createError(ErrorCode.GAME_NOT_YOUR_TURN);
     }
-    if (currentPhase !== "main1" && currentPhase !== "main2") {
+    if (currentPhase !== "main") {
       throw createError(ErrorCode.GAME_INVALID_PHASE, {
         reason: "Field Spells can only be activated during Main Phase",
       });
@@ -335,8 +335,7 @@ async function activateSpellHandler(
     !isQuickPlay &&
     !isFieldSpell &&
     !isEquipSpell &&
-    currentPhase !== "main1" &&
-    currentPhase !== "main2"
+    currentPhase !== "main"
   ) {
     throw createError(ErrorCode.GAME_INVALID_PHASE, {
       reason: "Normal Spells can only be activated during Main Phase",

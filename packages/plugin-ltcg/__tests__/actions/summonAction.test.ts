@@ -77,12 +77,12 @@ describe("Summon Action", () => {
 
   describe("Validation", () => {
     it("should validate when it is Main Phase and summon available", async () => {
-      // Mock game state - includes both new API fields and legacy fields for compatibility
+      // Mock game state
       const mockGameState = {
         gameId: "test-game-123",
         lobbyId: "lobby-123",
         status: "active",
-        phase: "main1",
+        phase: "main",
         currentTurn: "host",
         turnNumber: 2,
         currentTurnPlayer: "user-123",
@@ -97,7 +97,7 @@ describe("Summon Action", () => {
         opponentHandCount: 5,
         myBoard: [],
         opponentBoard: [],
-        // Legacy fields needed by current summonAction implementation
+        // Player zone data
         hostPlayer: {
           monsterZone: [],
           spellTrapZone: [],
@@ -110,19 +110,19 @@ describe("Summon Action", () => {
         },
       };
 
-      // Hand with summonable creature - includes both field naming conventions
+      // Hand with summonable stereotype
       const mockHand = [
         {
           _id: "card-1",
           handIndex: 0,
           name: "Blazing Drake",
-          type: "creature", // Legacy field
-          cardType: "creature",
-          level: 4, // Legacy field
+          type: "stereotype",
+          cardType: "stereotype",
+          level: 4,
           cost: 4,
-          atk: 1600, // Legacy field
+          atk: 1600,
           attack: 1600,
-          def: 1200, // Legacy field
+          def: 1200,
           defense: 1200,
           archetype: "fire",
         },
@@ -156,7 +156,7 @@ describe("Summon Action", () => {
         gameId: "test-game-123",
         lobbyId: "lobby-123",
         status: "active",
-        phase: "battle",
+        phase: "combat",
         currentTurn: "host",
         turnNumber: 3,
         currentTurnPlayer: "user-123",
@@ -201,7 +201,7 @@ describe("Summon Action", () => {
         gameId: "test-game-123",
         lobbyId: "lobby-123",
         status: "active",
-        phase: "main1",
+        phase: "main",
         currentTurn: "host",
         turnNumber: 3,
         currentTurnPlayer: "user-123",
@@ -233,8 +233,8 @@ describe("Summon Action", () => {
           _id: "card-1",
           handIndex: 0,
           name: "Murky Whale",
-          type: "creature",
-          cardType: "creature",
+          type: "stereotype",
+          cardType: "stereotype",
           level: 4,
           cost: 4,
           atk: 2100,
@@ -268,12 +268,12 @@ describe("Summon Action", () => {
       expect(result).toBe(false);
     });
 
-    it("should not validate when no summonable monsters in hand", async () => {
+    it("should not validate when no summonable stereotypes in hand", async () => {
       const mockGameState = {
         gameId: "test-game-123",
         lobbyId: "lobby-123",
         status: "active",
-        phase: "main1",
+        phase: "main",
         currentTurn: "host",
         turnNumber: 2,
         currentTurnPlayer: "user-123",
@@ -300,7 +300,7 @@ describe("Summon Action", () => {
         },
       };
 
-      // Hand with only spell/trap cards - no creatures
+      // Hand with only spell/trap cards - no stereotypes
       const mockHand = [
         {
           _id: "card-1",
@@ -309,7 +309,7 @@ describe("Summon Action", () => {
           type: "spell",
           cardType: "spell",
           cost: 2,
-          description: "Destroy one creature",
+          description: "Destroy one stereotype",
         },
         {
           _id: "card-2",
@@ -352,7 +352,7 @@ describe("Summon Action", () => {
         gameId: "test-game-123",
         lobbyId: "lobby-123",
         status: "active",
-        phase: "main1",
+        phase: "main",
         currentTurn: "host",
         turnNumber: 2,
         currentTurnPlayer: "user-123",
@@ -384,8 +384,8 @@ describe("Summon Action", () => {
           _id: "card-1",
           handIndex: 0,
           name: "Ember Wyrmling",
-          type: "creature",
-          cardType: "creature",
+          type: "stereotype",
+          cardType: "stereotype",
           level: 3,
           cost: 3,
           atk: 1200,
@@ -440,7 +440,7 @@ describe("Summon Action", () => {
         gameId: "test-game-123",
         lobbyId: "lobby-123",
         status: "active",
-        phase: "main1",
+        phase: "main",
         currentTurn: "host",
         turnNumber: 2,
         currentTurnPlayer: "user-123",
@@ -472,8 +472,8 @@ describe("Summon Action", () => {
           _id: "card-1",
           handIndex: 0,
           name: "Tidal Serpent",
-          type: "creature",
-          cardType: "creature",
+          type: "stereotype",
+          cardType: "stereotype",
           level: 3,
           cost: 3,
           atk: 1800,

@@ -3,9 +3,9 @@
  *
  * Validates all types of monster summons in Yu-Gi-Oh:
  * - Normal Summon (1 per turn, with tribute requirements)
- * - Tribute Summon (Level 5-6 = 1 tribute, Level 7+ = 2 tributes)
+ * - Tribute Summon (Level 7+ = 1 tribute)
  * - Flip Summon (face-down → face-up)
- * - Special Summon (Fusion, Ritual, Synchro, Xyz, Pendulum, Link)
+ * - Special Summon (card effects)
  */
 
 import type { Doc, Id } from "../_generated/dataModel";
@@ -38,12 +38,12 @@ export async function validateNormalSummon(
 ): Promise<ValidationResult> {
   const isHost = playerId === gameState.hostId;
 
-  // 0. Check phase — summons only allowed during Main Phase 1 or Main Phase 2
+  // 0. Check phase — summons only allowed during Main Phase
   const phase = gameState.currentPhase;
-  if (phase !== "main1" && phase !== "main2") {
+  if (phase !== "main") {
     return {
       valid: false,
-      error: "You can only Normal Summon during Main Phase 1 or Main Phase 2.",
+      error: "You can only Normal Summon during the Main Phase.",
     };
   }
 
@@ -60,15 +60,15 @@ export async function validateNormalSummon(
     };
   }
 
-  // 2. Check monster zone space (max 5 monsters)
+  // 2. Check stereotype zone space (max 3 stereotypes)
   const board = isHost ? gameState.hostBoard : gameState.opponentBoard;
-  const MONSTER_ZONE_LIMIT = 5;
+  const STEREOTYPE_ZONE_LIMIT = 3;
 
-  if (board.length >= MONSTER_ZONE_LIMIT) {
+  if (board.length >= STEREOTYPE_ZONE_LIMIT) {
     return {
       valid: false,
       error:
-        "Your Monster Zone is full (maximum 5 monsters). Remove a monster from the field before summoning.",
+        "Your Stereotype Zone is full (maximum 3). Remove a stereotype from the field before summoning.",
     };
   }
 
@@ -90,11 +90,11 @@ export async function validateNormalSummon(
     };
   }
 
-  if (card.cardType !== "creature") {
+  if (card.cardType !== "stereotype") {
     return {
       valid: false,
       error:
-        "Only monster cards can be Normal Summoned. Use 'Set' or 'Activate' for Spell/Trap cards.",
+        "Only Stereotype cards can be Normal Summoned. Use 'Set' or 'Activate' for Spell/Trap cards.",
     };
   }
 
@@ -171,12 +171,12 @@ export async function validateFlipSummon(
   const isHost = playerId === gameState.hostId;
   const board = isHost ? gameState.hostBoard : gameState.opponentBoard;
 
-  // 0. Check phase — flip summons only allowed during Main Phase 1 or Main Phase 2
+  // 0. Check phase — flip summons only allowed during Main Phase
   const phase = gameState.currentPhase;
-  if (phase !== "main1" && phase !== "main2") {
+  if (phase !== "main") {
     return {
       valid: false,
-      error: "You can only Flip Summon during Main Phase 1 or Main Phase 2.",
+      error: "You can only Flip Summon during the Main Phase.",
     };
   }
 
@@ -284,16 +284,12 @@ export async function validatePositionChange(
     };
   }
 
-  // 3. Check current phase (cannot change position in Battle Phase)
+  // 3. Check current phase (cannot change position in Combat Phase)
   const currentPhase = gameState.currentPhase;
-  if (
-    currentPhase === "battle_start" ||
-    currentPhase === "battle" ||
-    currentPhase === "battle_end"
-  ) {
+  if (currentPhase === "combat") {
     return {
       valid: false,
-      error: "Cannot change position during Battle Phase",
+      error: "Cannot change position during Combat Phase",
     };
   }
 

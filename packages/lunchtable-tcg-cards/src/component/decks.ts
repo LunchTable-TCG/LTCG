@@ -124,10 +124,10 @@ export const getDeckStats = query({
   returns: v.object({
     totalCards: v.number(),
     cardsByType: v.object({
-      creature: v.number(),
+      stereotype: v.number(),
       spell: v.number(),
       trap: v.number(),
-      equipment: v.number(),
+      class: v.number(),
     }),
     cardsByRarity: v.object({
       common: v.number(),
@@ -149,7 +149,7 @@ export const getDeckStats = query({
       .withIndex("by_deck", (q) => q.eq("deckId", args.deckId))
       .collect();
 
-    const cardsByType = { creature: 0, spell: 0, trap: 0, equipment: 0 };
+    const cardsByType = { stereotype: 0, spell: 0, trap: 0, class: 0 };
     const cardsByRarity = {
       common: 0,
       uncommon: 0,
@@ -175,10 +175,10 @@ export const getDeckStats = query({
       totalCost += cardDef.cost * qty;
 
       // Count by type
-      if (cardDef.cardType === "creature") cardsByType.creature += qty;
+      if (cardDef.cardType === "stereotype") cardsByType.stereotype += qty;
       else if (cardDef.cardType === "spell") cardsByType.spell += qty;
       else if (cardDef.cardType === "trap") cardsByType.trap += qty;
-      else if (cardDef.cardType === "equipment") cardsByType.equipment += qty;
+      else if (cardDef.cardType === "class") cardsByType.class += qty;
 
       // Count by rarity
       const rarity = cardDef.rarity as keyof typeof cardsByRarity;

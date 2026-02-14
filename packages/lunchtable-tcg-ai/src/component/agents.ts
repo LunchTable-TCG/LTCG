@@ -6,9 +6,7 @@ import { mutation, query } from "./_generated/server";
 // SHARED VALIDATORS
 // ============================================================================
 
-const streamingPlatformValidator = literals("twitch", "youtube", "kick", "custom", "retake", "x", "pumpfun");
 const walletStatusValidator = literals("pending", "created", "failed");
-const streamingVisualModeValidator = literals("webcam", "profile-picture");
 
 // ============================================================================
 // MUTATIONS
@@ -34,19 +32,6 @@ export const createAgent = mutation({
     walletCreatedAt: v.optional(v.number()),
     walletStatus: v.optional(walletStatusValidator),
     walletErrorMessage: v.optional(v.string()),
-    // Streaming fields
-    streamingEnabled: v.optional(v.boolean()),
-    streamingPlatform: v.optional(streamingPlatformValidator),
-    streamingKeyHash: v.optional(v.string()),
-    streamingRtmpUrl: v.optional(v.string()),
-    streamingAutoStart: v.optional(v.boolean()),
-    streamingPersistent: v.optional(v.boolean()),
-    streamingVoiceTrackUrl: v.optional(v.string()),
-    streamingVoiceVolume: v.optional(v.number()),
-    streamingVoiceLoop: v.optional(v.boolean()),
-    streamingVisualMode: v.optional(streamingVisualModeValidator),
-    streamingProfilePictureUrl: v.optional(v.string()),
-    lastStreamAt: v.optional(v.number()),
     // Webhook fields
     callbackUrl: v.optional(v.string()),
     webhookSecret: v.optional(v.string()),
@@ -77,18 +62,6 @@ export const createAgent = mutation({
       walletCreatedAt: args.walletCreatedAt,
       walletStatus: args.walletStatus,
       walletErrorMessage: args.walletErrorMessage,
-      streamingEnabled: args.streamingEnabled,
-      streamingPlatform: args.streamingPlatform,
-      streamingKeyHash: args.streamingKeyHash,
-      streamingRtmpUrl: args.streamingRtmpUrl,
-      streamingAutoStart: args.streamingAutoStart,
-      streamingPersistent: args.streamingPersistent,
-      streamingVoiceTrackUrl: args.streamingVoiceTrackUrl,
-      streamingVoiceVolume: args.streamingVoiceVolume,
-      streamingVoiceLoop: args.streamingVoiceLoop,
-      streamingVisualMode: args.streamingVisualMode,
-      streamingProfilePictureUrl: args.streamingProfilePictureUrl,
-      lastStreamAt: args.lastStreamAt,
       callbackUrl: args.callbackUrl,
       webhookSecret: args.webhookSecret,
       webhookEnabled: args.webhookEnabled,

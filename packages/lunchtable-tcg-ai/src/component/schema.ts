@@ -2,8 +2,6 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import { literals } from "convex-helpers/validators";
 
-const streamingPlatformValidator = literals("twitch", "youtube", "kick", "custom", "retake", "x", "pumpfun");
-
 export default defineSchema({
   agents: defineTable({
     userId: v.string(), // external ref
@@ -27,19 +25,6 @@ export default defineSchema({
     walletCreatedAt: v.optional(v.number()),
     walletStatus: v.optional(literals("pending", "created", "failed")),
     walletErrorMessage: v.optional(v.string()),
-    // Streaming fields
-    streamingEnabled: v.optional(v.boolean()),
-    streamingPlatform: v.optional(streamingPlatformValidator),
-    streamingKeyHash: v.optional(v.string()),
-    streamingRtmpUrl: v.optional(v.string()),
-    streamingAutoStart: v.optional(v.boolean()),
-    streamingPersistent: v.optional(v.boolean()),
-    streamingVoiceTrackUrl: v.optional(v.string()),
-    streamingVoiceVolume: v.optional(v.number()),
-    streamingVoiceLoop: v.optional(v.boolean()),
-    streamingVisualMode: v.optional(literals("webcam", "profile-picture")),
-    streamingProfilePictureUrl: v.optional(v.string()),
-    lastStreamAt: v.optional(v.number()),
     // Webhook fields
     callbackUrl: v.optional(v.string()),
     webhookSecret: v.optional(v.string()),

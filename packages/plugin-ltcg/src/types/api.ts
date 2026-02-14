@@ -75,7 +75,7 @@ export interface RateLimitStatus {
 export interface GameStateResponse {
   gameId: string;
   lobbyId: string;
-  phase: "draw" | "standby" | "main1" | "battle" | "main2" | "end";
+  phase: "draw" | "main" | "combat" | "end";
   turnNumber: number;
   currentTurnPlayer: string;
   isMyTurn: boolean;
@@ -152,7 +152,7 @@ export interface PlayerState {
 
 /**
  * Card in hand - uses cardType from backend schema
- * Note: cardType values are 'creature', 'spell', 'trap', 'equipment'
+ * Note: cardType values are 'stereotype', 'spell', 'trap', 'class'
  *
  * Authoritative fields (use these):
  * - cardType (not type)
@@ -197,7 +197,7 @@ export interface CardInHand {
   /** Card name */
   name: string;
   /** Card type - use this over legacy 'type' field */
-  cardType: "creature" | "spell" | "trap" | "equipment";
+  cardType: "stereotype" | "spell" | "trap" | "class";
   /** Mana/resource cost */
   cost?: number;
   /** Attack value - use this over legacy 'atk' field */
@@ -217,7 +217,7 @@ export interface CardInHand {
   /** @deprecated Use _id instead */
   cardId?: string;
   /** @deprecated Use cardType instead */
-  type?: "creature" | "spell" | "trap" | "equipment";
+  type?: "stereotype" | "spell" | "trap" | "class";
   /** @deprecated Use cost instead */
   level?: number;
   /** @deprecated Use attack instead */
@@ -237,7 +237,7 @@ export interface BoardCard {
   /** Card name */
   name: string;
   /** Card type */
-  cardType: "creature" | "spell" | "trap" | "equipment";
+  cardType: "stereotype" | "spell" | "trap" | "class";
   /** Base attack value */
   attack?: number;
   /** Base defense value */
@@ -287,7 +287,7 @@ export interface SpellTrapCard {
 export interface CardInGraveyard {
   cardId: string;
   name: string;
-  type: "creature" | "spell" | "trap" | "equipment";
+  type: "stereotype" | "spell" | "trap" | "class";
 }
 
 // ============================================================================
@@ -457,7 +457,7 @@ export interface Deck {
 export interface CardDefinition {
   cardId: string;
   name: string;
-  type: "creature" | "spell" | "trap" | "equipment";
+  type: "stereotype" | "spell" | "trap" | "class";
   level?: number;
   atk?: number;
   def?: number;

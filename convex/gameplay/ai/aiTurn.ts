@@ -59,7 +59,7 @@ interface StateChanges {
   opponentBanished: Id<"cardDefinitions">[];
   opponentSpellTrapZone: SpellTrapCard[];
   opponentFieldSpell: FieldSpell | undefined;
-  opponentMana: number;
+  opponentClout: number;
   hostBoard: BoardCard[];
   hostHand: Id<"cardDefinitions">[];
   hostLifePoints: number;
@@ -68,7 +68,7 @@ interface StateChanges {
   hostBanished: Id<"cardDefinitions">[];
   hostSpellTrapZone: SpellTrapCard[];
   hostFieldSpell: FieldSpell | undefined;
-  hostMana: number;
+  hostClout: number;
   opponentNormalSummonedThisTurn: boolean;
   lingeringEffects: AILingeringEffect[];
 }
@@ -91,7 +91,7 @@ function initStateChanges(gameState: Doc<"gameStates">): StateChanges {
     opponentFieldSpell: gameState.opponentFieldSpell
       ? { ...gameState.opponentFieldSpell }
       : undefined,
-    opponentMana: gameState.opponentMana ?? 0,
+    opponentClout: gameState.opponentClout ?? 0,
     hostBoard: gameState.hostBoard.map((m) => ({ ...m })),
     hostHand: [...gameState.hostHand],
     hostLifePoints: gameState.hostLifePoints,
@@ -100,7 +100,7 @@ function initStateChanges(gameState: Doc<"gameStates">): StateChanges {
     hostBanished: [...(gameState.hostBanished || [])],
     hostSpellTrapZone: (gameState.hostSpellTrapZone || []).map((s) => ({ ...s })),
     hostFieldSpell: gameState.hostFieldSpell ? { ...gameState.hostFieldSpell } : undefined,
-    hostMana: gameState.hostMana ?? 0,
+    hostClout: gameState.hostClout ?? 0,
     opponentNormalSummonedThisTurn: gameState.opponentNormalSummonedThisTurn || false,
     lingeringEffects: ((gameState.lingeringEffects || []) as AILingeringEffect[]).map((e) => ({
       ...e,
@@ -314,7 +314,7 @@ function executeCardEffects(
         if (stateChanges.opponentBoard.length < 5) {
           const summonTarget = stateChanges.opponentHand.find((id) => {
             const c = cardDataMap.get(id);
-            return c && c.cardType === "creature";
+            return c && c.cardType === "stereotype";
           });
           if (summonTarget) {
             const c = cardDataMap.get(summonTarget);
@@ -448,8 +448,8 @@ function executeAction(
 
       const card = cardDataMap.get(action.cardId);
       if (!card) return { success: false, description: "Card not found" };
-      if (card.cardType !== "creature")
-        return { success: false, description: "Only creatures can be summoned" };
+      if (card.cardType !== "stereotype")
+        return { success: false, description: "Only stereotypes can be summoned" };
 
       // Validate tribute count (use shared helper to match game engine)
       const requiredTributes = getTributeCount(card);
@@ -525,9 +525,9 @@ function executeAction(
       const card = cardDataMap.get(action.cardId);
       if (!card) return { success: false, description: "Card not found" };
 
-      // Only creatures can be set (spell/trap zone not tracked in AI state)
-      if (card.cardType !== "creature") {
-        return { success: false, description: "Only creatures can be set by AI" };
+      // Only stereotypes can be set (spell/trap zone not tracked in AI state)
+      if (card.cardType !== "stereotype") {
+        return { success: false, description: "Only stereotypes can be set by AI" };
       }
 
       // Setting a monster still requires tributes (level 5+ needs tributes)
@@ -956,7 +956,7 @@ function executeAction(
             if (stateChanges.opponentBoard.length < 5) {
               const summonTarget = stateChanges.opponentHand.find((id) => {
                 const c = cardDataMap.get(id);
-                return c && c.cardType === "creature";
+                return c && c.cardType === "stereotype";
               });
               if (summonTarget) {
                 const c = cardDataMap.get(summonTarget);
@@ -1282,7 +1282,7 @@ export const executeAITurn = mutation({
     let aiActionsSucceeded = false;
 
     try {
-      // MAIN PHASE 1: Make decisions until AI passes or has nothing to do
+      // MAIN PHASE: Make decisions until AI passes or has nothing to do
       let mainPhaseActions = 0;
       let mainPhaseFailures = 0;
       const maxMainPhaseActions = 5; // Prevent infinite loops
@@ -1294,7 +1294,7 @@ export const executeAITurn = mutation({
         const decision = await makeAIDecision(
           tempState as Doc<"gameStates">,
           aiPlayerId,
-          "main1",
+          "main",
           cardDataMap,
           difficulty
         );
@@ -1311,7 +1311,7 @@ export const executeAITurn = mutation({
           aiPlayerId
         );
         if (result.success) {
-          actionsLog.push(`[Main1] ${result.description}`);
+          actionsLog.push(`[Main] ${result.description}`);
           mainPhaseActions++;
           mainPhaseFailures = 0; // Reset on success
           if (isGameOver(stateChanges)) break; // LP=0: stop immediately
@@ -1320,18 +1320,18 @@ export const executeAITurn = mutation({
         }
       }
 
-      // BATTLE PHASE: Attack decisions
-      let battlePhaseActions = 0;
-      let battlePhaseFailures = 0;
-      const maxBattleActions = 5; // Max 5 monsters can attack
+      // COMBAT PHASE: Attack decisions
+      let combatPhaseActions = 0;
+      let combatPhaseFailures = 0;
+      const maxCombatActions = 5; // Max 5 monsters can attack
 
-      while (battlePhaseActions < maxBattleActions && battlePhaseFailures < 2) {
+      while (combatPhaseActions < maxCombatActions && combatPhaseFailures < 2) {
         const tempState = { ...gameState, ...stateChanges } as Doc<"gameStates">;
 
         const decision = await makeAIDecision(
           tempState as Doc<"gameStates">,
           aiPlayerId,
-          "battle",
+          "combat",
           cardDataMap,
           difficulty
         );
@@ -1349,52 +1349,15 @@ export const executeAITurn = mutation({
             aiPlayerId
           );
           if (result.success) {
-            actionsLog.push(`[Battle] ${result.description}`);
-            battlePhaseActions++;
-            battlePhaseFailures = 0;
+            actionsLog.push(`[Combat] ${result.description}`);
+            combatPhaseActions++;
+            combatPhaseFailures = 0;
             if (isGameOver(stateChanges)) break; // LP=0: stop attacking
           } else {
-            battlePhaseFailures++;
+            combatPhaseFailures++;
           }
         } else {
-          break; // Non-attack action in battle phase
-        }
-      }
-
-      // MAIN PHASE 2: Flip, spells, and set (skip if game is already over)
-      if (!isGameOver(stateChanges)) {
-        let main2Actions = 0;
-        let main2Failures = 0;
-        const maxMain2Actions = 5;
-
-        while (main2Actions < maxMain2Actions && main2Failures < 2) {
-          const tempState2 = { ...gameState, ...stateChanges } as Doc<"gameStates">;
-
-          const main2Decision = await makeAIDecision(
-            tempState2 as Doc<"gameStates">,
-            aiPlayerId,
-            "main2",
-            cardDataMap,
-            difficulty
-          );
-
-          if (main2Decision.type === "pass" || main2Decision.type === "end_phase") break;
-
-          const result = executeAction(
-            main2Decision,
-            stateChanges,
-            cardDataMap,
-            gameState.turnNumber || 1,
-            aiPlayerId
-          );
-          if (result.success) {
-            actionsLog.push(`[Main2] ${result.description}`);
-            main2Actions++;
-            main2Failures = 0;
-            if (isGameOver(stateChanges)) break;
-          } else {
-            main2Failures++;
-          }
+          break; // Non-attack action in combat phase
         }
       }
 
@@ -1416,7 +1379,7 @@ export const executeAITurn = mutation({
         opponentBanished: stateChanges.opponentBanished,
         opponentSpellTrapZone: stateChanges.opponentSpellTrapZone,
         opponentFieldSpell: stateChanges.opponentFieldSpell,
-        opponentMana: stateChanges.opponentMana,
+        opponentClout: stateChanges.opponentClout,
         hostBoard: stateChanges.hostBoard,
         hostHand: stateChanges.hostHand,
         hostLifePoints: stateChanges.hostLifePoints,
@@ -1425,7 +1388,7 @@ export const executeAITurn = mutation({
         hostBanished: stateChanges.hostBanished,
         hostSpellTrapZone: stateChanges.hostSpellTrapZone,
         hostFieldSpell: stateChanges.hostFieldSpell,
-        hostMana: stateChanges.hostMana,
+        hostClout: stateChanges.hostClout,
         lingeringEffects: stateChanges.lingeringEffects,
       });
     }
@@ -1530,7 +1493,7 @@ export const executeAITurnInternal = internalMutation({
     // === AI DECISION PHASE (fault-tolerant) ===
     // If AI actions fail, we skip them and just end the turn.
     try {
-      // MAIN PHASE 1: Make decisions until AI passes
+      // MAIN PHASE: Make decisions until AI passes
       let mainPhaseActions = 0;
       let mainPhaseFailures = 0;
       const maxMainPhaseActions = 5;
@@ -1541,7 +1504,7 @@ export const executeAITurnInternal = internalMutation({
         const decision = await makeAIDecision(
           tempState as Doc<"gameStates">,
           aiPlayerId,
-          "main1",
+          "main",
           cardDataMap,
           difficulty
         );
@@ -1556,7 +1519,7 @@ export const executeAITurnInternal = internalMutation({
           aiPlayerId
         );
         if (result.success) {
-          actionsLog.push(`[Main1] ${result.description}`);
+          actionsLog.push(`[Main] ${result.description}`);
           mainPhaseActions++;
           mainPhaseFailures = 0;
           if (isGameOver(stateChanges)) break; // LP=0: stop immediately
@@ -1565,18 +1528,18 @@ export const executeAITurnInternal = internalMutation({
         }
       }
 
-      // BATTLE PHASE: Attack decisions
-      let battlePhaseActions = 0;
-      let battlePhaseFailures = 0;
-      const maxBattleActions = 5;
+      // COMBAT PHASE: Attack decisions
+      let combatPhaseActions = 0;
+      let combatPhaseFailures = 0;
+      const maxCombatActions = 5;
 
-      while (battlePhaseActions < maxBattleActions && battlePhaseFailures < 2) {
+      while (combatPhaseActions < maxCombatActions && combatPhaseFailures < 2) {
         const tempState = { ...gameState, ...stateChanges } as Doc<"gameStates">;
 
         const decision = await makeAIDecision(
           tempState as Doc<"gameStates">,
           aiPlayerId,
-          "battle",
+          "combat",
           cardDataMap,
           difficulty
         );
@@ -1592,52 +1555,15 @@ export const executeAITurnInternal = internalMutation({
             aiPlayerId
           );
           if (result.success) {
-            actionsLog.push(`[Battle] ${result.description}`);
-            battlePhaseActions++;
-            battlePhaseFailures = 0;
+            actionsLog.push(`[Combat] ${result.description}`);
+            combatPhaseActions++;
+            combatPhaseFailures = 0;
             if (isGameOver(stateChanges)) break; // LP=0: stop attacking
           } else {
-            battlePhaseFailures++;
+            combatPhaseFailures++;
           }
         } else {
           break;
-        }
-      }
-
-      // MAIN PHASE 2: Flip, spells, and set (skip if game is already over)
-      if (!isGameOver(stateChanges)) {
-        let main2Actions = 0;
-        let main2Failures = 0;
-        const maxMain2Actions = 5;
-
-        while (main2Actions < maxMain2Actions && main2Failures < 2) {
-          const tempState2 = { ...gameState, ...stateChanges } as Doc<"gameStates">;
-
-          const main2Decision = await makeAIDecision(
-            tempState2 as Doc<"gameStates">,
-            aiPlayerId,
-            "main2",
-            cardDataMap,
-            difficulty
-          );
-
-          if (main2Decision.type === "pass" || main2Decision.type === "end_phase") break;
-
-          const result = executeAction(
-            main2Decision,
-            stateChanges,
-            cardDataMap,
-            gameState.turnNumber || 1,
-            aiPlayerId
-          );
-          if (result.success) {
-            actionsLog.push(`[Main2] ${result.description}`);
-            main2Actions++;
-            main2Failures = 0;
-            if (isGameOver(stateChanges)) break;
-          } else {
-            main2Failures++;
-          }
         }
       }
 
@@ -1659,7 +1585,7 @@ export const executeAITurnInternal = internalMutation({
         opponentBanished: stateChanges.opponentBanished,
         opponentSpellTrapZone: stateChanges.opponentSpellTrapZone,
         opponentFieldSpell: stateChanges.opponentFieldSpell,
-        opponentMana: stateChanges.opponentMana,
+        opponentClout: stateChanges.opponentClout,
         hostBoard: stateChanges.hostBoard,
         hostHand: stateChanges.hostHand,
         hostLifePoints: stateChanges.hostLifePoints,
@@ -1668,7 +1594,7 @@ export const executeAITurnInternal = internalMutation({
         hostBanished: stateChanges.hostBanished,
         hostSpellTrapZone: stateChanges.hostSpellTrapZone,
         hostFieldSpell: stateChanges.hostFieldSpell,
-        hostMana: stateChanges.hostMana,
+        hostClout: stateChanges.hostClout,
         lingeringEffects: stateChanges.lingeringEffects,
       });
     }
@@ -1796,7 +1722,7 @@ export const forceEndAITurn = internalMutation({
     await ctx.db.patch(gameState._id, {
       currentTurnPlayerId: nextPlayerId,
       turnNumber: nextTurnNumber,
-      currentPhase: "main1",
+      currentPhase: "main",
       [isHost ? "hostBoard" : "opponentBoard"]: resetPlayerBoard,
       [isHost ? "opponentBoard" : "hostBoard"]: resetOpponentBoard,
       hostNormalSummonedThisTurn: false,

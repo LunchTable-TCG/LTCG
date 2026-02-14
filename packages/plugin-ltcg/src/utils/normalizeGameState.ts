@@ -49,7 +49,7 @@ function normalizeCardInHand(card: CardInHand, index: number): CardInHand {
     ...card,
     handIndex: index,
     cardId: card._id,
-    // Pass through cardType to type field (both now use 'creature')
+    // Pass through cardType to type field (both now use 'stereotype')
     type: card.cardType,
     // Map new field names to legacy names
     level: card.cost,

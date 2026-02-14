@@ -31,7 +31,7 @@ import ltcgReferrals from "@lunchtable-tcg/referrals/convex.config";
 import ltcgSeasons from "@lunchtable-tcg/seasons/convex.config";
 import ltcgSocial from "@lunchtable-tcg/social/convex.config";
 import ltcgStory from "@lunchtable-tcg/story/convex.config";
-import ltcgStreaming from "@lunchtable-tcg/streaming/convex.config";
+
 import ltcgToken from "@lunchtable-tcg/token/convex.config";
 import ltcgTreasury from "@lunchtable-tcg/treasury/convex.config";
 import ltcgWebhooks from "@lunchtable-tcg/webhooks/convex.config";
@@ -74,7 +74,7 @@ app.use(ltcgReferrals);
 app.use(ltcgSeasons);
 app.use(ltcgSocial);
 app.use(ltcgStory);
-app.use(ltcgStreaming);
+
 app.use(ltcgToken);
 app.use(ltcgTreasury);
 app.use(ltcgWebhooks);

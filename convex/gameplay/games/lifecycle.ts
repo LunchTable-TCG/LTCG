@@ -303,18 +303,20 @@ export async function initializeGameStateHelper(
     hostBanished: [],
     opponentBanished: [],
 
-    // Initial resources (Yu-Gi-Oh: 8000 LP, no mana system)
+    // Initial resources (8000 LP, 0 Clout)
     hostLifePoints: 8000,
     opponentLifePoints: 8000,
-    hostMana: 0,
-    opponentMana: 0,
+    hostClout: 0,
+    opponentClout: 0,
+    hostBreakdownsCaused: 0,
+    opponentBreakdownsCaused: 0,
 
     // Turn tracking
     currentTurnPlayerId,
     turnNumber: 1,
 
-    // Phase Management (start in Main Phase 1, since starting hand is already dealt)
-    currentPhase: "main1",
+    // Phase Management (start in Draw Phase)
+    currentPhase: "draw",
 
     // Turn Flags (no normal summons yet)
     hostNormalSummonedThisTurn: false,
@@ -354,7 +356,7 @@ export async function initializeGameStateHelper(
  * - Loaded and shuffled decks from both players
  * - Initial 5-card hands
  * - Empty boards and graveyards
- * - Starting LP and mana
+ * - Starting LP and Clout
  * - Phase/chain/flag initialization
  */
 export const initializeGameState = internalMutation({

@@ -263,7 +263,7 @@ export function GameBoard({
   }
 
   // Determine summon options based on card type
-  const isCreature = selectedHandCard?.cardType === "creature";
+  const isCreature = selectedHandCard?.cardType === "stereotype";
   const isSpell = selectedHandCard?.cardType === "spell";
   const isTrap = selectedHandCard?.cardType === "trap";
 
@@ -431,7 +431,7 @@ export function GameBoard({
           canSummonAttack={canSummonAttack ?? false}
           canSummonDefense={canSummonDefense ?? false}
           canSet={
-            selectedHandCard?.cardType === "creature"
+            selectedHandCard?.cardType === "stereotype"
               ? (canSetMonster ?? false)
               : (canSetSpellTrap ?? false)
           }
@@ -455,7 +455,7 @@ export function GameBoard({
               : []
           }
           onSummon={handleSummon}
-          onSet={selectedHandCard?.cardType === "creature" ? handleSetMonster : handleSetSpellTrap}
+          onSet={selectedHandCard?.cardType === "stereotype" ? handleSetMonster : handleSetSpellTrap}
           onActivate={handleHandCardActivate}
           onClose={() => {
             setShowSummonModal(false);

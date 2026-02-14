@@ -3,8 +3,8 @@
  *
  * Derives spell speed from card type and JSON ability structure.
  *
- * Yu-Gi-Oh Spell Speed Rules:
- * - Spell Speed 1: Normal Spell, Field Spell, Continuous Spell, Equip Spell, creature effects (ignition)
+ * Spell Speed Rules:
+ * - Spell Speed 1: Normal Spell, Field Spell, Continuous Spell, Stereotypes, Classes
  * - Spell Speed 2: Quick-Play Spell, Normal Trap, Continuous Trap
  * - Spell Speed 3: Counter Trap
  */
@@ -18,16 +18,12 @@ import type { Doc } from "../_generated/dataModel";
  * Used for chain resolution and response validation.
  *
  * Spell Speed Rules:
- * - Speed 1: Normal Spells, Field Spells, Continuous Spells, Equip Spells, Monster effects
+ * - Speed 1: Normal Spells, Field Spells, Continuous Spells, Stereotypes, Classes
  * - Speed 2: Quick-Play Spells, Normal Traps, Continuous Traps
  * - Speed 3: Counter Traps
  *
  * @param card - Card definition
  * @returns Spell speed (1, 2, or 3)
- * @example
- * getSpellSpeed(darkHole) // 1 (Normal Spell)
- * getSpellSpeed(mysticalSpaceTyphoon) // 2 (Quick-Play Spell)
- * getSpellSpeed(solemJudgment) // 3 (Counter Trap)
  */
 export function getSpellSpeed(card: Doc<"cardDefinitions">): 1 | 2 | 3 {
   const cardType = card.cardType;
@@ -38,13 +34,13 @@ export function getSpellSpeed(card: Doc<"cardDefinitions">): 1 | 2 | 3 {
     return ability.spellSpeed;
   }
 
-  // Creatures (monsters): Spell Speed 1
-  if (cardType === "creature") {
+  // Stereotypes: Spell Speed 1
+  if (cardType === "stereotype") {
     return 1;
   }
 
-  // Equipment: Spell Speed 1
-  if (cardType === "equipment") {
+  // Classes: Spell Speed 1
+  if (cardType === "class") {
     return 1;
   }
 

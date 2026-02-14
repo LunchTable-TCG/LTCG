@@ -80,12 +80,9 @@ export const livekitWebhook = httpAction(async (ctx, request) => {
 
     // Extract event details
     const eventType = getNestedString(event, ["event"]) ?? "unknown";
-    const roomName =
-      getNestedString(event, ["room", "name"]) ??
-      getNestedString(event, ["egressInfo", "roomName"]); // Egress events use egressInfo.roomName
+    const roomName = getNestedString(event, ["room", "name"]);
     const participantIdentity = getNestedString(event, ["participant", "identity"]);
     const trackSid = getNestedString(event, ["track", "sid"]);
-    const egressId = getNestedString(event, ["egressInfo", "egressId"]);
     const createdAt = typeof event["createdAt"] === "number" ? event["createdAt"] : undefined;
 
     // Generate dedupe key
@@ -105,7 +102,6 @@ export const livekitWebhook = httpAction(async (ctx, request) => {
       roomName,
       participantIdentity,
       trackSid,
-      egressId,
       payload: event,
     });
 
@@ -173,16 +169,6 @@ async function enqueueAsyncHooks(
       // Example: workflow.start("finalizeRoom", { roomName: data.roomName })
       break;
 
-    case "egress_started":
-      console.log(
-        "[Hook] egress_started:",
-        getNestedString(data.event, ["egressInfo", "egressId"])
-      );
-      break;
-
-    case "egress_ended":
-      console.log("[Hook] egress_ended:", getNestedString(data.event, ["egressInfo", "egressId"]));
-      break;
   }
 }
 

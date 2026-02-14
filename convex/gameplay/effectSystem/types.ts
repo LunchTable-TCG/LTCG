@@ -19,7 +19,7 @@ export type LingeringEffectValue =
   | number // For stat modifications (ATK/DEF changes)
   | {
       // For complex effects like preventActivation
-      targetType?: "spell" | "trap" | "monster" | "any";
+      targetType?: "spell" | "trap" | "stereotype" | "class" | "any";
       condition?: JsonCondition;
     };
 
@@ -75,14 +75,12 @@ export type TriggerCondition =
   | "on_battle_attacked" // When this card is attacked
   | "on_battle_start" // At the start of the Battle Phase
   | "on_attack" // When this card declares an attack
-  | "on_enter_battle_phase" // When Battle Phase begins
+  | "on_enter_combat_phase" // When Combat Phase begins
   | "on_draw" // During draw phase
   | "on_end" // During end phase
   | "on_opponent_attacks" // When opponent declares an attack
   | "on_opponent_activates" // When opponent activates a card
-  | "on_standby" // During standby phase
-  | "on_main1_start" // At start of Main Phase 1
-  | "on_main2_start" // At start of Main Phase 2
+  | "on_main_start" // At start of Main Phase
   | "on_battle_end" // At end of Battle Phase
   | "on_turn_start" // At start of turn
   | "on_turn_end" // At end of turn
@@ -122,7 +120,7 @@ export type TargetOwner = "self" | "opponent" | "both" | "controller";
 /**
  * Card type filter for targeting
  */
-export type CardTypeFilter = "monster" | "spell" | "trap" | "any";
+export type CardTypeFilter = "stereotype" | "spell" | "trap" | "class" | "any";
 
 /**
  * Location zones in the game
@@ -147,28 +145,12 @@ export interface NumericRange {
  * Archetype identifiers matching the schema
  */
 export type ArchetypeId =
-  // Primary archetypes (from card CSV)
-  | "infernal_dragons"
-  | "abyssal_depths"
-  | "iron_legion"
-  | "necro_empire"
-  // Legacy archetypes (for backwards compatibility)
-  | "abyssal_horrors"
-  | "nature_spirits"
-  | "storm_elementals"
-  // Future/placeholder archetypes
-  | "shadow_assassins"
-  | "celestial_guardians"
-  | "undead_legion"
-  | "divine_knights"
-  | "arcane_mages"
-  | "mechanical_constructs"
-  | "neutral"
-  // Old archetypes (deprecated)
-  | "fire"
-  | "water"
-  | "earth"
-  | "wind";
+  | "dropout"
+  | "prep"
+  | "geek"
+  | "freak"
+  | "nerd"
+  | "goodie_two_shoes";
 
 /**
  * Card rarity levels
@@ -302,7 +284,7 @@ export interface JsonEffect {
   // Targeting
   target?: JsonTarget; // For effects that target specific cards
   targetCount?: number; // Simplified target count (shorthand for target.count)
-  targetType?: "monster" | "spell" | "trap" | "any"; // Simplified target type filter
+  targetType?: "stereotype" | "spell" | "trap" | "any"; // Simplified target type filter
   targetLocation?: ZoneLocation; // Simplified target location
   targetOwner?: TargetOwner; // Simplified target owner
 
@@ -342,7 +324,7 @@ export interface JsonEffect {
   negateAndDestroy?: boolean;
 
   // Activation negation specifics (for negateActivation effect type)
-  negateTargetType?: "spell" | "trap" | "monster" | "any";
+  negateTargetType?: "spell" | "trap" | "stereotype" | "any";
   destroyAfterNegation?: boolean;
 
   // Token generation specifics (for generateToken effect type)
@@ -383,7 +365,7 @@ export interface JsonAbility {
  */
 export interface ExtendedParsedEffect extends ParsedEffect {
   // Activation negation specifics (for negateActivation effect type)
-  negateTargetType?: "spell" | "trap" | "monster" | "any";
+  negateTargetType?: "spell" | "trap" | "stereotype" | "any";
   destroyAfterNegation?: boolean;
   negateAndDestroy?: boolean;
 }
@@ -394,7 +376,7 @@ export interface ParsedEffect {
   activationType?: ActivationType; // How the effect is activated
   value?: number; // Numeric value (e.g., "Draw 2" -> value: 2)
   targetCount?: number; // Number of targets required
-  targetType?: "monster" | "spell" | "trap" | "any";
+  targetType?: "stereotype" | "spell" | "trap" | "any";
   targetLocation?: "board" | "hand" | "graveyard" | "deck" | "banished";
   condition?: string; // Additional conditions
   continuous?: boolean; // Is this a continuous effect?
@@ -408,7 +390,7 @@ export interface ParsedEffect {
   cost?: {
     type: "discard" | "pay_lp" | "tribute" | "banish";
     value?: number; // Number of cards or LP amount
-    targetType?: "monster" | "spell" | "trap" | "any";
+    targetType?: "stereotype" | "spell" | "trap" | "any";
   };
   // Protection flags
   protection?: {

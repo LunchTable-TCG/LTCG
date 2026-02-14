@@ -1,8 +1,8 @@
 /**
  * Phase Manager
  *
- * Manages Yu-Gi-Oh turn structure and phase transitions.
- * Turn Structure: Draw → Standby → Main 1 → Battle (Start/Battle/End) → Main 2 → End
+ * Manages LunchTable TCG turn structure and phase transitions.
+ * Turn Structure: Draw → Main → Combat → Breakdown Check → End
  */
 
 import { v } from "convex/values";
@@ -22,16 +22,13 @@ import { recordEventHelper } from "./gameEvents";
 /**
  * Game Phase Types
  *
- * Yu-Gi-Oh has 6 main phases, with Battle Phase subdivided into 3 steps
+ * LunchTable TCG has 5 phases
  */
 export type GamePhase =
   | "draw"
-  | "standby"
-  | "main1"
-  | "battle_start"
-  | "battle"
-  | "battle_end"
-  | "main2"
+  | "main"
+  | "combat"
+  | "breakdown_check"
   | "end";
 
 /**
@@ -39,12 +36,9 @@ export type GamePhase =
  */
 const PHASE_SEQUENCE: GamePhase[] = [
   "draw",
-  "standby",
-  "main1",
-  "battle_start",
-  "battle",
-  "battle_end",
-  "main2",
+  "main",
+  "combat",
+  "breakdown_check",
   "end",
 ];
 
@@ -63,8 +57,8 @@ function getNextPhase(currentPhase: GamePhase): GamePhase | null {
  * Advance to next phase
  *
  * Validates phase transitions and executes phase-specific logic.
- * Auto-advances through non-interactive phases (draw, standby, battle_start, battle_end).
- * Only stops at interactive phases (main1, battle, main2, end).
+ * Auto-advances through non-interactive phases (draw, breakdown_check).
+ * Only stops at interactive phases (main, combat, end).
  */
 export const advancePhase = mutation({
   args: {
@@ -239,10 +233,10 @@ export const advancePhase = mutation({
 });
 
 /**
- * Skip Battle Phase - go from Main 1 directly to Main 2
+ * Skip Combat Phase - go from Main directly to Breakdown Check
  *
- * Allows the turn player to skip the Battle Phase entirely,
- * moving directly from Main Phase 1 to Main Phase 2.
+ * Allows the turn player to skip the Combat Phase entirely,
+ * moving directly from Main Phase to Breakdown Check.
  */
 export const skipBattlePhase = mutation({
   args: { lobbyId: v.id("gameLobbies") },
@@ -285,22 +279,22 @@ export const skipBattlePhase = mutation({
     }
 
     // 5. Validate current phase
-    const currentPhase: GamePhase = gameState.currentPhase || "main1";
+    const currentPhase: GamePhase = gameState.currentPhase || "main";
 
-    // Can only skip battle from main1 or during battle phases
-    if (!["main1", "battle_start", "battle", "battle_end"].includes(currentPhase)) {
+    // Can only skip combat from main phase or during combat phase
+    if (!["main", "combat"].includes(currentPhase)) {
       throw createError(ErrorCode.GAME_CANNOT_ADVANCE_PHASE, {
-        reason: "Can only skip Battle Phase from Main Phase 1 or during Battle Phase",
+        reason: "Can only skip Combat Phase from Main Phase or during Combat Phase",
         currentPhase,
       });
     }
 
     // 6. Calculate skipped phases
-    const skippedPhases = getSkippedPhases(currentPhase, "main2");
+    const skippedPhases = getSkippedPhases(currentPhase, "breakdown_check");
 
-    // 7. Update phase to main2
+    // 7. Update phase to breakdown_check
     await ctx.db.patch(gameState._id, {
-      currentPhase: "main2",
+      currentPhase: "breakdown_check",
     });
 
     // 8. Record event (gameId from lobby, turnNumber from gameState)
@@ -312,11 +306,11 @@ export const skipBattlePhase = mutation({
         eventType: "phase_changed",
         playerId: user.userId,
         playerUsername: user.username || "Unknown",
-        description: `${user.username} skipped Battle Phase`,
+        description: `${user.username} skipped Combat Phase`,
         metadata: {
           skipped: true,
           fromPhase: currentPhase,
-          toPhase: "main2",
+          toPhase: "breakdown_check",
           skippedPhases,
         },
       });
@@ -324,7 +318,7 @@ export const skipBattlePhase = mutation({
 
     return {
       success: true,
-      newPhase: "main2" as GamePhase,
+      newPhase: "breakdown_check" as GamePhase,
       skippedPhases,
     };
   },
@@ -387,10 +381,10 @@ export const skipToEndPhase = mutation({
       });
     }
 
-    // Cannot skip from draw or standby (mandatory phases)
-    if (currentPhase === "draw" || currentPhase === "standby") {
+    // Cannot skip from draw (mandatory phase)
+    if (currentPhase === "draw") {
       throw createError(ErrorCode.GAME_CANNOT_ADVANCE_PHASE, {
-        reason: "Cannot skip Draw Phase or Standby Phase",
+        reason: "Cannot skip Draw Phase",
         currentPhase,
       });
     }
@@ -454,10 +448,10 @@ export const skipToEndPhase = mutation({
 });
 
 /**
- * Skip Main Phase 2 - go directly to End Phase
+ * Skip Breakdown Check - go directly to End Phase
  *
- * Allows the turn player to skip Main Phase 2 and proceed
- * directly to the End Phase. Only valid when in Main Phase 2.
+ * Allows the turn player to skip Breakdown Check and proceed
+ * directly to the End Phase. Only valid when in Breakdown Check phase.
  */
 export const skipMainPhase2 = mutation({
   args: { lobbyId: v.id("gameLobbies") },
@@ -499,12 +493,12 @@ export const skipMainPhase2 = mutation({
       });
     }
 
-    // 5. Validate current phase is main2
+    // 5. Validate current phase is breakdown_check
     const currentPhase: GamePhase = gameState.currentPhase || "draw";
 
-    if (currentPhase !== "main2") {
+    if (currentPhase !== "breakdown_check") {
       throw createError(ErrorCode.GAME_CANNOT_ADVANCE_PHASE, {
-        reason: "Can only skip Main Phase 2 when in Main Phase 2",
+        reason: "Can only skip Breakdown Check when in Breakdown Check phase",
         currentPhase,
       });
     }
@@ -529,12 +523,12 @@ export const skipMainPhase2 = mutation({
       eventType: "phase_changed",
       playerId: user.userId,
       playerUsername: user.username || "Unknown",
-      description: `${user.username} skipped Main Phase 2`,
+      description: `${user.username} skipped Breakdown Check`,
       metadata: {
         skipped: true,
-        fromPhase: "main2",
+        fromPhase: "breakdown_check",
         toPhase: "end",
-        skippedPhases: ["main2"],
+        skippedPhases: ["breakdown_check"],
       },
     });
 
@@ -557,7 +551,7 @@ export const skipMainPhase2 = mutation({
     return {
       success: true,
       newPhase: "end" as GamePhase,
-      skippedPhases: ["main2"] as GamePhase[],
+      skippedPhases: ["breakdown_check"] as GamePhase[],
       gameEnded: sbaResult.gameEnded,
       winnerId: sbaResult.winnerId,
     };
@@ -581,12 +575,12 @@ function getSkippedPhases(fromPhase: GamePhase, toPhase: GamePhase): GamePhase[]
 
 /**
  * Check if a phase should auto-advance
- * Players only stop at: Main1, Battle, Main2
+ * Players only stop at: Main, Combat, End
  * All other phases auto-advance after executing their logic
  */
 function shouldAutoAdvancePhase(phase: GamePhase): boolean {
   // Interactive phases where player makes decisions
-  const interactivePhases: GamePhase[] = ["main1", "battle", "main2"];
+  const interactivePhases: GamePhase[] = ["main", "combat", "end"];
   return !interactivePhases.includes(phase);
 }
 
@@ -630,45 +624,13 @@ async function executePhaseLogic(
           await executePhaseTriggeredEffects(ctx, lobbyId, refreshedGameState, playerId, "draw");
         }
       }
-      // Draw phase auto-advances to Standby
+      // Draw phase auto-advances to Main
       break;
     }
 
-    case "standby":
-      // Trigger standby phase effects
-      await executePhaseTriggeredEffects(ctx, lobbyId, gameState, playerId, "standby");
-      // Auto-advances to Main Phase 1
-      break;
-
-    case "battle_start": {
-      // Validate required lobby fields
-      if (!lobby.gameId) {
-        throw createError(ErrorCode.GAME_NOT_STARTED, {
-          reason: "Game not started or missing game ID",
-        });
-      }
-
-      // Record battle_phase_entered event
-      const user = await ctx.db.get(playerId);
-      await recordEventHelper(ctx, {
-        lobbyId,
-        gameId: lobby.gameId,
-        turnNumber,
-        eventType: "battle_phase_entered",
-        playerId,
-        playerUsername: user?.username || "Unknown",
-        description: `${user?.username} entered the Battle Phase`,
-      });
-
-      // Trigger "At the start of the Battle Phase" effects
-      await executePhaseTriggeredEffects(ctx, lobbyId, gameState, playerId, "battle_start");
-      // Auto-advances to Battle (main battle phase)
-      break;
-    }
-
-    case "battle_end":
-      // Battle Phase cleanup (future implementation)
-      // Auto-advances to Main Phase 2
+    case "breakdown_check":
+      // Breakdown Check phase - check for card breakdowns
+      // Auto-advances to End Phase
       break;
 
     case "end":
@@ -679,7 +641,7 @@ async function executePhaseLogic(
       break;
 
     default:
-      // No special logic for main1, battle, main2
+      // No special logic for main, combat
       break;
   }
 }
@@ -695,7 +657,7 @@ async function executePhaseTriggeredEffects(
   lobbyId: Id<"gameLobbies">,
   gameState: Doc<"gameStates">,
   playerId: Id<"users">,
-  phase: "battle_start" | "end" | "draw" | "standby"
+  phase: "draw" | "end"
 ): Promise<void> {
   const lobby = await ctx.db.get(lobbyId);
   if (!lobby) return;
@@ -739,10 +701,8 @@ async function executePhaseTriggeredEffects(
 
   // Map phase to trigger condition
   const triggerMap: Record<string, string> = {
-    battle_start: "on_battle_start",
-    end: "on_end",
     draw: "on_draw",
-    standby: "on_standby",
+    end: "on_end",
   };
 
   const triggerCondition = triggerMap[phase];
@@ -756,10 +716,7 @@ async function executePhaseTriggeredEffects(
     // Check each effect in the ability for matching trigger
     for (const parsedEffect of parsedAbility.effects) {
       // Check if this effect triggers during this phase
-      // Support both standard trigger names and aliases
-      const matchesTrigger =
-        parsedEffect.trigger === triggerCondition ||
-        (phase === "battle_start" && parsedEffect.trigger === "on_enter_battle_phase");
+      const matchesTrigger = parsedEffect.trigger === triggerCondition;
       if (!matchesTrigger) continue;
       // Get refreshed game state
       const refreshedState = await ctx.db
@@ -852,7 +809,6 @@ function getAvailableActionsForPhase(
 } {
   switch (phase) {
     case "draw":
-    case "standby":
       return {
         canSummon: false,
         canSetCard: false,
@@ -863,8 +819,7 @@ function getAvailableActionsForPhase(
         canEndPhase: true,
       };
 
-    case "main1":
-    case "main2":
+    case "main":
       return {
         canSummon: true,
         canSetCard: true,
@@ -875,19 +830,18 @@ function getAvailableActionsForPhase(
         canEndPhase: true,
       };
 
-    case "battle_start":
-    case "battle":
+    case "combat":
       return {
         canSummon: false,
         canSetCard: false,
         canActivateSpell: true, // Quick-Play spells only (enforced in legalMoves)
         canActivateTrap: true,
         canDeclareAttack: true,
-        canChangePosition: false, // Cannot change position during Battle Phase
+        canChangePosition: false, // Cannot change position during Combat Phase
         canEndPhase: true,
       };
 
-    case "battle_end":
+    case "breakdown_check":
       return {
         canSummon: false,
         canSetCard: false,
@@ -895,7 +849,7 @@ function getAvailableActionsForPhase(
         canActivateTrap: true,
         canDeclareAttack: false,
         canChangePosition: false,
-        canEndPhase: true, // Auto-advances to Main 2
+        canEndPhase: true, // Auto-advances to End
       };
 
     case "end":
@@ -929,18 +883,12 @@ function getPhaseDisplayName(phase: GamePhase): string {
   switch (phase) {
     case "draw":
       return "Draw Phase";
-    case "standby":
-      return "Standby Phase";
-    case "main1":
-      return "Main Phase 1";
-    case "battle_start":
-      return "Battle Phase (Start Step)";
-    case "battle":
-      return "Battle Phase";
-    case "battle_end":
-      return "Battle Phase (End Step)";
-    case "main2":
-      return "Main Phase 2";
+    case "main":
+      return "Main Phase";
+    case "combat":
+      return "Combat Phase";
+    case "breakdown_check":
+      return "Breakdown Check";
     case "end":
       return "End Phase";
     default:
@@ -1175,10 +1123,10 @@ export const advancePhaseInternal = internalMutation({
 });
 
 /**
- * Skip Battle Phase (Internal)
+ * Skip Combat Phase (Internal)
  *
- * Internal mutation for API-based battle phase skip.
- * Allows the turn player to skip the Battle Phase entirely.
+ * Internal mutation for API-based combat phase skip.
+ * Allows the turn player to skip the Combat Phase entirely.
  */
 export const skipBattlePhaseInternal = internalMutation({
   args: {
@@ -1215,22 +1163,22 @@ export const skipBattlePhaseInternal = internalMutation({
     }
 
     // 4. Validate current phase
-    const currentPhase: GamePhase = gameState.currentPhase || "main1";
+    const currentPhase: GamePhase = gameState.currentPhase || "main";
 
-    // Can only skip battle from main1 or during battle phases
-    if (!["main1", "battle_start", "battle", "battle_end"].includes(currentPhase)) {
+    // Can only skip combat from main phase or during combat phase
+    if (!["main", "combat"].includes(currentPhase)) {
       throw createError(ErrorCode.GAME_CANNOT_ADVANCE_PHASE, {
-        reason: "Can only skip Battle Phase from Main Phase 1 or during Battle Phase",
+        reason: "Can only skip Combat Phase from Main Phase or during Combat Phase",
         currentPhase,
       });
     }
 
     // 5. Calculate skipped phases
-    const skippedPhases = getSkippedPhases(currentPhase, "main2");
+    const skippedPhases = getSkippedPhases(currentPhase, "breakdown_check");
 
-    // 6. Update phase to main2
+    // 6. Update phase to breakdown_check
     await ctx.db.patch(gameState._id, {
-      currentPhase: "main2",
+      currentPhase: "breakdown_check",
     });
 
     // 7. Record event
@@ -1241,18 +1189,18 @@ export const skipBattlePhaseInternal = internalMutation({
       eventType: "phase_changed",
       playerId: args.userId,
       playerUsername: (await ctx.db.get(args.userId))?.username || "Unknown",
-      description: `${(await ctx.db.get(args.userId))?.username} skipped Battle Phase`,
+      description: `${(await ctx.db.get(args.userId))?.username} skipped Combat Phase`,
       metadata: {
         skipped: true,
         fromPhase: currentPhase,
-        toPhase: "main2",
+        toPhase: "breakdown_check",
         skippedPhases,
       },
     });
 
     return {
       success: true,
-      newPhase: "main2" as GamePhase,
+      newPhase: "breakdown_check" as GamePhase,
       skippedPhases,
     };
   },
@@ -1309,10 +1257,10 @@ export const skipToEndPhaseInternal = internalMutation({
       });
     }
 
-    // Cannot skip from draw or standby (mandatory phases)
-    if (currentPhase === "draw" || currentPhase === "standby") {
+    // Cannot skip from draw (mandatory phase)
+    if (currentPhase === "draw") {
       throw createError(ErrorCode.GAME_CANNOT_ADVANCE_PHASE, {
-        reason: "Cannot skip Draw Phase or Standby Phase",
+        reason: "Cannot skip Draw Phase",
         currentPhase,
       });
     }

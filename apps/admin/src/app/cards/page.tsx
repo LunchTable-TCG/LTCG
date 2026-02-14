@@ -35,16 +35,16 @@ type CardDefinition = Doc<"cardDefinitions">;
 // =============================================================================
 
 type Rarity = "common" | "uncommon" | "rare" | "epic" | "legendary";
-type CardType = "creature" | "spell" | "trap" | "equipment";
+type CardType = "stereotype" | "spell" | "trap" | "class";
 
 interface CardStats {
   totalCards: number;
   activeCards: number;
   byType: {
-    creature: number;
+    stereotype: number;
     spell: number;
     trap: number;
-    equipment?: number;
+    class?: number;
   };
   byRarity: {
     common: number;
@@ -90,10 +90,10 @@ const ARCHETYPES = [
 ];
 
 const CARD_TYPES = [
-  { value: "creature", label: "Creature" },
+  { value: "stereotype", label: "Stereotype" },
   { value: "spell", label: "Spell" },
   { value: "trap", label: "Trap" },
-  { value: "equipment", label: "Equipment" },
+  { value: "class", label: "Class" },
 ];
 
 const RARITIES = [
@@ -178,8 +178,8 @@ export default function CardsPage() {
         </Card>
         <Card>
           <div className="text-center">
-            <Text className="text-2xl font-bold">{statsResult?.byType?.creature ?? "..."}</Text>
-            <Text className="text-sm text-muted-foreground">Creatures</Text>
+            <Text className="text-2xl font-bold">{statsResult?.byType?.stereotype ?? "..."}</Text>
+            <Text className="text-sm text-muted-foreground">Stereotypes</Text>
           </div>
         </Card>
         <Card>

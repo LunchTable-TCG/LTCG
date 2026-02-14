@@ -85,7 +85,7 @@ describe("Trash Talk Action", () => {
             gameState: {
               gameId: "test-game-123",
               status: "active",
-              phase: "main1",
+              phase: "main",
               currentTurn: "host",
               hostPlayer: { lifePoints: 8000, monsterZone: [], spellTrapZone: [] },
               opponentPlayer: { lifePoints: 8000, monsterZone: [], spellTrapZone: [] },
@@ -166,7 +166,7 @@ describe("Trash Talk Action", () => {
             gameState: {
               gameId: "test-game-123",
               status: "active",
-              phase: "main1",
+              phase: "main",
               turnNumber: 5,
               hostPlayer: { lifePoints: 8000, monsterZone: [{ name: "Infernal God Dragon", attack: 4000 }] },
               opponentPlayer: { lifePoints: 4000, monsterZone: [] },
@@ -217,7 +217,7 @@ describe("Trash Talk Action", () => {
             gameState: {
               gameId: "test-game-123",
               status: "active",
-              phase: "main1",
+              phase: "main",
               turnNumber: 5,
               hostPlayer: { lifePoints: 2000, monsterZone: [] },
               opponentPlayer: { lifePoints: 8000, monsterZone: [{ name: "Infernal God Dragon", attack: 4000 }] },

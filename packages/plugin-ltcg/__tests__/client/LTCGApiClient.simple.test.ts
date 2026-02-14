@@ -201,7 +201,7 @@ describe("LTCGApiClient - Basic Functionality", () => {
             message: "Not your turn",
             details: {
               gameId: "game123",
-              phase: "battle",
+              phase: "combat",
             },
           },
           timestamp: Date.now(),

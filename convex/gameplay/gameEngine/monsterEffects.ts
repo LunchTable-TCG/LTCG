@@ -105,7 +105,7 @@ async function activateMonsterEffectHandler(
     throw createError(ErrorCode.GAME_CARD_NOT_FOUND);
   }
 
-  if (card.cardType !== "creature") {
+  if (card.cardType !== "stereotype") {
     throw createError(ErrorCode.GAME_INVALID_CARD_TYPE, {
       reason: "Card is not a monster card",
     });
@@ -156,7 +156,7 @@ async function activateMonsterEffectHandler(
         reason: "Ignition effects can only be activated on your turn",
       });
     }
-    if (currentPhase !== "main1" && currentPhase !== "main2") {
+    if (currentPhase !== "main") {
       throw createError(ErrorCode.GAME_INVALID_PHASE, {
         reason: "Ignition effects can only be activated during Main Phase",
       });

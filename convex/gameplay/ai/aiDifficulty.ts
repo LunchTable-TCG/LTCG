@@ -71,7 +71,7 @@ export function handleMainPhase(
     // Check for tribute summons (level 5+)
     const highCostMonsters = myHand.filter((cardId) => {
       const card = cardData.get(cardId);
-      return card && card.cardType === "creature" && getTributeCount(card) > 0;
+      return card && card.cardType === "stereotype" && getTributeCount(card) > 0;
     });
 
     // Difficulty-based summon logic
@@ -279,7 +279,7 @@ export function handleMainPhase(
   if (!hasNormalSummoned && evaluation.hasMonsterZoneSpace) {
     const setableMonsters = myHand.filter((cardId) => {
       const card = cardData.get(cardId);
-      return card && card.cardType === "creature" && getTributeCount(card) === 0;
+      return card && card.cardType === "stereotype" && getTributeCount(card) === 0;
     });
 
     if (setableMonsters.length > 0) {
@@ -295,7 +295,7 @@ export function handleMainPhase(
 }
 
 /**
- * Handle Battle Phase attack decisions based on difficulty
+ * Handle Combat Phase attack decisions based on difficulty
  */
 export function handleBattlePhase(
   difficulty: "easy" | "medium" | "hard" | "boss",

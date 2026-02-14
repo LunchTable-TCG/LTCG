@@ -46,7 +46,7 @@ export const setCardAction: Action = {
       }
 
       // Must be in Main Phase
-      if (gameState.phase !== "main1" && gameState.phase !== "main2") {
+      if (gameState.phase !== "main") {
         logger.debug(`Cannot set in ${gameState.phase} phase`);
         return false;
       }
@@ -64,7 +64,7 @@ export const setCardAction: Action = {
       const monsterZoneFull = gameState.myBoard.length >= 5;
 
       const settableCards = hand.filter((card) => {
-        if (card.cardType === "creature" && !monsterZoneFull) return true;
+        if (card.cardType === "stereotype" && !monsterZoneFull) return true;
         if (card.cardType === "spell" || card.cardType === "trap") return true;
         return false;
       });
@@ -124,7 +124,7 @@ export const setCardAction: Action = {
       const monsterZoneFull = gameState.myBoard.length >= 5;
 
       const settableCards = hand.filter((card) => {
-        if (card.cardType === "creature" && !monsterZoneFull) return true;
+        if (card.cardType === "stereotype" && !monsterZoneFull) return true;
         if (card.cardType === "spell" || card.cardType === "trap") return true;
         return false;
       });
@@ -132,7 +132,7 @@ export const setCardAction: Action = {
       // Use LLM to select which card to set
       const cardOptions = settableCards
         .map((card, idx) => {
-          const isCreature = card.cardType === "creature";
+          const isStereotype = card.cardType === "stereotype";
           return `${idx + 1}. ${card.name} (${card.cardType.toUpperCase()})${
             isCreature ? ` - ${card.defense ?? 0} DEF` : ""
           }${card.description ? ` - ${card.description.substring(0, 100)}` : ""}`;
@@ -175,9 +175,9 @@ Respond with JSON: { "handIndex": <index>, "reasoning": "<brief explanation>" }`
         throw new Error("Invalid card selection");
       }
 
-      // Make API call — creatures use setCard, spells/traps use setSpellTrapCard
+      // Make API call — stereotypes use setCard, spells/traps use setSpellTrapCard
       const result =
-        selectedCard.cardType === "creature"
+        selectedCard.cardType === "stereotype"
           ? await client.setCard({
               gameId: gameState.gameId,
               cardId: selectedCard._id,
@@ -194,7 +194,7 @@ Respond with JSON: { "handIndex": <index>, "reasoning": "<brief explanation>" }`
         text: responseText,
         actions: ["SET_CARD"],
         source: message.content.source,
-        thought: `Setting ${selectedCard.name} face-down to ${selectedCard.cardType === "creature" ? "protect LP with defense" : "prepare reactive play for future turns"}`,
+        thought: `Setting ${selectedCard.name} face-down to ${selectedCard.cardType === "stereotype" ? "protect LP with defense" : "prepare reactive play for future turns"}`,
       } as Content);
 
       return {

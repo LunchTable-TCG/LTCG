@@ -15,4 +15,4 @@ export type Element = "fire" | "water" | "earth" | "wind";
 export type ElementWithNeutral = Element | "neutral";
 
 /** Card type categories (matches Convex schema `cardTypeValidator`). */
-export type CardType = "creature" | "spell" | "trap" | "equipment";
+export type CardType = "stereotype" | "spell" | "trap" | "class";

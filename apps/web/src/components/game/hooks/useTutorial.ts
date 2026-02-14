@@ -96,30 +96,29 @@ export function useTutorial({ enabled, gameState }: UseTutorialOptions): UseTuto
             gameState.turnNumber === 1 &&
             gameState.isPlayerTurn &&
             (gameState.currentPhase === "draw" ||
-              gameState.currentPhase === "standby" ||
-              gameState.currentPhase === "main1")
+              gameState.currentPhase === "main")
           );
 
         case "creature_in_hand":
-          // Moment 2: Has creature in hand during main phase
+          // Moment 2: Has stereotype in hand during main phase
           return (
-            gameState.currentPhase === "main1" &&
+            gameState.currentPhase === "main" &&
             gameState.isPlayerTurn &&
-            gameState.myHand.some((c) => c.cardType === "creature" || c.cardType === "monster")
+            gameState.myHand.some((c) => c.cardType === "stereotype" || c.cardType === "monster")
           );
 
         case "creature_on_field":
-          // Moment 3: Has creature on field during battle phase
+          // Moment 3: Has stereotype on field during combat phase
           return (
-            (gameState.currentPhase === "battle" || gameState.currentPhase === "battle_start") &&
+            gameState.currentPhase === "combat" &&
             gameState.isPlayerTurn &&
-            gameState.myField.some((c) => c.cardType === "creature" || c.cardType === "monster")
+            gameState.myField.some((c) => c.cardType === "stereotype" || c.cardType === "monster")
           );
 
         case "spell_in_hand":
           // Moment 4: Has spell in hand during main phase
           return (
-            (gameState.currentPhase === "main1" || gameState.currentPhase === "main2") &&
+            gameState.currentPhase === "main" &&
             gameState.isPlayerTurn &&
             gameState.myHand.some((c) => c.cardType === "spell")
           );

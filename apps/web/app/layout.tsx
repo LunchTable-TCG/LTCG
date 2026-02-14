@@ -4,12 +4,6 @@ import "./globals.css";
 import { ConvexClientProvider } from "@/components/ConvexClientProvider";
 import { PrivyAuthProvider } from "@/components/PrivyAuthProvider";
 import { LayoutWrapper } from "@/components/layout/LayoutWrapper";
-import { validateStreamingConfig } from "@/lib/streaming/validateConfig";
-
-// Validate streaming configuration at startup in production
-if (process.env.NODE_ENV === "production") {
-  validateStreamingConfig();
-}
 
 const geistSans = Geist({
   variable: "--font-geist-sans",

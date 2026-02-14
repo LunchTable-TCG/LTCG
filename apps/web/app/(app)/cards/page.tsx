@@ -35,7 +35,7 @@ const RARITY_COLORS: Record<Rarity, { bg: string; text: string; border: string }
 
 const ELEMENTS: Element[] = ["fire", "water", "earth", "wind", "neutral"];
 const RARITIES: Rarity[] = ["legendary", "epic", "rare", "uncommon", "common"];
-const CARD_TYPES: CardType[] = ["creature", "spell", "trap", "equipment"];
+const CARD_TYPES: CardType[] = ["stereotype", "spell", "trap", "class"];
 
 export default function CardCodexPage() {
   return (

@@ -73,7 +73,7 @@ export function BoardCard({
 
   // Determine test ID based on card type and owner
   const isMonster =
-    card.cardType === "monster" || card.cardType === "creature" || card.monsterStats;
+    card.cardType === "monster" || card.cardType === "stereotype" || card.monsterStats;
   const testId = isMonster
     ? isOpponent
       ? "opponent-monster"
@@ -140,7 +140,7 @@ export function BoardCard({
             )}
           </div>
 
-          {card.cardType && card.cardType !== "monster" && card.cardType !== "creature" && (
+          {card.cardType && card.cardType !== "monster" && card.cardType !== "stereotype" && (
             <div
               className={cn(
                 "absolute top-0 left-0 px-0.5 rounded text-[6px] font-bold uppercase",

@@ -46,7 +46,7 @@ export const flipSummonAction: Action = {
       }
 
       // Must be in Main Phase
-      if (gameState.phase !== "main1" && gameState.phase !== "main2") {
+      if (gameState.phase !== "main") {
         logger.debug(`Cannot flip summon in ${gameState.phase} phase`);
         return false;
       }

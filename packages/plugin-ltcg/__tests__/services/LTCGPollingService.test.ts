@@ -46,7 +46,7 @@ function createMockApiClient(overrides: Partial<LTCGApiClient> = {}): LTCGApiCli
     getGameState: mock(() =>
       Promise.resolve({
         status: "in_progress",
-        phase: "main1",
+        phase: "main",
         turnNumber: 1,
         currentTurn: "host",
         hostPlayer: { playerId: "host-id", lifePoints: 8000 },

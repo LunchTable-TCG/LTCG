@@ -289,7 +289,7 @@ function evaluateSimpleCondition(condition: JsonCondition, context: ConditionCon
     }
 
     // Level check (monsters only)
-    if (condition.level !== undefined && targetCardDef.cardType === "creature") {
+    if (condition.level !== undefined && targetCardDef.cardType === "stereotype") {
       const cardLevel = targetCardDef.cost || 0; // Level is derived from cost
       if (!evaluateNumericCondition(cardLevel, condition.level)) {
         return false;
@@ -297,7 +297,7 @@ function evaluateSimpleCondition(condition: JsonCondition, context: ConditionCon
     }
 
     // ATK check (monsters only)
-    if (condition.attack !== undefined && targetCardDef.cardType === "creature") {
+    if (condition.attack !== undefined && targetCardDef.cardType === "stereotype") {
       const cardAtk = targetCardDef.attack || 0;
       if (!evaluateNumericCondition(cardAtk, condition.attack)) {
         return false;
@@ -305,7 +305,7 @@ function evaluateSimpleCondition(condition: JsonCondition, context: ConditionCon
     }
 
     // DEF check (monsters only)
-    if (condition.defense !== undefined && targetCardDef.cardType === "creature") {
+    if (condition.defense !== undefined && targetCardDef.cardType === "stereotype") {
       const cardDef = targetCardDef.defense || 0;
       if (!evaluateNumericCondition(cardDef, condition.defense)) {
         return false;
@@ -652,21 +652,12 @@ export function evaluateAttribute(
   // Map archetypes to attributes (elements)
   // In this game, archetype often correlates with element
   const archetypeToAttribute: Record<string, string> = {
-    infernal_dragons: "fire",
-    abyssal_horrors: "water",
-    nature_spirits: "earth",
-    storm_elementals: "wind",
-    shadow_assassins: "dark",
-    celestial_guardians: "light",
-    undead_legion: "dark",
-    divine_knights: "light",
-    arcane_mages: "dark",
-    mechanical_constructs: "earth",
-    neutral: "neutral",
-    fire: "fire",
-    water: "water",
-    earth: "earth",
-    wind: "wind",
+    dropout: "red",
+    prep: "blue",
+    geek: "yellow",
+    freak: "purple",
+    nerd: "green",
+    goodie_two_shoes: "white",
   };
 
   const attribute = archetypeToAttribute[cardArchetype.toLowerCase()];
@@ -678,7 +669,7 @@ export function evaluateAttribute(
  */
 export function evaluateCardType(
   cardType: string | undefined,
-  requiredType: "creature" | "spell" | "trap" | "equipment"
+  requiredType: "stereotype" | "spell" | "trap" | "class"
 ): boolean {
   if (!cardType) return false;
   return cardType === requiredType;
@@ -728,7 +719,7 @@ function matchesCondition(
   if (!condition) return true; // No condition = affects all
 
   // Only affect monsters (continuous stat modifiers don't apply to spells/traps)
-  if (card.cardType !== "creature") return false;
+  if (card.cardType !== "stereotype") return false;
 
   // Check if it's a JSON condition (object) or string condition (legacy)
   if (isJsonCondition(condition)) {

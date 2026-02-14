@@ -45,8 +45,8 @@ export const attackAction: Action = {
         return false;
       }
 
-      // Must be Battle Phase
-      if (gameState.phase !== "battle") {
+      // Must be Combat Phase
+      if (gameState.phase !== "combat") {
         logger.debug(`Cannot attack in ${gameState.phase} phase`);
         return false;
       }

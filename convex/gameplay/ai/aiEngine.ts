@@ -82,7 +82,7 @@ export function findStrongestMonster(
 
   for (const cardId of cards) {
     const card = cardData.get(cardId);
-    if (!card || card.cardType !== "creature") continue;
+    if (!card || card.cardType !== "stereotype") continue;
 
     const power = (card.attack || 0) + (card.defense || 0);
     if (power > maxPower) {
@@ -118,7 +118,7 @@ export function findWeakestMonster(
  * Checks if a monster can be summoned without tribute (level ≤ 4)
  */
 export function canSummonWithoutTribute(card: Doc<"cardDefinitions">): boolean {
-  return card.cardType === "creature" && getTributeCount(card) === 0;
+  return card.cardType === "stereotype" && getTributeCount(card) === 0;
 }
 
 /**
@@ -131,7 +131,7 @@ export { getCardLevel, getTributeCount };
  *
  * Strategy:
  * - Main Phase: Summon strongest monster, use spells randomly
- * - Battle Phase: Attack when safe (higher ATK/DEF)
+ * - Combat Phase: Attack when safe (higher ATK/DEF)
  * - End Phase: Pass
  */
 export async function makeAIDecision(
@@ -157,8 +157,8 @@ export async function makeAIDecision(
 
   const evaluation = evaluateBoard(gameState, aiPlayerId);
 
-  // MAIN PHASE 1
-  if (phase === "main1") {
+  // MAIN PHASE
+  if (phase === "main") {
     return handleMainPhase(
       difficulty,
       hasNormalSummoned,
@@ -173,27 +173,9 @@ export async function makeAIDecision(
     );
   }
 
-  // BATTLE PHASE
-  if (phase === "battle") {
+  // COMBAT PHASE
+  if (phase === "combat") {
     return handleBattlePhase(difficulty, myBoard, oppBoard, gameState.turnNumber ?? 1);
-  }
-
-  // MAIN PHASE 2
-  if (phase === "main2") {
-    // Reuse Main Phase logic for flip_summon, spells, and set
-    // (normal summon check is enforced by executeAction, so a second summon/set is rejected)
-    return handleMainPhase(
-      difficulty,
-      hasNormalSummoned,
-      evaluation,
-      myHand,
-      myBoard,
-      oppBoard,
-      cardData,
-      gameState.turnNumber ?? 1,
-      mySpellTrapZone,
-      myFieldSpell
-    );
   }
 
   // END PHASE - always end turn

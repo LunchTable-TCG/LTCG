@@ -471,7 +471,7 @@ export class TurnOrchestrator extends Service {
       const cardType = card.cardType || card.type;
       const lines: string[] = [];
 
-      if (cardType === "creature") {
+      if (cardType === "stereotype") {
         const atk = card.attack ?? card.atk ?? "?";
         const def = card.defense ?? card.def ?? "?";
         const level = card.level ?? card.cost ?? "?";
@@ -615,7 +615,7 @@ export class TurnOrchestrator extends Service {
   private summarizeGraveyard(
     graveyard: Array<{ cardId: string; name: string; type: string }>
   ): string {
-    const monsters = graveyard.filter((c) => c.type === "creature");
+    const monsters = graveyard.filter((c) => c.type === "stereotype");
     const spells = graveyard.filter((c) => c.type === "spell");
     const traps = graveyard.filter((c) => c.type === "trap");
 
@@ -850,7 +850,7 @@ export class TurnOrchestrator extends Service {
     lines.push("");
     lines.push("## IF-THEN CONSEQUENCES");
 
-    // Battle consequence predictions
+    // Combat consequence predictions
     const myAttackers = agentMonsters.filter(
       (m: BoardCard) => m.position === 1 && !m.hasAttacked && !m.isFaceDown
     );
@@ -942,7 +942,7 @@ export class TurnOrchestrator extends Service {
     ).length;
 
     // Count monsters vs spells in graveyard (reveals playstyle)
-    const monstersInGrave = oppGraveyard.filter((c) => c.type === "creature").length;
+    const monstersInGrave = oppGraveyard.filter((c) => c.type === "stereotype").length;
     const spellsInGrave = oppGraveyard.filter(
       (c) => c.type === "spell" || c.type === "trap"
     ).length;
@@ -1188,11 +1188,11 @@ ${availableActionsText}
 
 ## RULES
 - The "AVAILABLE ACTIONS" list is authoritative. Never choose an action that is not listed there.
-- In main1, if ATTACK is not available but ENTER_BATTLE_PHASE is available, choose ENTER_BATTLE_PHASE first.
-- You cannot attack on turn 1 (first turn battle restriction).
+- In main phase, if ATTACK is not available but ENTER_BATTLE_PHASE is available, choose ENTER_BATTLE_PHASE first.
+- You cannot attack on turn 1 (first turn combat restriction).
 - You can only NORMAL SUMMON once per turn. If you already summoned, do NOT try again.
 - ATTACK is how you win! If you have monsters in attack position, attack the opponent.
-- Turn flow: summon/set (main1) → ATTACK → set more (main2) → END_TURN.
+- Turn flow: summon/set (main) → ENTER_BATTLE_PHASE → ATTACK → END_TURN.
 
 ## YOUR TASK
 Choose the BEST action. PRIORITY ORDER:
@@ -1402,7 +1402,7 @@ Use the cardId values shown in brackets (e.g., [cardId: abc123]) for your parame
       }
     }
 
-    // First-turn battle restriction is enforced server-side but not always reflected in available-actions.
+    // First-turn combat restriction is enforced server-side but not always reflected in available-actions.
     if (context.turnNumber <= 1) {
       legal.delete("ATTACK");
       legal.delete("ENTER_BATTLE_PHASE");
@@ -1433,25 +1433,25 @@ Use the cardId values shown in brackets (e.g., [cardId: abc123]) for your parame
       };
     }
 
-    if (context.phase === "main1") {
+    if (context.phase === "main") {
       if (canTry("ACTIVATE_SPELL")) {
         const spellCardId = this.selectActivateSpellCardId(context);
         if (spellCardId) {
           return {
             action: "ACTIVATE_SPELL",
-            reasoning: "Using deterministic spell activation in main phase 1",
+            reasoning: "Using deterministic spell activation in main phase",
             parameters: { cardId: spellCardId },
           };
         }
       }
 
-      // Summon before entering battle — build board presence each turn
+      // Summon before entering combat — build board presence each turn
       if (canTry("SUMMON_MONSTER")) {
         const summonCardId = this.selectSummonCardId(context);
         if (summonCardId) {
           return {
             action: "SUMMON_MONSTER",
-            reasoning: "Summoning monster before battle phase",
+            reasoning: "Summoning monster before combat phase",
             parameters: { cardId: summonCardId, position: "attack" },
           };
         }
@@ -1463,7 +1463,7 @@ Use the cardId values shown in brackets (e.g., [cardId: abc123]) for your parame
       if (attackersReady && canTry("ENTER_BATTLE_PHASE")) {
         return {
           action: "ENTER_BATTLE_PHASE",
-          reasoning: "Attacker available, entering battle phase",
+          reasoning: "Attacker available, entering combat phase",
         };
       }
 
@@ -1472,20 +1472,20 @@ Use the cardId values shown in brackets (e.g., [cardId: abc123]) for your parame
         if (setCardId) {
           return {
             action: "SET_CARD",
-            reasoning: "Setting a legal defensive card in main phase 1",
+            reasoning: "Setting a legal defensive card in main phase",
             parameters: { cardId: setCardId },
           };
         }
       }
     }
 
-    if (context.phase === "battle") {
+    if (context.phase === "combat") {
       if (canTry("ATTACK")) {
         const attackParams = this.selectAttackParameters(context.gameState);
         if (attackParams) {
           return {
             action: "ATTACK",
-            reasoning: "Battle phase with legal attacker available",
+            reasoning: "Combat phase with legal attacker available",
             parameters: attackParams,
           };
         }
@@ -1501,41 +1501,11 @@ Use the cardId values shown in brackets (e.g., [cardId: abc123]) for your parame
       if (canTry("END_TURN")) {
         return {
           action: "END_TURN",
-          reasoning: "No deterministic battle attack available",
+          reasoning: "No deterministic combat attack available",
         };
       }
     }
 
-    if (context.phase === "main2") {
-      if (canTry("ACTIVATE_SPELL")) {
-        const spellCardId = this.selectActivateSpellCardId(context);
-        if (spellCardId) {
-          return {
-            action: "ACTIVATE_SPELL",
-            reasoning: "Using deterministic spell activation in main phase 2",
-            parameters: { cardId: spellCardId },
-          };
-        }
-      }
-
-      if (canTry("SET_CARD")) {
-        const setCardId = this.selectSetCardId(context);
-        if (setCardId) {
-          return {
-            action: "SET_CARD",
-            reasoning: "Using deterministic set fallback in main phase 2",
-            parameters: { cardId: setCardId },
-          };
-        }
-      }
-
-      if (canTry("END_TURN")) {
-        return {
-          action: "END_TURN",
-          reasoning: "Main phase 2 fallback complete, ending turn",
-        };
-      }
-    }
 
     if (
       legalActions.has("END_TURN") &&
@@ -1563,10 +1533,10 @@ Use the cardId values shown in brackets (e.g., [cardId: abc123]) for your parame
     const canTry = (action: OrchestratorAction) =>
       legalActions.has(action) && !failedThisTurn.has(action);
 
-    if (context.phase === "battle" && canTry("ENTER_MAIN_PHASE_2")) {
+    if (context.phase === "combat" && canTry("ENTER_MAIN_PHASE_2")) {
       return {
         action: "ENTER_MAIN_PHASE_2",
-        reasoning: "LLM budget reached, advancing out of battle phase",
+        reasoning: "LLM budget reached, advancing out of combat phase",
       };
     }
 
@@ -1584,7 +1554,7 @@ Use the cardId values shown in brackets (e.g., [cardId: abc123]) for your parame
     if (canTry("ENTER_BATTLE_PHASE")) {
       return {
         action: "ENTER_BATTLE_PHASE",
-        reasoning: "LLM budget reached, entering battle phase deterministically",
+        reasoning: "LLM budget reached, entering combat phase deterministically",
       };
     }
 
@@ -1680,7 +1650,7 @@ Use the cardId values shown in brackets (e.g., [cardId: abc123]) for your parame
   private selectSummonCardId(context: TurnContext): string | null {
     const summonAction = this.getServerAction(context, "SUMMON_MONSTER");
     const legalCardIds = new Set(summonAction?.availableCards ?? []);
-    const monsters = (context.gameState.hand ?? []).filter((c: CardInHand) => c.cardType === "creature");
+    const monsters = (context.gameState.hand ?? []).filter((c: CardInHand) => c.cardType === "stereotype");
     const summonable =
       legalCardIds.size > 0
         ? monsters.filter((c: CardInHand) => legalCardIds.has(c._id))
@@ -1716,7 +1686,7 @@ Use the cardId values shown in brackets (e.g., [cardId: abc123]) for your parame
     }
 
     // Prefer spell/traps for deterministic, low-risk sets.
-    const spellTrap = candidates.find((c: CardInHand) => c.cardType !== "creature");
+    const spellTrap = candidates.find((c: CardInHand) => c.cardType !== "stereotype");
     if (spellTrap?._id) {
       return spellTrap._id;
     }
@@ -1724,7 +1694,7 @@ Use the cardId values shown in brackets (e.g., [cardId: abc123]) for your parame
     // If the server explicitly provided legal cards, trust it and choose the
     // lowest-tribute monster to avoid invalid tribute-required sets.
     if (legalCardIds.size > 0) {
-      const monsters = candidates.filter((c: CardInHand) => c.cardType === "creature");
+      const monsters = candidates.filter((c: CardInHand) => c.cardType === "stereotype");
       const ranked = [...monsters].sort((a, b) => {
         const tributeDiff = resolveTributeRequirement(a) - resolveTributeRequirement(b);
         if (tributeDiff !== 0) {
@@ -1740,7 +1710,7 @@ Use the cardId values shown in brackets (e.g., [cardId: abc123]) for your parame
     // When server doesn't provide availableCards for SET_CARD, avoid blind
     // high-level monster sets that commonly fail due to tribute requirements.
     const lowTributeMonsters = candidates.filter(
-      (c: CardInHand) => c.cardType === "creature" && resolveTributeRequirement(c) === 0
+      (c: CardInHand) => c.cardType === "stereotype" && resolveTributeRequirement(c) === 0
     );
     return lowTributeMonsters[0]?._id ?? null;
   }
@@ -1769,9 +1739,9 @@ Use the cardId values shown in brackets (e.g., [cardId: abc123]) for your parame
       case "ATTACK":
         return "Declare attack (use attackerCardId and optional targetCardId)";
       case "ENTER_BATTLE_PHASE":
-        return "Move from main phase into battle phase";
+        return "Move from main phase into combat phase";
       case "ENTER_MAIN_PHASE_2":
-        return "Move from battle phase into main phase 2";
+        return "Move from combat phase into main phase";
       case "CHANGE_POSITION":
         return "Change a monster between attack/defense";
       case "FLIP_SUMMON":
@@ -1800,11 +1770,11 @@ Use the cardId values shown in brackets (e.g., [cardId: abc123]) for your parame
       return decision;
     }
 
-    // Common invalid pattern in main1: model picks ATTACK before entering battle phase.
+    // Common invalid pattern in main phase: model picks ATTACK before entering combat phase.
     if (decision.action === "ATTACK" && legal.has("ENTER_BATTLE_PHASE")) {
       return {
         action: "ENTER_BATTLE_PHASE",
-        reasoning: `${decision.reasoning} (attack not legal yet, entering battle phase first)`,
+        reasoning: `${decision.reasoning} (attack not legal yet, entering combat phase first)`,
       };
     }
 
@@ -2023,7 +1993,7 @@ Use the cardId values shown in brackets (e.g., [cardId: abc123]) for your parame
     context: TurnContext
   ): Promise<boolean> {
     const hand = context.gameState.hand ?? [];
-    const monsters = hand.filter((c: CardInHand) => c.cardType === "creature");
+    const monsters = hand.filter((c: CardInHand) => c.cardType === "stereotype");
     const summonAction = this.getServerAction(context, "SUMMON_MONSTER");
     const legalCardIds = new Set(summonAction?.availableCards ?? []);
     const summonableMonsters =
@@ -2047,7 +2017,7 @@ Use the cardId values shown in brackets (e.g., [cardId: abc123]) for your parame
     if (!selectedCard && handIndex !== undefined) {
       selectedCard = summonableMonsters.find(
         (c: CardInHand) =>
-          c.handIndex === handIndex && (c.cardType === "creature" || c.type === "creature")
+          c.handIndex === handIndex && (c.cardType === "stereotype" || c.type === "stereotype")
       );
     }
     if (!selectedCard) {
@@ -2132,7 +2102,7 @@ Use the cardId values shown in brackets (e.g., [cardId: abc123]) for your parame
         legalCardIds.size > 0
           ? hand.filter((c: CardInHand) => legalCardIds.has(c._id))
           : hand;
-      const spellTraps = candidates.filter((c: CardInHand) => c.cardType !== "creature");
+      const spellTraps = candidates.filter((c: CardInHand) => c.cardType !== "stereotype");
       card = spellTraps[0] ?? candidates[0];
     }
     if (!card?._id) {
@@ -2140,7 +2110,7 @@ Use the cardId values shown in brackets (e.g., [cardId: abc123]) for your parame
       return false;
     }
 
-    const requiredTributes = card.cardType === "creature" ? resolveTributeRequirement(card) : 0;
+    const requiredTributes = card.cardType === "stereotype" ? resolveTributeRequirement(card) : 0;
     let tributeCardIds = Array.isArray(decision.parameters?.tributeCardIds)
       ? (decision.parameters?.tributeCardIds as string[])
       : undefined;
@@ -2156,7 +2126,7 @@ Use the cardId values shown in brackets (e.g., [cardId: abc123]) for your parame
     }
 
     try {
-      if (card.cardType === "creature") {
+      if (card.cardType === "stereotype") {
         await this.client?.setCard({
           gameId,
           cardId: card._id,
@@ -2334,17 +2304,17 @@ Use the cardId values shown in brackets (e.g., [cardId: abc123]) for your parame
   }
 
   /**
-   * Execute enter battle phase
+   * Execute enter combat phase
    */
   private async executeEnterBattlePhase(gameId: string): Promise<boolean> {
     if (!this.client) return false;
 
     try {
       await this.client.enterBattlePhase(gameId);
-      logger.info({ gameId }, "Entered battle phase");
+      logger.info({ gameId }, "Entered combat phase");
       return true;
     } catch (error) {
-      logger.error({ error, gameId }, "Failed to enter battle phase");
+      logger.error({ error, gameId }, "Failed to enter combat phase");
       return false;
     }
   }

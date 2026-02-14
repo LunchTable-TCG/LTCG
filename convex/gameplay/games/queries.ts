@@ -616,20 +616,17 @@ export const getAvailableActions = query({
     // My turn - determine available actions based on phase
     switch (currentPhase) {
       case "draw":
-      case "standby":
         actions.push("advancePhase");
         break;
 
-      case "main1":
-      case "main2":
+      case "main":
         if (!normalSummonedThisTurn) {
           actions.push("normalSummon", "setMonster");
         }
         actions.push("setSpellTrap", "activateSpell", "changePosition", "advancePhase");
         break;
 
-      case "battle_start":
-      case "battle": {
+      case "combat": {
         // Can attack with monsters that haven't attacked yet
         const canAttack = myBoard.some((card) => !card.hasAttacked && card.position === 1);
         if (canAttack) {
@@ -639,7 +636,7 @@ export const getAvailableActions = query({
         break;
       }
 
-      case "battle_end":
+      case "breakdown_check":
         actions.push("advancePhase");
         break;
 
@@ -880,7 +877,7 @@ export const getGameStateForPlayer = query({
       myDeckCount: isHost ? gameState.hostDeck.length : gameState.opponentDeck.length,
       myGraveyard,
       myLifePoints: isHost ? gameState.hostLifePoints : gameState.opponentLifePoints,
-      myMana: isHost ? gameState.hostMana : gameState.opponentMana,
+      myClout: isHost ? gameState.hostClout : gameState.opponentClout,
 
       // Opponent's state (limited visibility - no hand/deck contents, but full card data on board)
       opponentHandCount: isHost ? gameState.opponentHand.length : gameState.hostHand.length,
@@ -890,7 +887,7 @@ export const getGameStateForPlayer = query({
       opponentDeckCount: isHost ? gameState.opponentDeck.length : gameState.hostDeck.length,
       opponentGraveyard,
       opponentLifePoints: isHost ? gameState.opponentLifePoints : gameState.hostLifePoints,
-      opponentMana: isHost ? gameState.opponentMana : gameState.hostMana,
+      opponentClout: isHost ? gameState.opponentClout : gameState.hostClout,
 
       // Response window state (for chain response UI)
       responseWindow: gameState.responseWindow,
@@ -1151,27 +1148,25 @@ export const getCurrentPhaseInfo = query({
     const availableSkips: string[] = [];
 
     switch (currentPhase) {
-      case "main1":
-        // From Main 1, can skip battle phase or skip to end
-        availableSkips.push("skipBattlePhase", "skipToEndPhase");
+      case "main":
+        // From Main, can skip combat phase or skip to end
+        availableSkips.push("skipCombatPhase", "skipToEndPhase");
         break;
-      case "battle_start":
-      case "battle":
-      case "battle_end":
-        // During battle, can skip to main2 or end
-        availableSkips.push("skipBattlePhase", "skipToEndPhase");
+      case "combat":
+        // During combat, can skip to end
+        availableSkips.push("skipCombatPhase", "skipToEndPhase");
         break;
-      case "main2":
-        // From Main 2, can skip to end
-        availableSkips.push("skipMainPhase2");
+      case "breakdown_check":
+        // From Breakdown Check, can skip to end
+        availableSkips.push("skipToEndPhase");
         break;
       default:
-        // No skips available for draw, standby, end phases
+        // No skips available for draw, end phases
         break;
     }
 
     // Interactive phases where player makes decisions
-    const interactivePhases = ["main1", "battle", "main2"];
+    const interactivePhases = ["main", "combat"];
     const isInteractivePhase = interactivePhases.includes(currentPhase);
 
     return {

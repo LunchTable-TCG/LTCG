@@ -74,13 +74,13 @@ export const handProvider: Provider = {
       });
 
       // Structured values for template substitution
-      // Note: cardType uses 'creature' not 'monster' in the backend schema
+      // Note: cardType uses 'stereotype' not 'monster' in the backend schema
       const values = {
         handSize: hand.length,
-        hasMonsters: hand.some((c) => c.cardType === "creature"),
+        hasMonsters: hand.some((c) => c.cardType === "stereotype"),
         hasSpells: hand.some((c) => c.cardType === "spell"),
         hasTraps: hand.some((c) => c.cardType === "trap"),
-        monsterCount: hand.filter((c) => c.cardType === "creature").length,
+        monsterCount: hand.filter((c) => c.cardType === "stereotype").length,
         spellCount: hand.filter((c) => c.cardType === "spell").length,
         trapCount: hand.filter((c) => c.cardType === "trap").length,
       };
@@ -89,7 +89,7 @@ export const handProvider: Provider = {
       const data = {
         hand,
         cardsByType: {
-          monsters: hand.filter((c) => c.cardType === "creature"),
+          monsters: hand.filter((c) => c.cardType === "stereotype"),
           spells: hand.filter((c) => c.cardType === "spell"),
           traps: hand.filter((c) => c.cardType === "trap"),
         },
@@ -110,17 +110,17 @@ export const handProvider: Provider = {
 
 /**
  * Format a card for display
- * Note: cardType uses 'creature' not 'monster' in the backend schema
+ * Note: cardType uses 'stereotype' not 'monster' in the backend schema
  */
 function formatCard(card: CardInHand): string {
-  if (card.cardType === "creature") {
+  if (card.cardType === "stereotype") {
     const tributeText = getTributeRequirementText(card.cost || 0);
     const abilityText =
       card.abilities && card.abilities.length > 0
         ? `   - Abilities: ${card.abilities.map((a: CardAbility) => a.name || a.description).join(", ")}`
         : "   - No special effects";
 
-    return `${card.name} [Creature, Cost ${card.cost || 0}] ATK: ${card.attack || 0}, DEF: ${card.defense || 0}
+    return `${card.name} [Stereotype, Cost ${card.cost || 0}] ATK: ${card.attack || 0}, DEF: ${card.defense || 0}
    - ${tributeText}
 ${abilityText}`;
   }

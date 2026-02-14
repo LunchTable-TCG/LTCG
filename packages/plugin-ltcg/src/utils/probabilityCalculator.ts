@@ -580,7 +580,7 @@ export function turnsToLethal(
  */
 export function cardEnablesLethal(card: CardInHand, gameState: GameStateResponse): boolean {
   // Simplistic check - if it's a high ATK monster and we can summon
-  if (card.cardType === "creature" || card.type === "creature") {
+  if (card.cardType === "stereotype" || card.type === "stereotype") {
     const atk = card.attack ?? card.atk ?? 0;
     const currentDamage = calculateDamageRange(
       gameState.myBoard || [],

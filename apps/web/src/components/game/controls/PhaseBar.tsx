@@ -2,25 +2,22 @@
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { ChevronRight, Link2, Loader2, Scroll, Sparkles, Swords } from "lucide-react";
+import { AlertTriangle, ChevronRight, Link2, Loader2, Sparkles, Swords } from "lucide-react";
 
 // Only show interactive phases that players actually stop at
 const PHASES = [
-  { id: "main1", label: "Main Phase", shortLabel: "Main", fullName: "Main Phase 1" },
-  { id: "battle", label: "Battle", shortLabel: "Battle", fullName: "Battle Phase" },
-  { id: "main2", label: "Main 2", shortLabel: "Main2", fullName: "Main Phase 2" },
+  { id: "main", label: "Main Phase", shortLabel: "Main", fullName: "Main Phase" },
+  { id: "combat", label: "Combat", shortLabel: "Combat", fullName: "Combat Phase" },
+  { id: "breakdown_check", label: "Breakdown", shortLabel: "BD", fullName: "Breakdown Check" },
 ] as const;
 
 // Map all phases to display phases for highlighting
 const PHASE_MAPPING: Record<string, string> = {
-  draw: "main1",
-  standby: "main1",
-  main1: "main1",
-  battle_start: "battle",
-  battle: "battle",
-  battle_end: "battle",
-  main2: "main2",
-  end: "main2",
+  draw: "main",
+  main: "main",
+  combat: "combat",
+  breakdown_check: "breakdown_check",
+  end: "breakdown_check",
 };
 
 interface PhaseBarProps {

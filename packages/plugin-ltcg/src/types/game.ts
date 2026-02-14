@@ -12,7 +12,7 @@ export type Id<T extends string = string> = string & { __tableName: T };
 // Game Phases
 // ============================================================================
 
-export type GamePhase = "draw" | "standby" | "main1" | "battle" | "main2" | "end";
+export type GamePhase = "draw" | "main" | "combat" | "end";
 
 export type TurnPlayer = "host" | "opponent";
 
@@ -24,9 +24,9 @@ export type GameStatus = "waiting" | "active" | "completed";
 
 /**
  * Card types matching Convex schema
- * Note: Use 'creature' not 'monster' to match database schema
+ * Note: Use 'stereotype' not 'monster' to match database schema
  */
-export type CardType = "creature" | "spell" | "trap" | "equipment";
+export type CardType = "stereotype" | "spell" | "trap" | "class";
 
 export type MonsterPosition = "attack" | "defense" | "facedown";
 
@@ -126,7 +126,7 @@ export interface Card {
 }
 
 export interface MonsterCard extends Card {
-  type: "creature";
+  type: "stereotype";
   level: number;
   atk: number;
   def: number;
@@ -186,7 +186,7 @@ export interface CardAbility {
   abilityId: string;
   name: string;
   type: "trigger" | "ignition" | "quick" | "continuous" | "flip" | "summon";
-  timing: "summon" | "flip" | "onDestroy" | "onDamage" | "standby" | "endPhase" | "any";
+  timing: "summon" | "flip" | "onDestroy" | "onDamage" | "endPhase" | "any";
   description: string;
   cost?: AbilityCost;
   effects: CardEffect[];
@@ -289,7 +289,7 @@ export interface BattleResult {
 export interface DamageEvent {
   player: TurnPlayer;
   amount: number;
-  source: "battle" | "effect";
+  source: "combat" | "effect";
   cardId?: string;
 }
 

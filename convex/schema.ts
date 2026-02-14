@@ -4,7 +4,7 @@ import { literals } from "convex-helpers/validators";
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import type { Infer } from "convex/values";
-import { userStreamingPlatformValidator } from "./lib/streamingPlatforms";
+
 import { livekitTables } from "./livekit/schema";
 import { GAME_CONFIG } from "@ltcg/core";
 
@@ -265,14 +265,6 @@ export default defineSchema({
       allowFriendRequests: v.boolean(),
       showMatchHistory: v.boolean(),
     }),
-    streaming: v.optional(
-      v.object({
-        streamerModeEnabled: v.boolean(),
-        platform: v.optional(userStreamingPlatformValidator),
-        streamKeyHash: v.optional(v.string()),
-        rtmpUrl: v.optional(v.string()),
-      })
-    ),
     createdAt: v.number(),
     updatedAt: v.number(),
   }).index("by_user", ["userId"]),

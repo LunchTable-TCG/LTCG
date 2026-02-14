@@ -55,42 +55,30 @@ export function getCardAttribute(card: Doc<"cardDefinitions">): Attribute {
  */
 export function deriveAttributeFromArchetype(archetype: string): Attribute {
   const mapping: Record<string, Attribute> = {
-    // New archetypes → attributes
-    infernal_dragons: "fire",
-    abyssal_horrors: "water",
-    nature_spirits: "earth",
-    storm_elementals: "wind",
-    shadow_assassins: "dark",
-    celestial_guardians: "light",
-    undead_legion: "dark",
-    divine_knights: "light",
-    arcane_mages: "dark",
-    mechanical_constructs: "earth",
-    // Legacy element names
-    fire: "fire",
-    water: "water",
-    earth: "earth",
-    wind: "wind",
+    dropout: "red",
+    prep: "blue",
+    geek: "yellow",
+    freak: "purple",
+    nerd: "green",
+    goodie_two_shoes: "white",
   };
 
-  return mapping[archetype.toLowerCase()] || "neutral";
+  return mapping[archetype.toLowerCase()] || "white";
 }
 
 /**
  * Get tribute count required for a card based on its level
  *
- * Yu-Gi-Oh rules:
- * - Level 1-4: No tributes required
- * - Level 5-6: 1 tribute required
- * - Level 7+: 2 tributes required
+ * LTCG rules:
+ * - Level 1-6: No tributes required
+ * - Level 7+: 1 tribute required
  *
  * @param card - Card definition document
- * @returns Number of tributes required (0, 1, or 2)
+ * @returns Number of tributes required (0 or 1)
  */
 export function getTributeCount(card: Doc<"cardDefinitions">): number {
   const level = getCardLevel(card);
-  if (level >= 7) return 2;
-  if (level >= 5) return 1;
+  if (level >= 7) return 1;
   return 0;
 }
 

@@ -46,7 +46,7 @@ export const summonAction: Action = {
       }
 
       // Must be in Main Phase
-      if (gameState.phase !== "main1" && gameState.phase !== "main2") {
+      if (gameState.phase !== "main") {
         logger.debug(`Cannot summon in ${gameState.phase} phase`);
         return false;
       }
@@ -69,7 +69,7 @@ export const summonAction: Action = {
       // Check for summonable monsters
       const monstersOnField = gameState.myBoard.length;
       const summonableMonsters = hand.filter((card) => {
-        if (card.cardType !== "creature") return false;
+        if (card.cardType !== "stereotype") return false;
 
         const cost = card.cost || 0;
 
@@ -137,7 +137,7 @@ export const summonAction: Action = {
       // Get summonable monsters
       const monstersOnField = gameState.myBoard;
       const summonableMonsters = hand.filter((card) => {
-        if (card.cardType !== "creature") return false;
+        if (card.cardType !== "stereotype") return false;
 
         const cost = card.cost || 0;
 

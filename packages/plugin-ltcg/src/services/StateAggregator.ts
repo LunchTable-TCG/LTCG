@@ -403,24 +403,24 @@ export class StateAggregator extends Service {
   private transformGameState(gameState: GameStateResponse, gameId: string): GameSnapshot {
     // Count monsters and spell/traps from board arrays
     const myMonsters = (gameState.myBoard || []).filter(
-      (card) => card.cardType === "creature"
+      (card) => card.cardType === "stereotype"
     ).length;
     const mySpellTraps = (gameState.myBoard || []).filter(
       (card) =>
-        card.cardType === "spell" || card.cardType === "trap" || card.cardType === "equipment"
+        card.cardType === "spell" || card.cardType === "trap" || card.cardType === "class"
     ).length;
     const opponentMonsters = (gameState.opponentBoard || []).filter(
-      (card) => card.cardType === "creature"
+      (card) => card.cardType === "stereotype"
     ).length;
     const opponentSpellTraps = (gameState.opponentBoard || []).filter(
       (card) =>
-        card.cardType === "spell" || card.cardType === "trap" || card.cardType === "equipment"
+        card.cardType === "spell" || card.cardType === "trap" || card.cardType === "class"
     ).length;
 
     // Map cardType to panel-friendly types
     const mapCardType = (cardType: string): "monster" | "spell" | "trap" => {
-      if (cardType === "creature") return "monster";
-      if (cardType === "spell" || cardType === "equipment") return "spell";
+      if (cardType === "stereotype") return "monster";
+      if (cardType === "spell" || cardType === "class") return "spell";
       if (cardType === "trap") return "trap";
       return "spell"; // default
     };

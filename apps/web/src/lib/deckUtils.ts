@@ -2,7 +2,7 @@ import type { DeckCard } from "@/types/binder";
 
 export interface DeckStats {
   avgCost: string;
-  creatureCount: number;
+  stereotypeCount: number;
   spellCount: number;
   totalCards: number;
 }
@@ -12,7 +12,7 @@ export interface DeckStats {
  */
 export function calculateDeckStats(deckCards: DeckCard[]): DeckStats {
   let totalCost = 0;
-  let creatureCount = 0;
+  let stereotypeCount = 0;
   let spellCount = 0;
   let totalCards = 0;
 
@@ -21,13 +21,13 @@ export function calculateDeckStats(deckCards: DeckCard[]): DeckStats {
     totalCost += cardTotalCost;
     totalCards += count;
 
-    if (card.cardType === "creature") creatureCount += count;
+    if (card.cardType === "stereotype") stereotypeCount += count;
     if (card.cardType === "spell") spellCount += count;
   }
 
   return {
     avgCost: totalCards > 0 ? (totalCost / totalCards).toFixed(1) : "0",
-    creatureCount,
+    stereotypeCount,
     spellCount,
     totalCards,
   };

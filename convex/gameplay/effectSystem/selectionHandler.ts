@@ -17,13 +17,12 @@ export type SelectionContext = "cost" | "target" | "search" | "effect";
 
 /**
  * Convert effect target type to actual card type in schema
- * Effects use "monster" but schema uses "creature"
  */
 function normalizeCardType(
   effectTargetType?: "monster" | "spell" | "trap" | "any"
-): "creature" | "spell" | "trap" | "equipment" | "any" | undefined {
+): "stereotype" | "spell" | "trap" | "class" | "any" | undefined {
   if (!effectTargetType) return undefined;
-  if (effectTargetType === "monster") return "creature";
+  if (effectTargetType === "monster") return "stereotype";
   if (effectTargetType === "any") return "any";
   return effectTargetType;
 }
@@ -38,7 +37,7 @@ export interface SelectionRequest {
   minSelections: number;
   maxSelections: number;
   filter?: {
-    cardType?: "creature" | "spell" | "trap" | "equipment" | "any";
+    cardType?: "stereotype" | "spell" | "trap" | "class" | "any";
     archetype?: string;
     levelMin?: number;
     levelMax?: number;
@@ -116,8 +115,8 @@ export async function getAvailableSelections(
         if (!hasArchetype) return false;
       }
 
-      // Level filters (for monsters)
-      if (card.cardType === "creature") {
+      // Level filters (for monsters/stereotypes)
+      if (card.cardType === "stereotype") {
         const level = card.cost || 1; // cost field stores level
 
         if (levelMin !== undefined && level < levelMin) return false;
@@ -170,7 +169,7 @@ export async function getAvailableSelections(
       cardType: card.cardType,
       imageUrl: card.imageUrl,
       monsterStats:
-        card.cardType === "creature"
+        card.cardType === "stereotype"
           ? {
               attack: card.attack || 0,
               defense: card.defense || 0,
@@ -375,7 +374,7 @@ export function getSelectionRequirements(
       minSelections: 1,
       maxSelections: count,
       filter: {
-        cardType: normalizeCardType(effect.targetType) || "creature",
+        cardType: normalizeCardType(effect.targetType) || "stereotype",
       },
     };
   }
@@ -392,7 +391,7 @@ export function getSelectionRequirements(
       minSelections: 1,
       maxSelections: count,
       filter: {
-        cardType: "creature",
+        cardType: "stereotype",
       },
     };
   }

@@ -357,18 +357,15 @@ export function useGameInteraction(
       if (!isMainPhase) {
         const phaseNames: Record<string, string> = {
           draw: "Draw Phase",
-          standby: "Standby Phase",
-          main1: "Main Phase 1",
-          battle_start: "Battle Start",
-          battle: "Battle Phase",
-          battle_end: "Battle End",
-          main2: "Main Phase 2",
+          main: "Main Phase",
+          combat: "Combat Phase",
+          breakdown_check: "Breakdown Check",
           end: "End Phase",
         };
         const phaseName = phaseNames[currentPhase || ""] || currentPhase || "Unknown Phase";
 
         toast.warning("Wrong Phase", {
-          description: `You can only play cards during Main Phase 1 or Main Phase 2. Current Phase: ${phaseName}.`,
+          description: `You can only play cards during the Main Phase. Current Phase: ${phaseName}.`,
         });
         return;
       }
@@ -407,7 +404,7 @@ export function useGameInteraction(
       const isPlayerCard =
         player?.frontline?.instanceId === card.instanceId ||
         player?.support?.some((c) => c.instanceId === card.instanceId);
-      const isMonster = card.cardType === "monster" || card.cardType === "creature";
+      const isMonster = card.cardType === "monster" || card.cardType === "stereotype";
       const hasManualEffects = card.effects?.some(
         (e) => e.activationType === "ignition" || e.activationType === "quick"
       );
@@ -617,9 +614,9 @@ export function useGameInteraction(
       if (!selectedCard) return;
 
       const isField = selectedCard.cardType === "field";
-      const isSpell = selectedCard.cardType === "spell" || selectedCard.cardType === "equipment";
+      const isSpell = selectedCard.cardType === "spell" || selectedCard.cardType === "class";
       const isTrap = selectedCard.cardType === "trap";
-      const isMonster = selectedCard.cardType === "monster" || selectedCard.cardType === "creature";
+      const isMonster = selectedCard.cardType === "monster" || selectedCard.cardType === "stereotype";
 
       try {
         const costCheck = await getPendingCostMutation({

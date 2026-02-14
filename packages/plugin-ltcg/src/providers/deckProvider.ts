@@ -58,7 +58,7 @@ export const deckProvider: Provider = {
       }
 
       // Analyze deck composition
-      const monsters = currentDeck.cards.filter((c) => c.type === "creature");
+      const monsters = currentDeck.cards.filter((c) => c.type === "stereotype");
       const spells = currentDeck.cards.filter((c) => c.type === "spell");
       const traps = currentDeck.cards.filter((c) => c.type === "trap");
 

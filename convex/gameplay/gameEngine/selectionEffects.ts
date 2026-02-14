@@ -50,7 +50,7 @@ export const getGraveyardSummonTargets = query({
     const targets = [];
     for (const cardId of graveyard) {
       const card = cardMap.get(cardId);
-      if (!card || card.cardType !== "creature") continue;
+      if (!card || card.cardType !== "stereotype") continue;
 
       targets.push({
         cardId,
@@ -105,7 +105,7 @@ export const getBanishedSummonTargets = query({
     const targets = [];
     for (const cardId of banished) {
       const card = cardMap.get(cardId);
-      if (!card || card.cardType !== "creature") continue;
+      if (!card || card.cardType !== "stereotype") continue;
 
       targets.push({
         cardId,

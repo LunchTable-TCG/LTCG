@@ -31,7 +31,7 @@ describe("Event Types", () => {
           gameId: "game-123",
           status: "active",
           currentTurn: "host",
-          phase: "main1",
+          phase: "main",
           turnNumber: 1,
           hostPlayer: {
             playerId: "host-id",
@@ -72,14 +72,14 @@ describe("Event Types", () => {
       const event: TurnNotificationEvent = {
         type: "turn_notification",
         gameId: "game-123",
-        phase: "main1",
+        phase: "main",
         isMyTurn: true,
         timestamp: Date.now(),
       };
 
       expect(event.type).toBe("turn_notification");
       expect(event.gameId).toBe("game-123");
-      expect(event.phase).toBe("main1");
+      expect(event.phase).toBe("main");
       expect(event.isMyTurn).toBe(true);
       expect(event.timestamp).toBeGreaterThan(0);
     });
@@ -91,7 +91,7 @@ describe("Event Types", () => {
         eventId: "event-1",
         gameId: "game-123",
         turnNumber: 1,
-        phase: "main1",
+        phase: "main",
         eventType: "summon",
         playerId: "player-123",
         description: "Summoned Infernal God Dragon",
@@ -205,7 +205,7 @@ describe("Event Types", () => {
         {
           type: "turn_notification",
           gameId: "game-123",
-          phase: "main1",
+          phase: "main",
           isMyTurn: true,
           timestamp: Date.now(),
         },

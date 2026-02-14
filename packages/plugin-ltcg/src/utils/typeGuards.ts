@@ -20,12 +20,12 @@ import type {
 // ============================================================================
 
 /**
- * Check if a CardInHand is a creature/monster
+ * Check if a CardInHand is a stereotype (monster)
  */
-export function isCreatureCard(
+export function isStereotypeCard(
   card: CardInHand | null | undefined
-): card is CardInHand & { cardType: "creature" } {
-  return card != null && (card.cardType === "creature" || card.type === "creature");
+): card is CardInHand & { cardType: "stereotype" } {
+  return card != null && (card.cardType === "stereotype" || card.type === "stereotype");
 }
 
 /**
@@ -34,7 +34,7 @@ export function isCreatureCard(
 export function isSpellCard(
   card: CardInHand | null | undefined
 ): card is CardInHand & { cardType: "spell" } {
-  return card != null && (card.cardType === "spell" || card.type === "spell");
+  return card != null && card.cardType === "spell";
 }
 
 /**
@@ -43,25 +43,25 @@ export function isSpellCard(
 export function isTrapCard(
   card: CardInHand | null | undefined
 ): card is CardInHand & { cardType: "trap" } {
-  return card != null && (card.cardType === "trap" || card.type === "trap");
+  return card != null && card.cardType === "trap";
 }
 
 /**
- * Check if a CardInHand is equipment
+ * Check if a CardInHand is a class card
  */
-export function isEquipmentCard(
+export function isClassCard(
   card: CardInHand | null | undefined
-): card is CardInHand & { cardType: "equipment" } {
-  return card != null && (card.cardType === "equipment" || card.type === "equipment");
+): card is CardInHand & { cardType: "class" } {
+  return card != null && (card.cardType === "class" || card.type === "class");
 }
 
 /**
- * Check if a BoardCard is a creature
+ * Check if a BoardCard is a stereotype
  */
-export function isBoardCreature(
+export function isBoardStereotype(
   card: BoardCard | null | undefined
-): card is BoardCard & { cardType: "creature" } {
-  return card != null && card.cardType === "creature";
+): card is BoardCard & { cardType: "stereotype" } {
+  return card != null && card.cardType === "stereotype";
 }
 
 /**
@@ -115,7 +115,7 @@ export function isGraveyardCard(card: unknown): card is CardInGraveyard {
   return (
     typeof c.cardId === "string" &&
     typeof c.name === "string" &&
-    (c.type === "creature" || c.type === "spell" || c.type === "trap" || c.type === "equipment")
+    (c.type === "stereotype" || c.type === "spell" || c.type === "trap" || c.type === "class")
   );
 }
 
@@ -152,15 +152,15 @@ export function isApiErrorResponse(
 /**
  * Check if a game state phase is a main phase (can summon, set cards)
  */
-export function isMainPhase(phase: string | undefined): phase is "main1" | "main2" {
-  return phase === "main1" || phase === "main2";
+export function isMainPhase(phase: string | undefined): phase is "main" {
+  return phase === "main";
 }
 
 /**
- * Check if a game state phase is battle phase
+ * Check if a game state phase is combat phase
  */
-export function isBattlePhase(phase: string | undefined): phase is "battle" {
-  return phase === "battle";
+export function isCombatPhase(phase: string | undefined): phase is "combat" {
+  return phase === "combat";
 }
 
 /**
@@ -174,7 +174,7 @@ export function canSummonInPhase(phase: string | undefined): boolean {
  * Check if a game phase allows attacking
  */
 export function canAttackInPhase(phase: string | undefined): boolean {
-  return isBattlePhase(phase);
+  return isCombatPhase(phase);
 }
 
 // ============================================================================

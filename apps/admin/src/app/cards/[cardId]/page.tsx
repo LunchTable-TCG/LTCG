@@ -73,10 +73,10 @@ const ARCHETYPES = [
 ];
 
 const CARD_TYPES = [
-  { value: "creature", label: "Creature" },
+  { value: "stereotype", label: "Stereotype" },
   { value: "spell", label: "Spell" },
   { value: "trap", label: "Trap" },
-  { value: "equipment", label: "Equipment" },
+  { value: "class", label: "Class" },
 ];
 
 const RARITIES = [
@@ -140,7 +140,7 @@ export default function CardEditorPage() {
   const [name, setName] = useState("");
   const [rarity, setRarity] = useState("common");
   const [archetype, setArchetype] = useState("neutral");
-  const [cardType, setCardType] = useState("creature");
+  const [cardType, setCardType] = useState("stereotype");
   const [attack, setAttack] = useState<number | "">("");
   const [defense, setDefense] = useState<number | "">("");
   const [cost, setCost] = useState(1);
@@ -207,8 +207,8 @@ export default function CardEditorPage() {
       return;
     }
 
-    if (cardType === "creature" && (attack === "" || defense === "")) {
-      toast.error("Creatures must have attack and defense values");
+    if (cardType === "stereotype" && (attack === "" || defense === "")) {
+      toast.error("Stereotypes must have attack and defense values");
       return;
     }
 
@@ -230,12 +230,12 @@ export default function CardEditorPage() {
         rarity: rarity as CardRarity,
         archetype: archetype as CardArchetype,
         cardType: cardType as CardType,
-        attack: cardType === "creature" ? Number(attack) : undefined,
-        defense: cardType === "creature" ? Number(defense) : undefined,
+        attack: cardType === "stereotype" ? Number(attack) : undefined,
+        defense: cardType === "stereotype" ? Number(defense) : undefined,
         cost,
-        level: cardType === "creature" && level !== "" ? Number(level) : undefined,
-        attribute: cardType === "creature" ? (attribute as CardAttribute) : undefined,
-        monsterType: cardType === "creature" ? (monsterType as MonsterType) : undefined,
+        level: cardType === "stereotype" && level !== "" ? Number(level) : undefined,
+        attribute: cardType === "stereotype" ? (attribute as CardAttribute) : undefined,
+        monsterType: cardType === "stereotype" ? (monsterType as MonsterType) : undefined,
         spellType: cardType === "spell" ? (spellType as SpellType) : undefined,
         trapType: cardType === "trap" ? (trapType as TrapType) : undefined,
         flavorText: flavorText.trim() || undefined,
@@ -448,9 +448,9 @@ export default function CardEditorPage() {
           </Card>
 
           {/* Type-Specific Fields */}
-          {cardType === "creature" && (
+          {cardType === "stereotype" && (
             <Card>
-              <Title>Creature Stats</Title>
+              <Title>Stereotype Stats</Title>
               <div className="mt-4 grid gap-4 md:grid-cols-4">
                 <div className="space-y-2">
                   <Label htmlFor="attack">Attack *</Label>
@@ -648,14 +648,14 @@ export default function CardEditorPage() {
                 <Text className="text-sm text-muted-foreground capitalize">
                   {cardType} • {ARCHETYPES.find((a) => a.value === archetype)?.label}
                 </Text>
-                {cardType === "creature" && (
+                {cardType === "stereotype" && (
                   <div className="flex gap-4 text-sm">
                     <span>ATK: {attack || 0}</span>
                     <span>DEF: {defense || 0}</span>
                     <span>Cost: {cost}</span>
                   </div>
                 )}
-                {cardType !== "creature" && <Text className="text-sm">Cost: {cost}</Text>}
+                {cardType !== "stereotype" && <Text className="text-sm">Cost: {cost}</Text>}
                 {flavorText && (
                   <Text className="text-sm italic text-muted-foreground mt-2">{flavorText}</Text>
                 )}

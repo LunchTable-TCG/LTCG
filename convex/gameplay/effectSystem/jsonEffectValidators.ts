@@ -139,11 +139,12 @@ export type TargetOwnerInfer = Infer<typeof targetOwnerValidator>;
  */
 export const targetTypeValidator = v.union(
   v.literal("monster"),
+  v.literal("stereotype"),
   v.literal("spell"),
   v.literal("trap"),
+  v.literal("class"),
   v.literal("any"),
-  v.literal("card"),
-  v.literal("creature")
+  v.literal("card")
 );
 export type TargetTypeInfer = Infer<typeof targetTypeValidator>;
 
@@ -207,14 +208,12 @@ export type DurationTypeInfer = Infer<typeof durationTypeValidator>;
  * Card attribute validator
  */
 export const cardAttributeValidator = v.union(
-  v.literal("fire"),
-  v.literal("water"),
-  v.literal("earth"),
-  v.literal("wind"),
-  v.literal("light"),
-  v.literal("dark"),
-  v.literal("divine"),
-  v.literal("neutral")
+  v.literal("red"),
+  v.literal("blue"),
+  v.literal("yellow"),
+  v.literal("purple"),
+  v.literal("green"),
+  v.literal("white")
 );
 export type CardAttributeInfer = Infer<typeof cardAttributeValidator>;
 
@@ -222,40 +221,14 @@ export type CardAttributeInfer = Infer<typeof cardAttributeValidator>;
  * Card archetype validator
  */
 export const cardArchetypeValidator = v.union(
-  v.literal("infernal_dragons"),
-  v.literal("abyssal_horrors"),
-  v.literal("nature_spirits"),
-  v.literal("storm_elementals"),
-  v.literal("shadow_assassins"),
-  v.literal("celestial_guardians"),
-  v.literal("undead_legion"),
-  v.literal("divine_knights"),
-  v.literal("arcane_mages"),
-  v.literal("mechanical_constructs"),
-  v.literal("neutral"),
-  v.literal("fire"),
-  v.literal("water"),
-  v.literal("earth"),
-  v.literal("wind")
+  v.literal("dropout"),
+  v.literal("prep"),
+  v.literal("geek"),
+  v.literal("freak"),
+  v.literal("nerd"),
+  v.literal("goodie_two_shoes")
 );
 export type CardArchetypeInfer = Infer<typeof cardArchetypeValidator>;
-
-/**
- * Monster type validator (industry-standard TCG types)
- */
-export const monsterTypeValidator = v.union(
-  v.literal("dragon"),
-  v.literal("spellcaster"),
-  v.literal("warrior"),
-  v.literal("beast"),
-  v.literal("fiend"),
-  v.literal("zombie"),
-  v.literal("machine"),
-  v.literal("aqua"),
-  v.literal("pyro"),
-  v.literal("divine_beast")
-);
-export type MonsterTypeInfer = Infer<typeof monsterTypeValidator>;
 
 /**
  * Spell type validator
@@ -263,10 +236,7 @@ export type MonsterTypeInfer = Infer<typeof monsterTypeValidator>;
 export const spellTypeValidator = v.union(
   v.literal("normal"),
   v.literal("quick_play"),
-  v.literal("continuous"),
-  v.literal("field"),
-  v.literal("equip"),
-  v.literal("ritual")
+  v.literal("continuous")
 );
 export type SpellTypeInfer = Infer<typeof spellTypeValidator>;
 
@@ -296,12 +266,9 @@ export type PositionInfer = Infer<typeof positionValidator>;
  */
 export const phaseValidator = v.union(
   v.literal("draw"),
-  v.literal("standby"),
-  v.literal("main1"),
-  v.literal("battle_start"),
-  v.literal("battle"),
-  v.literal("battle_end"),
-  v.literal("main2"),
+  v.literal("main"),
+  v.literal("combat"),
+  v.literal("breakdown_check"),
   v.literal("end")
 );
 export type PhaseInfer = Infer<typeof phaseValidator>;
@@ -391,9 +358,8 @@ export const jsonConditionValidator = v.object({
   archetype: v.optional(v.union(v.string(), v.array(v.string()))),
   attribute: v.optional(v.union(cardAttributeValidator, v.array(cardAttributeValidator))),
   cardType: v.optional(
-    v.union(v.literal("creature"), v.literal("spell"), v.literal("trap"), v.literal("equipment"))
+    v.union(v.literal("stereotype"), v.literal("spell"), v.literal("trap"), v.literal("class"))
   ),
-  monsterType: v.optional(v.union(monsterTypeValidator, v.array(monsterTypeValidator))),
   spellType: v.optional(v.union(spellTypeValidator, v.array(spellTypeValidator))),
   trapType: v.optional(v.union(trapTypeValidator, v.array(trapTypeValidator))),
   level: v.optional(numericOrRangeValidator),
@@ -471,7 +437,6 @@ export const jsonTargetValidator = v.object({
   type: v.optional(targetTypeValidator),
   archetype: v.optional(v.union(v.string(), v.array(v.string()))),
   attribute: v.optional(v.union(cardAttributeValidator, v.array(cardAttributeValidator))),
-  monsterType: v.optional(v.union(monsterTypeValidator, v.array(monsterTypeValidator))),
   spellType: v.optional(v.union(spellTypeValidator, v.array(spellTypeValidator))),
   trapType: v.optional(v.union(trapTypeValidator, v.array(trapTypeValidator))),
   position: v.optional(v.union(positionValidator, v.literal("facedown"))),
@@ -841,7 +806,6 @@ export const validators = {
   duration: durationTypeValidator,
   attribute: cardAttributeValidator,
   archetype: cardArchetypeValidator,
-  monsterType: monsterTypeValidator,
   spellType: spellTypeValidator,
   trapType: trapTypeValidator,
   position: positionValidator,

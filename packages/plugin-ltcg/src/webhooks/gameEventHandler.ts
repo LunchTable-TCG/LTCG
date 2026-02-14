@@ -223,7 +223,7 @@ async function handleTurnStarted(
   // Emit custom LTCG event
   await emitLTCGEvent(runtime, LTCGEventType.TURN_STARTED, {
     gameId,
-    phase: data.phase ?? "main1",
+    phase: data.phase ?? "main",
     turnNumber: data.turnNumber ?? 1,
   });
 
@@ -253,7 +253,7 @@ async function handleTurnStarted(
   if (orchestrator) {
     // Fire-and-forget: orchestrator handles the full turn asynchronously
     orchestrator
-      .onTurnStarted(gameId, data.phase ?? "main1", data.turnNumber ?? 1)
+      .onTurnStarted(gameId, data.phase ?? "main", data.turnNumber ?? 1)
       .catch((error) => {
         logger.error({ error, gameId }, "TurnOrchestrator error during turn execution");
       });

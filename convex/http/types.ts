@@ -21,13 +21,13 @@ export type CardPosition = z.infer<typeof CardPositionSchema>;
 /**
  * Game phases
  */
-export const GamePhaseSchema = z.enum(["draw", "standby", "main1", "battle", "main2", "end"]);
+export const GamePhaseSchema = z.enum(["draw", "main", "combat", "breakdown_check", "end"]);
 export type GamePhase = z.infer<typeof GamePhaseSchema>;
 
 /**
  * Card types in the game
  */
-export const CardTypeSchema = z.enum(["creature", "spell", "trap"]);
+export const CardTypeSchema = z.enum(["stereotype", "spell", "trap", "class"]);
 export type CardType = z.infer<typeof CardTypeSchema>;
 
 // =============================================================================
@@ -146,7 +146,7 @@ export interface HandCard {
 export interface FieldMonster {
   _id: string;
   name: string;
-  cardType: "creature";
+  cardType: "stereotype";
   attack: number;
   defense: number;
   position: 1 | 2; // 1 = attack, 2 = defense

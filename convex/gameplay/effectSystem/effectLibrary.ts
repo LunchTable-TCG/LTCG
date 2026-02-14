@@ -11,7 +11,7 @@
  *
  * const myCardEffects = [
  *   EFFECT_TEMPLATES.draw(2),
- *   EFFECT_TEMPLATES.destroyTarget(1, CONDITIONS.cardType("monster")),
+ *   EFFECT_TEMPLATES.destroyTarget(1, CONDITIONS.cardType("stereotype")),
  * ];
  * ```
  */
@@ -44,7 +44,7 @@ export const CONDITIONS = {
 
   /**
    * Match cards by archetype
-   * @example CONDITIONS.archetype("infernal_dragons")
+   * @example CONDITIONS.archetype("dropout")
    */
   archetype: (archetype: ArchetypeId | ArchetypeId[]): JsonCondition => ({
     archetype: Array.isArray(archetype) ? archetype : archetype,
@@ -52,7 +52,7 @@ export const CONDITIONS = {
 
   /**
    * Match cards by card type
-   * @example CONDITIONS.cardType("monster")
+   * @example CONDITIONS.cardType("stereotype")
    */
   cardType: (cardType: CardTypeFilter | CardTypeFilter[]): JsonCondition => ({
     cardType,
@@ -185,14 +185,14 @@ export const CONDITIONS = {
   }),
 
   /**
-   * Match monsters in attack position
+   * Match stereotypes in attack position
    */
   inAttackPosition: (): JsonCondition => ({
     position: "attack",
   }),
 
   /**
-   * Match monsters in defense position
+   * Match stereotypes in defense position
    */
   inDefensePosition: (): JsonCondition => ({
     position: "defense",
@@ -251,21 +251,21 @@ export const CONDITIONS = {
   }),
 
   /**
-   * Opponent has no monsters on board
+   * Opponent has no stereotypes on board
    */
   opponentHasNoMonsters: (): JsonCondition => ({
     opponentHasNoMonsters: true,
   }),
 
   /**
-   * You control no monsters
+   * You control no stereotypes
    */
   controlsNoMonsters: (): JsonCondition => ({
     controlsNoMonsters: true,
   }),
 
   /**
-   * No monsters in attack position (for direct attack conditions)
+   * No stereotypes in attack position (for direct attack conditions)
    */
   noMonstersInAttackPosition: (): JsonCondition => ({
     hasNoMonstersInAttackPosition: true,
@@ -297,7 +297,7 @@ export const CONDITIONS = {
 
   /**
    * Combine conditions with AND logic
-   * @example CONDITIONS.and(CONDITIONS.cardType("monster"), CONDITIONS.attackAtMost(1500))
+   * @example CONDITIONS.and(CONDITIONS.cardType("stereotype"), CONDITIONS.attackAtMost(1500))
    */
   and: (...conditions: JsonCondition[]): JsonCondition => ({
     type: "and",
@@ -318,42 +318,42 @@ export const CONDITIONS = {
   // -------------------------------------------------------------------------
 
   /**
-   * Match opponent's monsters on board
+   * Match opponent's stereotypes on board
    */
   opponentMonster: (): JsonCondition =>
-    CONDITIONS.and(CONDITIONS.cardType("monster"), CONDITIONS.ownedBy("opponent")),
+    CONDITIONS.and(CONDITIONS.cardType("stereotype"), CONDITIONS.ownedBy("opponent")),
 
   /**
-   * Match your monsters on board
+   * Match your stereotypes on board
    */
   yourMonster: (): JsonCondition =>
-    CONDITIONS.and(CONDITIONS.cardType("monster"), CONDITIONS.ownedBy("self")),
+    CONDITIONS.and(CONDITIONS.cardType("stereotype"), CONDITIONS.ownedBy("self")),
 
   /**
-   * Match any monster on board
+   * Match any stereotype on board
    */
-  anyMonster: (): JsonCondition => CONDITIONS.cardType("monster"),
+  anyMonster: (): JsonCondition => CONDITIONS.cardType("stereotype"),
 
   /**
-   * Match low-level monsters (commonly used for searching)
+   * Match low-level stereotypes (commonly used for searching)
    * @example CONDITIONS.lowLevelMonster(4) // Level 4 or lower
    */
   lowLevelMonster: (maxLevel = 4): JsonCondition =>
-    CONDITIONS.and(CONDITIONS.cardType("monster"), CONDITIONS.levelAtMost(maxLevel)),
+    CONDITIONS.and(CONDITIONS.cardType("stereotype"), CONDITIONS.levelAtMost(maxLevel)),
 
   /**
-   * Match high-level monsters
+   * Match high-level stereotypes
    * @example CONDITIONS.highLevelMonster(7) // Level 7 or higher
    */
   highLevelMonster: (minLevel = 7): JsonCondition =>
-    CONDITIONS.and(CONDITIONS.cardType("monster"), CONDITIONS.levelAtLeast(minLevel)),
+    CONDITIONS.and(CONDITIONS.cardType("stereotype"), CONDITIONS.levelAtLeast(minLevel)),
 
   /**
-   * Match archetype monsters
-   * @example CONDITIONS.archetypeMonster("infernal_dragons")
+   * Match archetype stereotypes
+   * @example CONDITIONS.archetypeMonster("dropout")
    */
   archetypeMonster: (archetype: ArchetypeId): JsonCondition =>
-    CONDITIONS.and(CONDITIONS.cardType("monster"), CONDITIONS.archetype(archetype)),
+    CONDITIONS.and(CONDITIONS.cardType("stereotype"), CONDITIONS.archetype(archetype)),
 
   /**
    * Match spell/trap cards
@@ -369,7 +369,7 @@ export const COSTS = {
   /**
    * Discard card(s) from hand
    * @example COSTS.discard(1) // Discard 1 card
-   * @example COSTS.discard(2, CONDITIONS.cardType("monster")) // Discard 2 monsters
+   * @example COSTS.discard(2, CONDITIONS.cardType("stereotype")) // Discard 2 stereotypes
    */
   discard: (count: number, condition?: JsonCondition): JsonCost => ({
     type: "discard",
@@ -388,9 +388,9 @@ export const COSTS = {
   }),
 
   /**
-   * Tribute monster(s) from board
-   * @example COSTS.tribute(1) // Tribute 1 monster
-   * @example COSTS.tribute(2, CONDITIONS.archetype("infernal_dragons"))
+   * Tribute stereotype(s) from board
+   * @example COSTS.tribute(1) // Tribute 1 stereotype
+   * @example COSTS.tribute(2, CONDITIONS.archetype("dropout"))
    */
   tribute: (count: number, condition?: JsonCondition): JsonCost => ({
     type: "tribute",
@@ -463,7 +463,7 @@ export const TARGETS = {
 
   /**
    * Random targets matching condition
-   * @example TARGETS.random(1, CONDITIONS.cardType("monster"))
+   * @example TARGETS.random(1, CONDITIONS.cardType("stereotype"))
    */
   random: (count: number, condition?: JsonCondition, location?: ZoneLocation): JsonTarget => ({
     count,
@@ -474,7 +474,7 @@ export const TARGETS = {
 
   /**
    * Target with min/max range
-   * @example TARGETS.range(1, 3, CONDITIONS.cardType("monster"))
+   * @example TARGETS.range(1, 3, CONDITIONS.cardType("stereotype"))
    */
   range: (
     min: number,
@@ -491,7 +491,7 @@ export const TARGETS = {
 
   /**
    * Target opponent's cards
-   * @example TARGETS.opponent(1, CONDITIONS.cardType("monster"))
+   * @example TARGETS.opponent(1, CONDITIONS.cardType("stereotype"))
    */
   opponent: (count: number, condition?: JsonCondition): JsonTarget => ({
     count,
@@ -503,7 +503,7 @@ export const TARGETS = {
 
   /**
    * Target your own cards
-   * @example TARGETS.self(1, CONDITIONS.cardType("monster"))
+   * @example TARGETS.self(1, CONDITIONS.cardType("stereotype"))
    */
   self: (count: number, condition?: JsonCondition, location?: ZoneLocation): JsonTarget => ({
     count,
@@ -585,7 +585,7 @@ export const EFFECT_TEMPLATES = {
 
   /**
    * Destroy all cards matching condition
-   * @example EFFECT_TEMPLATES.destroyAll(CONDITIONS.cardType("monster"))
+   * @example EFFECT_TEMPLATES.destroyAll(CONDITIONS.cardType("stereotype"))
    */
   destroyAll: (condition?: JsonCondition, trigger: TriggerCondition = "manual"): JsonEffect => ({
     type: "destroy",
@@ -594,7 +594,7 @@ export const EFFECT_TEMPLATES = {
   }),
 
   /**
-   * Destroy all opponent's monsters (Raigeki-style)
+   * Destroy all opponent's stereotypes
    */
   destroyAllOpponentMonsters: (trigger: TriggerCondition = "manual"): JsonEffect => ({
     type: "destroy",
@@ -603,12 +603,12 @@ export const EFFECT_TEMPLATES = {
   }),
 
   /**
-   * Destroy all monsters (Dark Hole-style)
+   * Destroy all stereotypes
    */
   destroyAllMonsters: (trigger: TriggerCondition = "manual"): JsonEffect => ({
     type: "destroy",
     trigger,
-    target: TARGETS.all(CONDITIONS.cardType("monster"), "board"),
+    target: TARGETS.all(CONDITIONS.cardType("stereotype"), "board"),
   }),
 
   /**
@@ -747,7 +747,7 @@ export const EFFECT_TEMPLATES = {
 
   /**
    * Continuous ATK boost for archetype
-   * @example EFFECT_TEMPLATES.archetypeATKBoost("infernal_dragons", 300)
+   * @example EFFECT_TEMPLATES.archetypeATKBoost("dropout", 300)
    */
   archetypeATKBoost: (archetype: ArchetypeId, amount: number): JsonEffect => ({
     type: "modifyATK",
@@ -761,7 +761,7 @@ export const EFFECT_TEMPLATES = {
 
   /**
    * Field spell style ATK boost
-   * @example EFFECT_TEMPLATES.fieldBoostATK(500, CONDITIONS.archetype("infernal_dragons"))
+   * @example EFFECT_TEMPLATES.fieldBoostATK(500, CONDITIONS.archetype("dropout"))
    */
   fieldBoostATK: (amount: number, condition: JsonCondition): JsonEffect => ({
     type: "modifyATK",
@@ -779,7 +779,7 @@ export const EFFECT_TEMPLATES = {
 
   /**
    * Search deck for card matching condition
-   * @example EFFECT_TEMPLATES.searchDeck(CONDITIONS.archetypeMonster("infernal_dragons"))
+   * @example EFFECT_TEMPLATES.searchDeck(CONDITIONS.archetypeMonster("dropout"))
    */
   searchDeck: (condition: JsonCondition, trigger: TriggerCondition = "manual"): JsonEffect => ({
     type: "search",
@@ -791,7 +791,7 @@ export const EFFECT_TEMPLATES = {
 
   /**
    * Search with cost
-   * @example EFFECT_TEMPLATES.searchWithCost(CONDITIONS.cardType("monster"), COSTS.discard(1))
+   * @example EFFECT_TEMPLATES.searchWithCost(CONDITIONS.cardType("stereotype"), COSTS.discard(1))
    */
   searchWithCost: (
     condition: JsonCondition,
@@ -853,7 +853,7 @@ export const EFFECT_TEMPLATES = {
 
   /**
    * Special summon from graveyard
-   * @example EFFECT_TEMPLATES.summonFromGraveyard(CONDITIONS.cardType("monster"))
+   * @example EFFECT_TEMPLATES.summonFromGraveyard(CONDITIONS.cardType("stereotype"))
    */
   summonFromGraveyard: (
     condition?: JsonCondition,
@@ -900,7 +900,7 @@ export const EFFECT_TEMPLATES = {
 
   /**
    * Send card to graveyard
-   * @example EFFECT_TEMPLATES.toGraveyard(TARGETS.opponent(1, CONDITIONS.cardType("monster")))
+   * @example EFFECT_TEMPLATES.toGraveyard(TARGETS.opponent(1, CONDITIONS.cardType("stereotype")))
    */
   toGraveyard: (target: JsonTarget, trigger: TriggerCondition = "manual"): JsonEffect => ({
     type: "toGraveyard",
@@ -925,7 +925,7 @@ export const EFFECT_TEMPLATES = {
 
   /**
    * Banish from graveyard
-   * @example EFFECT_TEMPLATES.banishFromGraveyard(1, CONDITIONS.cardType("monster"))
+   * @example EFFECT_TEMPLATES.banishFromGraveyard(1, CONDITIONS.cardType("stereotype"))
    */
   banishFromGraveyard: (
     count: number,
@@ -1015,7 +1015,7 @@ export const EFFECT_TEMPLATES = {
 
   /**
    * Negate effect only (not activation)
-   * @example EFFECT_TEMPLATES.negateEffect(CONDITIONS.cardType("monster"))
+   * @example EFFECT_TEMPLATES.negateEffect(CONDITIONS.cardType("stereotype"))
    */
   negateEffect: (condition?: JsonCondition, trigger: TriggerCondition = "manual"): JsonEffect => ({
     type: "negate",
@@ -1116,7 +1116,7 @@ export const EFFECT_TEMPLATES = {
 
   /**
    * Hard once per turn (by card name)
-   * @example EFFECT_TEMPLATES.hardOPT(EFFECT_TEMPLATES.searchDeck(CONDITIONS.cardType("monster")))
+   * @example EFFECT_TEMPLATES.hardOPT(EFFECT_TEMPLATES.searchDeck(CONDITIONS.cardType("stereotype")))
    */
   hardOPT: (effect: JsonEffect): JsonEffect => ({
     ...effect,

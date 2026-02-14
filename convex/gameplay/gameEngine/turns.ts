@@ -63,10 +63,10 @@ export const endTurn = mutation({
       throw createError(ErrorCode.GAME_NOT_YOUR_TURN);
     }
 
-    // 5. Validate in Main Phase 2 or End Phase (can end turn from either)
-    if (gameState.currentPhase !== "main2" && gameState.currentPhase !== "end") {
+    // 5. Validate in Main Phase or End Phase (can end turn from either)
+    if (gameState.currentPhase !== "main" && gameState.currentPhase !== "end") {
       throw createError(ErrorCode.GAME_INVALID_PHASE, {
-        reason: "Must be in Main Phase 2 or End Phase to end turn",
+        reason: "Must be in Main Phase or End Phase to end turn",
       });
     }
 
@@ -82,8 +82,8 @@ export const endTurn = mutation({
       });
     }
 
-    // If still in Main Phase 2, advance to End Phase first
-    if (gameState.currentPhase === "main2") {
+    // If still in Main Phase, advance to End Phase first
+    if (gameState.currentPhase === "main") {
       await ctx.db.patch(gameState._id, {
         currentPhase: "end",
       });
@@ -329,10 +329,9 @@ export const endTurn = mutation({
       console.log(`Turn ${nextTurnNumber}: Skipping draw for first player's first turn`);
     }
 
-    // Auto-advance through Draw Phase → Standby → Main Phase 1
-    // Step 1: Enter Standby Phase (on_standby triggers would fire here)
+    // Auto-advance through Draw Phase → Main Phase
     await ctx.db.patch(refreshedGameState._id, {
-      currentPhase: "standby",
+      currentPhase: "main",
     });
 
     await recordEventHelper(ctx, {
@@ -342,29 +341,10 @@ export const endTurn = mutation({
       eventType: "phase_changed",
       playerId: nextPlayerId,
       playerUsername: nextPlayer?.username || "Unknown",
-      description: "Standby Phase",
+      description: `${nextPlayer?.username || "Unknown"} entered Main Phase`,
       metadata: {
         previousPhase: "draw",
-        newPhase: "standby",
-      },
-    });
-
-    // Step 2: Advance to Main Phase 1
-    await ctx.db.patch(refreshedGameState._id, {
-      currentPhase: "main1",
-    });
-
-    await recordEventHelper(ctx, {
-      lobbyId: args.lobbyId,
-      gameId: lobby.gameId ?? "",
-      turnNumber: nextTurnNumber,
-      eventType: "phase_changed",
-      playerId: nextPlayerId,
-      playerUsername: nextPlayer?.username || "Unknown",
-      description: `${nextPlayer?.username || "Unknown"} entered Main Phase 1`,
-      metadata: {
-        previousPhase: "standby",
-        newPhase: "main1",
+        newPhase: "main",
         cardDrawn: !shouldSkipDraw,
       },
     });
@@ -431,9 +411,9 @@ export const endTurnInternal = internalMutation({
       return { success: false, message: "User not found" };
     }
 
-    // 5. For story mode, allow ending from any main phase
+    // 5. For story mode, allow ending from main phase
     // Auto-advance to end phase if needed
-    if (gameState.currentPhase === "main1" || gameState.currentPhase === "main2") {
+    if (gameState.currentPhase === "main") {
       await ctx.db.patch(gameState._id, {
         currentPhase: "end",
       });
@@ -645,10 +625,9 @@ export const endTurnInternal = internalMutation({
       }
     }
 
-    // Auto-advance through Draw Phase → Standby → Main Phase 1
-    // Step 1: Enter Standby Phase (on_standby triggers would fire here)
+    // Auto-advance through Draw Phase → Main Phase
     await ctx.db.patch(refreshedGameState._id, {
-      currentPhase: "standby",
+      currentPhase: "main",
     });
 
     await recordEventHelper(ctx, {
@@ -658,29 +637,10 @@ export const endTurnInternal = internalMutation({
       eventType: "phase_changed",
       playerId: nextPlayerId,
       playerUsername: nextPlayer?.username || "AI Opponent",
-      description: "Standby Phase",
+      description: `${nextPlayer?.username || "AI Opponent"} entered Main Phase`,
       metadata: {
         previousPhase: "draw",
-        newPhase: "standby",
-      },
-    });
-
-    // Step 2: Advance to Main Phase 1
-    await ctx.db.patch(refreshedGameState._id, {
-      currentPhase: "main1",
-    });
-
-    await recordEventHelper(ctx, {
-      lobbyId: gameState.lobbyId,
-      gameId: args.gameId,
-      turnNumber: nextTurnNumber,
-      eventType: "phase_changed",
-      playerId: nextPlayerId,
-      playerUsername: nextPlayer?.username || "AI Opponent",
-      description: `${nextPlayer?.username || "AI Opponent"} entered Main Phase 1`,
-      metadata: {
-        previousPhase: "standby",
-        newPhase: "main1",
+        newPhase: "main",
         cardDrawn: !shouldSkipDraw,
       },
     });

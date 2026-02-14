@@ -25,10 +25,10 @@ import type {
   Rarity,
   Attribute,
   Archetype,
-  MonsterType,
   SpellType,
   TrapType,
   CardVariant,
+  ViceType,
 } from "./game";
 
 // =============================================================================
@@ -207,7 +207,7 @@ export interface GameLobby {
 // Game State Types
 // =============================================================================
 
-export type GamePhase = "draw" | "standby" | "main1" | "battle" | "main2" | "end" | "game_over";
+export type GamePhase = "draw" | "main" | "combat" | "breakdown_check" | "end" | "game_over";
 
 export type ZoneType =
   | "hand"
@@ -224,7 +224,7 @@ export interface CardInstance {
   instanceId: string;
   definitionId: Id<"cardDefinitions">;
   name: string;
-  cardType: "creature" | "spell" | "trap" | "equipment";
+  cardType: "stereotype" | "spell" | "trap" | "class";
   currentAttack?: number;
   currentDefense?: number;
   position?: "attack" | "defense" | "facedown";
@@ -291,9 +291,11 @@ export interface CardDefinition {
   // Industry-standard TCG fields
   level?: number;
   attribute?: Attribute;
-  monsterType?: MonsterType;
   spellType?: SpellType;
   trapType?: TrapType;
+  viceType?: ViceType;
+  breakdownEffect?: unknown;
+  breakdownFlavorText?: string;
   // Ability (JSON format)
   ability?: JsonAbility;
   flavorText?: string;

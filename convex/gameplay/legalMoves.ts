@@ -146,17 +146,17 @@ export const getLegalMoves = query({
     // SUMMON ACTIONS
     // ============================================================================
 
-    // Can summon during Main Phase 1 or Main Phase 2
-    if ((currentPhase === "main1" || currentPhase === "main2") && !normalSummonedThisTurn) {
+    // Can summon during Main Phase
+    if (currentPhase === "main" && !normalSummonedThisTurn) {
       // Check if summoning is prevented
       const summonPreventionCheck = isActionPrevented(gameState, "summon_monster", userId);
       if (!summonPreventionCheck.prevented) {
-        // Check monster zone space (max 5)
-        if (myBoard.length < 5) {
+        // Check monster zone space (max 3)
+        if (myBoard.length < 3) {
           // Check each monster card in hand
           for (const cardId of myHand) {
             const card = await ctx.db.get(cardId);
-            if (!card || card.cardType !== "creature") continue;
+            if (!card || card.cardType !== "stereotype") continue;
 
             const level = card.level || 0;
             let requiresTributes = 0;
@@ -192,8 +192,8 @@ export const getLegalMoves = query({
     // ATTACK ACTIONS
     // ============================================================================
 
-    // Can attack during Battle Phase
-    if (currentPhase === "battle" || currentPhase === "battle_start") {
+    // Can attack during Combat Phase
+    if (currentPhase === "combat") {
       // Check if attacks are prevented
       const attackPreventionCheck = isActionPrevented(gameState, "declare_attack", userId);
       if (!attackPreventionCheck.prevented) {
@@ -255,8 +255,8 @@ export const getLegalMoves = query({
     // SET SPELL/TRAP ACTIONS
     // ============================================================================
 
-    // Can set during Main Phase 1 or Main Phase 2
-    if (currentPhase === "main1" || currentPhase === "main2") {
+    // Can set during Main Phase
+    if (currentPhase === "main") {
       // Check spell/trap zone space (max 5)
       if (mySpellTrapZone.length < 5) {
         // Check each spell/trap card in hand
@@ -279,13 +279,12 @@ export const getLegalMoves = query({
     // ACTIVATE SPELL ACTIONS
     // ============================================================================
 
-    // Normal spells: Main Phase 1 or Main Phase 2 only
-    // Quick-Play spells: Main Phase 1, Main Phase 2, Battle Phase, or opponent's turn
-    const isMainPhase = currentPhase === "main1" || currentPhase === "main2";
-    const isBattlePhase =
-      currentPhase === "battle" || currentPhase === "battle_start" || currentPhase === "battle_end";
+    // Normal spells: Main Phase only
+    // Quick-Play spells: Main Phase, Combat Phase, or opponent's turn
+    const isMainPhase = currentPhase === "main";
+    const isCombatPhase = currentPhase === "combat";
 
-    if (isMainPhase || isBattlePhase) {
+    if (isMainPhase || isCombatPhase) {
       for (const cardId of myHand) {
         const card = await ctx.db.get(cardId);
         if (!card || card.cardType !== "spell") continue;
@@ -293,8 +292,8 @@ export const getLegalMoves = query({
         const spellType = card.spellType || "normal";
         const isQuickPlay = spellType === "quick_play";
 
-        // During battle phase, only Quick-Play spells can be activated
-        if (isBattlePhase && !isQuickPlay) continue;
+        // During combat phase, only Quick-Play spells can be activated
+        if (isCombatPhase && !isQuickPlay) continue;
 
         if (spellType === "normal" || isQuickPlay) {
           legalMoves.canActivateSpell.push({
@@ -310,8 +309,8 @@ export const getLegalMoves = query({
     // CHANGE POSITION ACTIONS
     // ============================================================================
 
-    // Can change position during Main Phase 1 or Main Phase 2
-    if (currentPhase === "main1" || currentPhase === "main2") {
+    // Can change position during Main Phase
+    if (currentPhase === "main") {
       // Check each monster on board
       for (const boardCard of myBoard) {
         // Can only change position if:
@@ -339,8 +338,8 @@ export const getLegalMoves = query({
     // END TURN ACTION
     // ============================================================================
 
-    // Can end turn from Main Phase 2 or End Phase
-    if (currentPhase === "main2" || currentPhase === "end") {
+    // Can end turn from Main Phase or End Phase
+    if (currentPhase === "main" || currentPhase === "end") {
       legalMoves.canEndTurn = true;
     }
 

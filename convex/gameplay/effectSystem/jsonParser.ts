@@ -179,7 +179,7 @@ function evaluateSimpleCondition(condition: JsonCondition, context: ConditionCon
     const cardTypes = Array.isArray(condition.cardType) ? condition.cardType : [condition.cardType];
 
     const typeMap: Record<string, string> = {
-      monster: "creature",
+      monster: "stereotype",
       spell: "spell",
       trap: "trap",
       any: card.cardType,
@@ -441,7 +441,7 @@ function convertJsonCost(jsonCost: JsonCost): ParsedEffect["cost"] {
     return_to_deck: "discard",
   };
 
-  let targetType: "monster" | "spell" | "trap" | "any" | undefined;
+  let targetType: "stereotype" | "spell" | "trap" | "any" | undefined;
   if (jsonCost.condition?.cardType) {
     targetType = normalizeTargetType(jsonCost.condition.cardType);
   }
@@ -478,15 +478,15 @@ function convertZoneLocation(
  */
 function normalizeTargetType(
   cardType: string | string[] | undefined
-): "monster" | "spell" | "trap" | "any" {
+): "stereotype" | "spell" | "trap" | "any" {
   if (!cardType) return "any";
 
   const type = Array.isArray(cardType) ? cardType[0] : cardType;
   if (!type || type === "any") return "any";
 
-  const typeMap: Record<string, "monster" | "spell" | "trap" | "any"> = {
-    monster: "monster",
-    creature: "monster",
+  const typeMap: Record<string, "stereotype" | "spell" | "trap" | "any"> = {
+    monster: "stereotype",
+    stereotype: "stereotype",
     spell: "spell",
     trap: "trap",
   };

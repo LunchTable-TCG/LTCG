@@ -89,7 +89,7 @@ function createMockApiClient(overrides: Partial<LTCGApiClient> = {}): LTCGApiCli
 function createMockGameState(overrides: Partial<GameStateResponse> = {}): GameStateResponse {
   return {
     status: "in_progress",
-    phase: "main1",
+    phase: "main",
     turnNumber: 1,
     currentTurn: "host",
     isMyTurn: true,
@@ -400,7 +400,7 @@ describe("StateAggregator - Data Aggregation", () => {
           id: "decision-1",
           timestamp: Date.now(),
           turnNumber: 1,
-          phase: "main1",
+          phase: "main",
           action: "SUMMON_MONSTER",
           reasoning: "Establish board presence",
           parameters: { handIndex: 0 },
@@ -411,7 +411,7 @@ describe("StateAggregator - Data Aggregation", () => {
           id: "decision-2",
           timestamp: Date.now(),
           turnNumber: 1,
-          phase: "battle",
+          phase: "combat",
           action: "ATTACK",
           reasoning: "Deal damage",
           parameters: { attackerBoardIndex: 0 },
@@ -524,21 +524,21 @@ describe("StateAggregator - Data Aggregation", () => {
   describe("getGameState", () => {
     it("should transform game state into snapshot format", async () => {
       const gameState = createMockGameState({
-        phase: "battle",
+        phase: "combat",
         turnNumber: 3,
         isMyTurn: true,
         myLifePoints: 6000,
         opponentLifePoints: 4000,
         hand: [
-          { name: "Blue Dragon", type: "creature", cardType: "creature", handIndex: 0 },
+          { name: "Blue Dragon", type: "stereotype", cardType: "stereotype", handIndex: 0 },
           { name: "Magic Bolt", type: "spell", cardType: "spell", handIndex: 1 },
         ],
         myBoard: [
-          { name: "Red Warrior", cardType: "creature" },
+          { name: "Red Warrior", cardType: "stereotype" },
           { name: "Shield Wall", cardType: "spell" },
         ],
         opponentBoard: [
-          { name: "Dark Knight", cardType: "creature" },
+          { name: "Dark Knight", cardType: "stereotype" },
           { name: "Ring of Fire", cardType: "trap" },
         ],
         status: "in_progress",
@@ -549,7 +549,7 @@ describe("StateAggregator - Data Aggregation", () => {
       const snapshot = await aggregator.getGameState("test-agent", "game-456");
 
       expect(snapshot.gameId).toBe("game-456");
-      expect(snapshot.phase).toBe("battle");
+      expect(snapshot.phase).toBe("combat");
       expect(snapshot.turnNumber).toBe(3);
       expect(snapshot.isMyTurn).toBe(true);
       expect(snapshot.lifePoints.agent).toBe(6000);
@@ -586,10 +586,10 @@ describe("StateAggregator - transformGameState", () => {
   });
 
   describe("card type mapping", () => {
-    it("should map creature to monster", () => {
+    it("should map stereotype to monster", () => {
       const privateMethods = getPrivateMembers(aggregator);
       const gameState = createMockGameState({
-        hand: [{ name: "Test Monster", type: "creature", cardType: "creature", handIndex: 0 }],
+        hand: [{ name: "Test Stereotype", type: "stereotype", cardType: "stereotype", handIndex: 0 }],
       } as Partial<GameStateResponse>);
 
       const snapshot = privateMethods.transformGameState(gameState, "test-game") as {
@@ -625,10 +625,10 @@ describe("StateAggregator - transformGameState", () => {
       expect(snapshot.hand.cards[0].type).toBe("trap");
     });
 
-    it("should map equipment to spell", () => {
+    it("should map class to spell", () => {
       const privateMethods = getPrivateMembers(aggregator);
       const gameState = createMockGameState({
-        hand: [{ name: "Test Equipment", type: "equipment", cardType: "equipment", handIndex: 0 }],
+        hand: [{ name: "Test Class", type: "class", cardType: "class", handIndex: 0 }],
       } as Partial<GameStateResponse>);
 
       const snapshot = privateMethods.transformGameState(gameState, "test-game") as {
@@ -644,13 +644,13 @@ describe("StateAggregator - transformGameState", () => {
       const privateMethods = getPrivateMembers(aggregator);
       const gameState = createMockGameState({
         myBoard: [
-          { cardType: "creature" },
-          { cardType: "creature" },
+          { cardType: "stereotype" },
+          { cardType: "stereotype" },
           { cardType: "spell" },
           { cardType: "trap" },
-          { cardType: "equipment" },
+          { cardType: "class" },
         ],
-        opponentBoard: [{ cardType: "creature" }, { cardType: "spell" }],
+        opponentBoard: [{ cardType: "stereotype" }, { cardType: "spell" }],
       } as Partial<GameStateResponse>);
 
       const snapshot = privateMethods.transformGameState(gameState, "test-game") as {
@@ -663,7 +663,7 @@ describe("StateAggregator - transformGameState", () => {
       };
 
       expect(snapshot.board.agentMonsters).toBe(2);
-      expect(snapshot.board.agentSpellTraps).toBe(3); // spell + trap + equipment
+      expect(snapshot.board.agentSpellTraps).toBe(3); // spell + trap + class
       expect(snapshot.board.opponentMonsters).toBe(1);
       expect(snapshot.board.opponentSpellTraps).toBe(1);
     });
@@ -960,7 +960,7 @@ describe("StateAggregator - Edge Cases", () => {
   it("should handle cards with missing names", () => {
     const privateMethods = getPrivateMembers(aggregator);
     const gameState = createMockGameState({
-      hand: [{ cardType: "creature", handIndex: 0 }], // No name property
+      hand: [{ cardType: "stereotype", handIndex: 0 }], // No name property
     } as Partial<GameStateResponse>);
 
     const snapshot = privateMethods.transformGameState(gameState, "test-game") as {

@@ -111,7 +111,7 @@ function categorizeCardThreat(card: CardDefinition): CategorizedCard {
   }
 
   // High ATK monsters are medium threats
-  if (card.type === "creature" && (card.atk || 0) >= 2500) {
+  if (card.type === "stereotype" && (card.atk || 0) >= 2500) {
     return {
       ...card,
       threatLevel: "medium",

@@ -11,7 +11,6 @@
 
 import { type IAgentRuntime, Service, logger } from "@elizaos/core";
 import { LTCGApiClient } from "../client/LTCGApiClient";
-import { LTCG_PRODUCTION_CONFIG } from "../constants";
 import { LTCGEventType, emitLTCGEvent } from "../events/types";
 import type { MatchmakingEvent, MatchmakingStatus } from "../frontend/types/panel";
 import type { GameStateResponse } from "../types/api";
@@ -135,8 +134,6 @@ export class LTCGPollingService extends Service {
   private currentGameId: string | null = null;
   /** Story stage ID for the current game (set via startPollingGame metadata) */
   private currentStageId: string | null = null;
-  /** Active streaming session ID (set via startPollingGame metadata) */
-  private currentStreamingSessionId: string | null = null;
   private lastKnownGameState: GameStateResponse | null = null;
   private lastSnapshot: GameStateSnapshot | null = null;
   private intervalMs: number;
@@ -343,7 +340,7 @@ export class LTCGPollingService extends Service {
   }
 
   async stop(): Promise<void> {
-    // Cleanup active game and stream before stopping
+    // Cleanup active game before stopping
     await this.cleanupActiveResources();
 
     this.storyContinuationInFlight = false;
@@ -358,9 +355,8 @@ export class LTCGPollingService extends Service {
   }
 
   /**
-   * Cleanup active game and streaming resources on shutdown.
-   * Surrenders any active game and ends any active streaming session
-   * to prevent stale processes from blocking future sessions.
+   * Cleanup active game resources on shutdown.
+   * Surrenders any active game to prevent stale processes.
    */
   private async cleanupActiveResources(): Promise<void> {
     if (!this.client) return;
@@ -376,34 +372,6 @@ export class LTCGPollingService extends Service {
         logger.warn({ error, gameId: this.currentGameId }, "Failed to surrender game on shutdown (may have already ended)");
       }
     }
-
-    // End active streaming session via app API
-    const appUrl = process.env.LTCG_APP_URL;
-    const apiKey = process.env.LTCG_API_KEY;
-    const agentId = process.env.LTCG_AGENT_ID;
-
-    if (appUrl && agentId) {
-      try {
-        logger.info("Ending streaming session on shutdown via app API");
-        await fetch(`${appUrl}/api/streaming/stop`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            ...(apiKey
-              ? {
-                  Authorization: `Bearer ${apiKey}`,
-                  "x-api-key": apiKey,
-                }
-              : {}),
-          },
-          body: JSON.stringify({ agentId, reason: "agent_shutdown" }),
-        });
-        logger.info("Streaming stop request sent successfully");
-      } catch (error) {
-        // Non-fatal: streaming may not be active
-        logger.warn({ error }, "Failed to stop streaming on shutdown (may not be active)");
-      }
-    }
   }
 
   // ============================================================================
@@ -413,7 +381,7 @@ export class LTCGPollingService extends Service {
   /**
    * Start polling for a specific game
    */
-  startPollingGame(gameId: string, meta?: { stageId?: string; streamingSessionId?: string }): void {
+  startPollingGame(gameId: string, meta?: { stageId?: string }): void {
     if (!this.client) {
       logger.warn("Cannot start polling - API client not initialized");
       return;
@@ -429,7 +397,6 @@ export class LTCGPollingService extends Service {
 
     this.currentGameId = gameId;
     this.currentStageId = meta?.stageId ?? null;
-    this.currentStreamingSessionId = meta?.streamingSessionId ?? null;
     this.lastSnapshot = null;
     this.isPolling = true;
 
@@ -480,7 +447,6 @@ export class LTCGPollingService extends Service {
     this.isPolling = false;
     this.currentGameId = null;
     this.currentStageId = null;
-    this.currentStreamingSessionId = null;
     this.lastSnapshot = null;
     this.lastKnownGameState = null;
 
@@ -497,7 +463,7 @@ export class LTCGPollingService extends Service {
   }
 
   /**
-   * Handle game end: complete story stage and update streaming session with match result.
+   * Handle game end: complete story stage.
    * Called before stopPolling clears state.
    */
   private async handleGameEnd(gameState: GameStateResponse | null): Promise<void> {
@@ -531,48 +497,6 @@ export class LTCGPollingService extends Service {
       }
     }
 
-    // 2. Update streaming session with match result (shows win/loss overlay)
-    if (this.currentStreamingSessionId && this.client) {
-      try {
-        const appBaseUrl = (process.env.LTCG_APP_URL || LTCG_PRODUCTION_CONFIG.APP_URL).replace(/\/$/, "");
-        const internalAuth = process.env.INTERNAL_API_SECRET?.trim();
-        if (internalAuth) {
-          const response = await fetch(`${appBaseUrl}/api/streaming/match-result`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json", "x-api-key": internalAuth },
-            body: JSON.stringify({
-              sessionId: this.currentStreamingSessionId,
-              lastMatchEndedAt: Date.now(),
-              lastMatchResult: result,
-              lastMatchSummary: agentWon ? "Match over: victory secured." : "Match over: tough loss. Reviewing lines.",
-              clearCurrentLobby: true,
-            }),
-          });
-          if (!response.ok) {
-            const text = await response.text().catch(() => `status ${response.status}`);
-            throw new Error(`match-result API failed (${response.status}): ${text}`);
-          }
-          const cleared = await this.ensureLobbyLinkCleared(
-            this.currentStreamingSessionId,
-            appBaseUrl,
-            internalAuth
-          );
-          if (!cleared) {
-            logger.warn(
-              { sessionId: this.currentStreamingSessionId },
-              "Match result updated but lobby linkage may still be present"
-            );
-          }
-          logger.info(
-            { sessionId: this.currentStreamingSessionId, result, clearedLobbyLink: cleared },
-            "Updated streaming session with match result"
-          );
-        }
-      } catch (error) {
-        const msg = error instanceof Error ? error.message : String(error);
-        logger.warn({ error: msg }, "Failed to update streaming session with match result");
-      }
-    }
   }
 
   private shouldAutoContinueStoryGame(): boolean {
@@ -581,7 +505,6 @@ export class LTCGPollingService extends Service {
 
   private async continueStoryModeAfterGameEnd(params: {
     reason: "completed" | "game_not_found";
-    previousStreamingSessionId: string | null;
   }): Promise<void> {
     if (!this.client) {
       return;
@@ -617,14 +540,8 @@ export class LTCGPollingService extends Service {
         return;
       }
 
-      const linkedStreamingSessionId = await this.relinkStoryStreamToLobby(
-        nextStoryGame.lobbyId,
-        params.previousStreamingSessionId
-      );
-
       this.startPollingGame(nextStoryGame.gameId, {
         stageId: nextStoryGame.stageId,
-        streamingSessionId: linkedStreamingSessionId ?? undefined,
       });
 
       logger.info(
@@ -644,207 +561,6 @@ export class LTCGPollingService extends Service {
       );
     } finally {
       this.storyContinuationInFlight = false;
-    }
-  }
-
-  private async relinkStoryStreamToLobby(
-    lobbyId: string,
-    previousStreamingSessionId: string | null
-  ): Promise<string | null> {
-    if (!previousStreamingSessionId) {
-      return null;
-    }
-
-    const apiKey = firstNonEmpty(process.env.LTCG_API_KEY);
-    const agentId = firstNonEmpty(process.env.LTCG_AGENT_ID);
-    const configuredAppUrl =
-      firstNonEmpty(process.env.LTCG_APP_URL, process.env.NEXT_PUBLIC_APP_URL) ??
-      LTCG_PRODUCTION_CONFIG.APP_URL;
-    const appBaseUrl = configuredAppUrl.includes(".convex.site")
-      ? LTCG_PRODUCTION_CONFIG.APP_URL
-      : configuredAppUrl.replace(/\/+$/, "");
-
-    if (!apiKey || !agentId) {
-      return previousStreamingSessionId;
-    }
-
-    const headers: Record<string, string> = {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-      "x-api-key": apiKey,
-    };
-
-    const platform = firstNonEmpty(process.env.STREAMING_PLATFORM);
-    const body: Record<string, unknown> = {
-      agentId,
-      streamType: "agent",
-      lobbyId,
-      useStoredCredentials: true,
-    };
-    if (platform) {
-      body.platform = platform;
-    }
-
-    try {
-      const response = await fetch(`${appBaseUrl}/api/streaming/start`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify(body),
-      });
-
-      if (!response.ok) {
-        const text = await response.text().catch(() => "");
-        logger.warn(
-          {
-            sessionId: previousStreamingSessionId,
-            lobbyId,
-            status: response.status,
-            error: text,
-          },
-          "Failed to relink stream to next story lobby; preserving previous session reference"
-        );
-        return previousStreamingSessionId;
-      }
-
-      const payload = await response.json().catch(() => null);
-      const linkedSessionId =
-        payload && typeof payload === "object" && typeof payload.sessionId === "string"
-          ? payload.sessionId
-          : null;
-
-      return linkedSessionId ?? previousStreamingSessionId;
-    } catch (error) {
-      logger.warn(
-        {
-          sessionId: previousStreamingSessionId,
-          lobbyId,
-          error: error instanceof Error ? error.message : String(error),
-        },
-        "Stream relink request failed while continuing story mode"
-      );
-      return previousStreamingSessionId;
-    }
-  }
-
-  private async ensureLobbyLinkCleared(
-    sessionId: string,
-    appBaseUrl: string,
-    internalAuth: string
-  ): Promise<boolean> {
-    const statusCheck = await this.fetchStreamingStatus(appBaseUrl, sessionId);
-    if (statusCheck && !statusCheck.currentLobbyId) {
-      return true;
-    }
-
-    const clearedViaConvex = await this.clearLobbyLinkDirectlyInConvex(sessionId, internalAuth);
-    if (!clearedViaConvex) {
-      return false;
-    }
-
-    const afterDirectClear = await this.fetchStreamingStatus(appBaseUrl, sessionId);
-    return afterDirectClear ? !afterDirectClear.currentLobbyId : true;
-  }
-
-  private async fetchStreamingStatus(
-    appBaseUrl: string,
-    sessionId: string
-  ): Promise<{ currentLobbyId?: unknown } | null> {
-    try {
-      const response = await fetch(
-        `${appBaseUrl}/api/streaming/status?sessionId=${encodeURIComponent(sessionId)}`
-      );
-      if (!response.ok) {
-        return null;
-      }
-      const body = await response.json();
-      if (!body || typeof body !== "object") {
-        return null;
-      }
-      return body as { currentLobbyId?: unknown };
-    } catch {
-      return null;
-    }
-  }
-
-  private async clearLobbyLinkDirectlyInConvex(
-    sessionId: string,
-    internalAuth: string
-  ): Promise<boolean> {
-    const convexBaseUrl = firstNonEmpty(
-      process.env.LTCG_CONVEX_URL,
-      process.env.NEXT_PUBLIC_CONVEX_URL,
-      process.env.CONVEX_URL
-    );
-    if (!convexBaseUrl) {
-      return false;
-    }
-
-    const convexMutationUrl = `${convexBaseUrl.replace(/\/+$/, "")}/api/mutation`;
-
-    const runMutation = async (path: string, args: Record<string, unknown>) => {
-      const response = await fetch(convexMutationUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ path, args }),
-      });
-      const text = await response.text().catch(() => "");
-      let parsed: unknown = null;
-      try {
-        parsed = text ? JSON.parse(text) : null;
-      } catch {
-        parsed = text;
-      }
-      const hasConvexError =
-        parsed &&
-        typeof parsed === "object" &&
-        ((parsed as { status?: string }).status === "error" ||
-          typeof (parsed as { errorMessage?: unknown }).errorMessage === "string");
-      return {
-        ok: response.ok && !hasConvexError,
-        status: response.status,
-        body: parsed,
-      };
-    };
-
-    try {
-      const clearLobbyResult = await runMutation("streaming/sessions:clearLobbyLink", {
-        sessionId,
-        internalAuth,
-      });
-      if (clearLobbyResult.ok) {
-        return true;
-      }
-
-      const legacyFallbackResult = await runMutation("streaming/sessions:updateSession", {
-        sessionId,
-        internalAuth,
-        updates: {
-          currentLobbyId: "",
-        },
-      });
-      if (!legacyFallbackResult.ok) {
-        logger.warn(
-          {
-            sessionId,
-            primaryStatus: clearLobbyResult.status,
-            primaryBody: clearLobbyResult.body,
-            fallbackStatus: legacyFallbackResult.status,
-            fallbackBody: legacyFallbackResult.body,
-          },
-          "Direct Convex lobby clear mutation failed (primary + fallback)"
-        );
-        return false;
-      }
-
-      return true;
-    } catch (error) {
-      logger.warn(
-        { sessionId, error: error instanceof Error ? error.message : String(error) },
-        "Direct Convex clearLobbyLink mutation errored"
-      );
-      return false;
     }
   }
 
@@ -1387,7 +1103,6 @@ export class LTCGPollingService extends Service {
 
     if (gameNotFound) {
       const shouldContinueStory = this.shouldAutoContinueStoryGame();
-      const previousStreamingSessionId = this.currentStreamingSessionId;
       logger.info({ gameId }, "Game no longer exists, stopping polling and clearing active game");
       // Use last known game state for win detection (LP values)
       await this.handleGameEnd(this.lastKnownGameState);
@@ -1395,7 +1110,6 @@ export class LTCGPollingService extends Service {
       if (shouldContinueStory) {
         await this.continueStoryModeAfterGameEnd({
           reason: "game_not_found",
-          previousStreamingSessionId,
         });
       }
       return;
@@ -1430,7 +1144,6 @@ export class LTCGPollingService extends Service {
     // Check if game ended
     if (gameState.status === "completed") {
       const shouldContinueStory = this.shouldAutoContinueStoryGame();
-      const previousStreamingSessionId = this.currentStreamingSessionId;
       logger.info(
         { gameId: this.currentGameId, status: gameState.status },
         "Game ended, stopping polling"
@@ -1440,7 +1153,6 @@ export class LTCGPollingService extends Service {
       if (shouldContinueStory) {
         await this.continueStoryModeAfterGameEnd({
           reason: "completed",
-          previousStreamingSessionId,
         });
       }
     }

@@ -82,7 +82,7 @@ describe("LTCG Providers", () => {
         lobbyId: "lobby-123",
         status: "active",
         currentTurn: "host",
-        phase: "main1",
+        phase: "main",
         turnNumber: 3,
         currentTurnPlayer: "user-123",
         isMyTurn: true,
@@ -97,7 +97,7 @@ describe("LTCG Providers", () => {
           {
             _id: "card-1",
             name: "Murky Whale",
-            cardType: "creature",
+            cardType: "stereotype",
             attack: 2100,
             defense: 1500,
             currentAttack: 2100,
@@ -109,7 +109,7 @@ describe("LTCG Providers", () => {
           {
             _id: "card-2",
             name: "Ember Wyrmling",
-            cardType: "creature",
+            cardType: "stereotype",
             attack: 1200,
             defense: 800,
             currentAttack: 1200,
@@ -131,7 +131,7 @@ describe("LTCG Providers", () => {
           {
             _id: "card-6",
             name: "Infernal God Dragon",
-            cardType: "creature",
+            cardType: "stereotype",
             attack: 4000,
             defense: 3500,
             currentAttack: 4000,
@@ -148,7 +148,7 @@ describe("LTCG Providers", () => {
             name: "Tidal Surge",
             cardType: "spell",
             cost: 2,
-            description: "Destroy all opponent creatures",
+            description: "Destroy all opponent stereotypes",
             abilities: [],
           },
         ],
@@ -161,7 +161,7 @@ describe("LTCG Providers", () => {
 
       expect(result).toBeDefined();
       expect(result.text).toContain("Turn 3");
-      expect(result.text).toContain("Main Phase 1"); // Formatted phase name
+      expect(result.text).toContain("Main Phase"); // Formatted phase name
       expect(result.text).toContain("YOUR TURN");
       expect(result.text).toContain("7000"); // Life points
       expect(result.text).toContain("6500"); // Opponent LP
@@ -203,7 +203,7 @@ describe("LTCG Providers", () => {
         lobbyId: "lobby-123",
         status: "active",
         currentTurn: "host",
-        phase: "main1",
+        phase: "main",
         turnNumber: 3,
         currentTurnPlayer: "user-123",
         isMyTurn: true,
@@ -221,7 +221,7 @@ describe("LTCG Providers", () => {
             handIndex: 0,
             cardId: "card-1",
             name: "Infernal God Dragon",
-            cardType: "creature",
+            cardType: "stereotype",
             cost: 10,
             attack: 4000,
             defense: 3500,
@@ -233,16 +233,16 @@ describe("LTCG Providers", () => {
             handIndex: 1,
             cardId: "card-2",
             name: "Murky Whale",
-            cardType: "creature",
+            cardType: "stereotype",
             cost: 4,
             attack: 2100,
             defense: 1500,
             archetype: "abyssal_depths",
-            description: "A massive creature from the depths.",
+            description: "A massive stereotype from the depths.",
             abilities: [
               {
                 name: "Deep Dive",
-                description: "Can attack directly if opponent has no water creatures",
+                description: "Can attack directly if opponent has no water stereotypes",
               },
             ],
           },
@@ -268,7 +268,7 @@ describe("LTCG Providers", () => {
             cardType: "spell",
             cost: 2,
             archetype: "abyssal_depths",
-            description: "Destroy all creatures your opponent controls.",
+            description: "Destroy all stereotypes your opponent controls.",
             abilities: [],
           },
           {
@@ -278,7 +278,7 @@ describe("LTCG Providers", () => {
             cardType: "trap",
             cost: 1,
             archetype: "infernal_dragons",
-            description: "When an opponent's creature attacks: Destroy the attacking creature.",
+            description: "When an opponent's stereotype attacks: Destroy the attacking stereotype.",
             abilities: [],
           },
         ],
@@ -316,7 +316,7 @@ describe("LTCG Providers", () => {
         lobbyId: "lobby-123",
         status: "active",
         currentTurn: "host",
-        phase: "main1",
+        phase: "main",
         turnNumber: 3,
         currentTurnPlayer: "user-123",
         isMyTurn: true,
@@ -331,7 +331,7 @@ describe("LTCG Providers", () => {
           {
             _id: "card-1",
             name: "Murky Whale",
-            cardType: "creature",
+            cardType: "stereotype",
             attack: 2100,
             defense: 1500,
             currentAttack: 2100,
@@ -343,7 +343,7 @@ describe("LTCG Providers", () => {
           {
             _id: "card-2",
             name: "Ember Wyrmling",
-            cardType: "creature",
+            cardType: "stereotype",
             attack: 1200,
             defense: 800,
             currentAttack: 1200,
@@ -357,7 +357,7 @@ describe("LTCG Providers", () => {
           {
             _id: "card-4",
             name: "Infernal God Dragon",
-            cardType: "creature",
+            cardType: "stereotype",
             attack: 4000,
             defense: 3500,
             currentAttack: 4000,
@@ -369,7 +369,7 @@ describe("LTCG Providers", () => {
           {
             _id: "card-5",
             name: "Flame Whelp",
-            cardType: "creature",
+            cardType: "stereotype",
             attack: 600,
             defense: 400,
             currentAttack: 600,
@@ -409,7 +409,7 @@ describe("LTCG Providers", () => {
         lobbyId: "lobby-123",
         status: "active",
         currentTurn: "host",
-        phase: "main1",
+        phase: "main",
         turnNumber: 2,
         currentTurnPlayer: "user-123",
         isMyTurn: true,
@@ -427,12 +427,12 @@ describe("LTCG Providers", () => {
       };
 
       const mockAvailableActions: AvailableActionsResponse = {
-        phase: "main1",
+        phase: "main",
         turnNumber: 2,
         actions: [
           {
             action: "summon",
-            description: "Normal summon a creature from hand",
+            description: "Normal summon a stereotype from hand",
             parameters: {
               availableCards: [
                 { handIndex: 0, name: "Ember Wyrmling", cost: 3, atk: 1200 },
@@ -497,7 +497,7 @@ describe("LTCG Providers", () => {
         lobbyId: "lobby-123",
         status: "active",
         currentTurn: "host",
-        phase: "main1",
+        phase: "main",
         turnNumber: 3,
         currentTurnPlayer: "user-123",
         isMyTurn: true,
@@ -512,7 +512,7 @@ describe("LTCG Providers", () => {
           {
             _id: "card-1",
             name: "Ember Wyrmling",
-            cardType: "creature",
+            cardType: "stereotype",
             attack: 1200,
             defense: 800,
             currentAttack: 1200,
@@ -526,7 +526,7 @@ describe("LTCG Providers", () => {
           {
             _id: "card-2",
             name: "Infernal God Dragon",
-            cardType: "creature",
+            cardType: "stereotype",
             attack: 4000,
             defense: 3500,
             currentAttack: 4000,
@@ -538,7 +538,7 @@ describe("LTCG Providers", () => {
           {
             _id: "card-3",
             name: "Murky Whale",
-            cardType: "creature",
+            cardType: "stereotype",
             attack: 2100,
             defense: 1500,
             currentAttack: 2100,
@@ -555,7 +555,7 @@ describe("LTCG Providers", () => {
             name: "Ring of Fire",
             cardType: "trap",
             cost: 1,
-            description: "Destroy attacking creature",
+            description: "Destroy attacking stereotype",
             abilities: [],
           },
         ],

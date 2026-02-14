@@ -465,7 +465,7 @@ export function SummonModal({
                       <div className="text-left flex-1">
                         <div className="font-medium text-sm text-[#e8e0d5]">Set Face-Down</div>
                         <div className="text-[11px] text-[#a89f94]">
-                          {card.cardType === "creature"
+                          {card.cardType === "stereotype"
                             ? "Place in defense position (hidden)"
                             : "Save for later - hidden until you choose to activate"}
                         </div>

@@ -51,7 +51,6 @@ export const applyWebhookEvent = internalMutation({
     roomName: v.optional(v.string()),
     participantIdentity: v.optional(v.string()),
     trackSid: v.optional(v.string()),
-    egressId: v.optional(v.string()),
     payload: v.any(),
   },
   handler: async (ctx, args) => {
@@ -130,17 +129,6 @@ export const applyWebhookEvent = internalMutation({
         }
         break;
 
-      case "egress_started":
-        if (args.egressId) {
-          await handleEgressStarted(ctx, args.egressId, now);
-        }
-        break;
-
-      case "egress_ended":
-        if (args.egressId) {
-          await handleEgressEnded(ctx, args.egressId, args.payload, now);
-        }
-        break;
     }
 
     return { applied: true };
@@ -407,78 +395,3 @@ function coerceTrackSource(
   return "camera";
 }
 
-// ============================================================================
-// Egress Event Handlers
-// ============================================================================
-
-/**
- * Handle egress_started - transition streaming session from "pending" to "live"
- */
-async function handleEgressStarted(ctx: MutationCtx, egressId: string, now: number) {
-  // Look up streaming session by egressId
-  const session = await ctx.db
-    .query("streamingSessions")
-    .withIndex("by_egress", (q) => q.eq("egressId", egressId))
-    .first();
-
-  if (!session) {
-    console.log(`[Egress] No streaming session found for egressId: ${egressId}`);
-    return;
-  }
-
-  if (session.status === "live") {
-    console.log(`[Egress] Session ${session._id} already live, skipping`);
-    return;
-  }
-
-  console.log(`[Egress] Transitioning session ${session._id} from "${session.status}" to "live"`);
-  await ctx.db.patch(session._id, {
-    status: "live",
-    startedAt: now,
-  });
-}
-
-/**
- * Handle egress_ended - transition streaming session to "ended"
- */
-async function handleEgressEnded(
-  ctx: MutationCtx,
-  egressId: string,
-  payload: unknown,
-  now: number
-) {
-  const session = await ctx.db
-    .query("streamingSessions")
-    .withIndex("by_egress", (q) => q.eq("egressId", egressId))
-    .first();
-
-  if (!session) {
-    console.log(`[Egress] No streaming session found for egressId: ${egressId}`);
-    return;
-  }
-
-  if (session.status === "ended") {
-    console.log(`[Egress] Session ${session._id} already ended, skipping`);
-    return;
-  }
-
-  // Check if egress ended with an error
-  const egressInfo =
-    payload && typeof payload === "object"
-      ? (payload as Record<string, unknown>)["egressInfo"]
-      : undefined;
-  const error =
-    egressInfo && typeof egressInfo === "object"
-      ? (egressInfo as Record<string, unknown>)["error"]
-      : undefined;
-  const errorMessage = error && typeof error === "string" ? error : undefined;
-
-  console.log(
-    `[Egress] Ending session ${session._id}${errorMessage ? ` (error: ${errorMessage})` : ""}`
-  );
-  await ctx.db.patch(session._id, {
-    status: errorMessage ? "error" : "ended",
-    endedAt: now,
-    ...(errorMessage ? { errorMessage } : {}),
-  });
-}

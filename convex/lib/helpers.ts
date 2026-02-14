@@ -81,16 +81,16 @@ import { GAME_CONFIG } from "@ltcg/core";
 import { Attribute } from "./types";
 
 /**
- * Map archetype name to element for frontend compatibility
+ * Map archetype name to attribute color for frontend compatibility
  *
- * Converts both long-form archetype names (infernal_dragons) and
- * short-form element names (fire) to standardized element types.
+ * Converts archetype names (dropout, prep, geek, etc.) to their
+ * corresponding attribute colors (red, blue, yellow, etc.).
  *
- * @param archetype - Archetype identifier (e.g., "infernal_dragons", "fire")
- * @returns Element type for frontend display
+ * @param archetype - Archetype identifier (e.g., "dropout", "prep", "geek")
+ * @returns Attribute color for frontend display
  */
 export function archetypeToElement(archetype: string): Attribute {
-  return (GAME_CONFIG.ARCHETYPE_TO_ATTRIBUTE[archetype] as Attribute) || "neutral";
+  return (GAME_CONFIG.ARCHETYPE_TO_ATTRIBUTE[archetype] as Attribute) || "white";
 }
 
 /**
@@ -166,11 +166,11 @@ export function weightedRandomRarity(weights?: RarityWeights): Rarity {
  *
  * @param ctx - Query or mutation context
  * @param rarity - Card rarity to filter by
- * @param archetype - Optional archetype filter (e.g., "warrior", "dragon", "neutral")
+ * @param archetype - Optional archetype filter (e.g., "dropout", "prep", "geek")
  * @returns Random card matching criteria
  * @throws Error if no cards found matching criteria
  * @example
- * await getRandomCard(ctx, "ultra_rare", "dragon") // Random ultra rare dragon card
+ * await getRandomCard(ctx, "rare", "dropout") // Random rare dropout card
  * await getRandomCard(ctx, "common") // Random common card of any archetype
  */
 export async function getRandomCard(
@@ -184,7 +184,7 @@ export async function getRandomCard(
     .withIndex("by_active_rarity", (q) => q.eq("isActive", true).eq("rarity", rarity))
     .collect();
 
-  if (archetype && archetype !== "neutral") {
+  if (archetype) {
     const archetypeCards = cards.filter((card) => card.archetype === archetype);
 
     if (archetypeCards.length > 0) {

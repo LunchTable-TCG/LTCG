@@ -177,7 +177,7 @@ describe("NetworkError", () => {
 describe("GameError", () => {
   it("should create game error with game context", () => {
     const error = new GameError("Not your turn", ApiErrorCode.NOT_YOUR_TURN, 400, "game123", {
-      phase: "battle",
+      phase: "combat",
       turnPlayer: "opponent",
     });
 
@@ -187,7 +187,7 @@ describe("GameError", () => {
     expect(error.code).toBe(ApiErrorCode.NOT_YOUR_TURN);
     expect(error.statusCode).toBe(400);
     expect(error.gameId).toBe("game123");
-    expect(error.phase).toBe("battle");
+    expect(error.phase).toBe("combat");
     expect(error.turnPlayer).toBe("opponent");
   });
 
@@ -201,12 +201,12 @@ describe("GameError", () => {
 
   it("should serialize with game context", () => {
     const error = new GameError("Test", ApiErrorCode.INVALID_MOVE, 400, "game123", {
-      phase: "main1",
+      phase: "main",
     });
     const json = error.toJSON();
 
     expect(json.gameId).toBe("game123");
-    expect(json.phase).toBe("main1");
+    expect(json.phase).toBe("main");
   });
 });
 
@@ -336,7 +336,7 @@ describe("parseErrorResponse", () => {
         message: "It is not your turn",
         details: {
           gameId: "game123",
-          phase: "battle",
+          phase: "combat",
           turnPlayer: "opponent",
         },
       },
@@ -347,7 +347,7 @@ describe("parseErrorResponse", () => {
     expect(error).toBeInstanceOf(GameError);
     if (error instanceof GameError) {
       expect(error.gameId).toBe("game123");
-      expect(error.phase).toBe("battle");
+      expect(error.phase).toBe("combat");
       expect(error.turnPlayer).toBe("opponent");
     }
   });

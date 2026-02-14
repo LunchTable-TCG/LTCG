@@ -6,7 +6,10 @@ const cardVariantValidator = v.union(
   v.literal("foil"),
   v.literal("alt_art"),
   v.literal("full_art"),
-  v.literal("numbered")
+  v.literal("numbered"),
+  v.literal("first_edition"),
+  v.literal("detention_foil"),
+  v.literal("rock_bottom")
 );
 
 export default defineSchema({
@@ -20,9 +23,11 @@ export default defineSchema({
     cost: v.number(),
     level: v.optional(v.number()),
     attribute: v.optional(v.string()),
-    monsterType: v.optional(v.string()),
     spellType: v.optional(v.string()),
     trapType: v.optional(v.string()),
+    viceType: v.optional(v.string()),
+    breakdownEffect: v.optional(v.any()),
+    breakdownFlavorText: v.optional(v.string()),
     ability: v.optional(v.any()),
     flavorText: v.optional(v.string()),
     imageUrl: v.optional(v.string()),

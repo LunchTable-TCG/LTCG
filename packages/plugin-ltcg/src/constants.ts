@@ -9,7 +9,6 @@
  * Users can override these in their .env for development/testing:
  * - LTCG_API_URL / LTCG_PRODUCTION_API_URL - Override API base URL
  * - LTCG_CONVEX_URL / LTCG_PRODUCTION_CONVEX_URL - Override Convex deployment URL
- * - RETAKE_BASE_URL - Override Retake.tv chat API base URL
  * - LTCG_APP_URL - Override app URL for links
  */
 export const LTCG_PRODUCTION_CONFIG = {
@@ -20,10 +19,6 @@ export const LTCG_PRODUCTION_CONFIG = {
   /** Production Convex deployment URL - set via LTCG_PRODUCTION_CONVEX_URL env var */
   CONVEX_URL:
     process.env.LTCG_PRODUCTION_CONVEX_URL || process.env.LTCG_CONVEX_URL || "",
-
-  /** Retake.tv chat API base URL */
-  RETAKE_BASE_URL:
-    process.env.RETAKE_BASE_URL || "https://chat.retake.tv",
 
   /** App URL for links and notifications */
   APP_URL:
@@ -137,10 +132,8 @@ export const TRIBUTE_REQUIREMENTS = {
  */
 export const GAME_PHASES = {
   DRAW: "draw",
-  STANDBY: "standby",
-  MAIN1: "main1",
-  BATTLE: "battle",
-  MAIN2: "main2",
+  MAIN: "main",
+  COMBAT: "combat",
   END: "end",
 } as const;
 

@@ -58,9 +58,7 @@ export type JsonTriggerCondition =
   | "on_opponent_draws"
   | "on_opponent_activates"
   | "on_opponent_attacks"
-  | "on_standby"
-  | "on_main1_start"
-  | "on_main2_start"
+  | "on_main_start"
   | "on_battle_end"
   | "on_turn_start"
   | "on_turn_end"
@@ -103,7 +101,7 @@ export interface FieldCountCondition {
   owner: "self" | "opponent" | "both";
   count: number | NumericRange;
   filter?: {
-    cardType?: "creature" | "spell" | "trap";
+    cardType?: "stereotype" | "spell" | "trap" | "class";
     archetype?: string;
     attribute?: string;
     position?: "attack" | "defense";
@@ -115,7 +113,7 @@ export interface FieldCountCondition {
  * Card property filter (used in conditions and targets)
  */
 export interface JsonCardPropertyFilter {
-  cardType?: "creature" | "spell" | "trap" | "equipment";
+  cardType?: "stereotype" | "spell" | "trap" | "class";
   archetype?: CardArchetype | CardArchetype[] | string;
   attribute?: CardAttribute | CardAttribute[];
   level?: number | NumericRange;
@@ -149,41 +147,23 @@ export interface BanishedCondition {
  * Card attribute values (element types)
  */
 export type CardAttribute =
-  | "fire"
-  | "water"
-  | "earth"
-  | "wind"
-  | "light"
-  | "dark"
-  | "divine"
-  | "neutral";
+  | "red"
+  | "blue"
+  | "yellow"
+  | "purple"
+  | "green"
+  | "white";
 
 /**
  * Card archetype values (matches schema)
  */
 export type CardArchetype =
-  // Primary archetypes (from card CSV)
-  | "infernal_dragons"
-  | "abyssal_depths"
-  | "iron_legion"
-  | "necro_empire"
-  // Legacy archetypes (for backwards compatibility)
-  | "abyssal_horrors"
-  | "nature_spirits"
-  | "storm_elementals"
-  // Future/placeholder archetypes
-  | "shadow_assassins"
-  | "celestial_guardians"
-  | "undead_legion"
-  | "divine_knights"
-  | "arcane_mages"
-  | "mechanical_constructs"
-  | "neutral"
-  // Old archetypes (deprecated)
-  | "fire"
-  | "water"
-  | "earth"
-  | "wind";
+  | "dropout"
+  | "prep"
+  | "geek"
+  | "freak"
+  | "nerd"
+  | "goodie_two_shoes";
 
 /**
  * Comparison operators for numeric values
@@ -222,7 +202,7 @@ export interface JsonCondition {
   attribute?: CardAttribute | CardAttribute[];
 
   /** Card type */
-  cardType?: "creature" | "spell" | "trap" | "equipment";
+  cardType?: "stereotype" | "spell" | "trap" | "class";
 
   /** Monster level */
   level?: number | NumericRange;
@@ -301,7 +281,7 @@ export interface JsonCondition {
   turnNumber?: number | NumericRange;
 
   /** Current phase */
-  phase?: "draw" | "standby" | "main1" | "battle_start" | "battle" | "battle_end" | "main2" | "end";
+  phase?: "draw" | "main" | "combat" | "breakdown_check" | "end";
 
   /** Whose turn */
   turnOwner?: "self" | "opponent";
@@ -380,7 +360,7 @@ export interface CardInfo {
   _id: Id<"cardDefinitions">;
   name: string;
   archetype: string;
-  cardType: "creature" | "spell" | "trap" | "equipment";
+  cardType: "stereotype" | "spell" | "trap" | "class";
   attack?: number;
   defense?: number;
   cost: number;
@@ -489,7 +469,7 @@ export function isJsonCondition(
  *
  * Supports patterns like:
  * - "archetype_dragons" -> { archetype: "dragons" }
- * - "all_monsters" -> { cardType: "creature" }
+ * - "all_monsters" -> { cardType: "stereotype" }
  * - "level_4_or_lower" -> { level: { max: 4 } }
  * - "atk_1500_or_less" -> { attack: { max: 1500 } }
  */
@@ -502,12 +482,12 @@ export function convertLegacyCondition(stringCondition: string): JsonCondition |
 
   // "all_monsters" -> affects all monsters
   if (condition === "all_monsters") {
-    return { cardType: "creature" };
+    return { cardType: "stereotype" };
   }
 
   // "opponent_monsters" -> opponent's monsters
   if (condition === "opponent_monsters") {
-    return { cardType: "creature", owner: "opponent" };
+    return { cardType: "stereotype", owner: "opponent" };
   }
 
   // Level conditions: "level_4_or_lower", "level_7_or_higher"
@@ -586,7 +566,7 @@ export type TargetZone =
 export type TargetOwner = "self" | "opponent" | "both" | "any";
 
 /** Card type filter */
-export type JsonTargetType = "monster" | "spell" | "trap" | "any" | "card" | "creature";
+export type JsonTargetType = "monster" | "stereotype" | "spell" | "trap" | "class" | "any" | "card";
 
 /** How targets are selected */
 export type SelectionMode =
@@ -711,12 +691,9 @@ export interface JsonDuration {
   countOwner?: "self" | "opponent" | "both";
   expirePhase?:
     | "draw"
-    | "standby"
-    | "main1"
-    | "battle_start"
-    | "battle"
-    | "battle_end"
-    | "main2"
+    | "main"
+    | "combat"
+    | "breakdown_check"
     | "end";
 }
 
@@ -1212,7 +1189,7 @@ export interface GameEvent {
   type: string;
   cardId?: Id<"cardDefinitions">;
   cardName?: string;
-  cardType?: "creature" | "spell" | "trap" | "equipment";
+  cardType?: "stereotype" | "spell" | "trap" | "class";
   archetype?: string;
   level?: number;
   attack?: number;
@@ -1244,8 +1221,8 @@ export function convertLegacyConditionExtended(stringCondition: string): JsonCon
 
   const condition = stringCondition.toLowerCase().trim();
 
-  if (condition === "all_monsters") return { cardType: "creature" };
-  if (condition === "opponent_monsters") return { cardType: "creature", owner: "opponent" };
+  if (condition === "all_monsters") return { cardType: "stereotype" };
+  if (condition === "opponent_monsters") return { cardType: "stereotype", owner: "opponent" };
 
   const levelMatch = condition.match(/level_(\d+)_or_(lower|higher)/i);
   if (levelMatch?.[1] && levelMatch[2]) {
@@ -1314,7 +1291,7 @@ export function jsonEffectToParsedEffect(effect: JsonEffect | JsonGenericEffect)
     else if (target.maxCount) targetCount = target.maxCount;
 
     const type = target.type ?? target.cardType;
-    if (type === "monster" || type === "creature") targetType = "monster";
+    if (type === "monster" || type === "stereotype") targetType = "monster";
     else if (type === "spell" || type === "trap" || type === "any") targetType = type;
 
     const zone = target.zone ?? target.location;
@@ -1333,7 +1310,7 @@ export function jsonEffectToParsedEffect(effect: JsonEffect | JsonGenericEffect)
   if (genericEffect.targetCount !== undefined) targetCount = genericEffect.targetCount;
   if (genericEffect.targetType) {
     const t = genericEffect.targetType;
-    if (t === "monster" || t === "creature") targetType = "monster";
+    if (t === "monster" || t === "stereotype") targetType = "monster";
     else if (t === "spell" || t === "trap" || t === "any") targetType = t;
   }
   if (genericEffect.targetLocation) {
@@ -1431,7 +1408,7 @@ export function parsedEffectToJsonEffect(effect: ParsedEffect): JsonGenericEffec
     };
     if (effect.targetType) {
       (jsonEffect.target as JsonTarget).cardType =
-        effect.targetType === "monster" ? "creature" : effect.targetType;
+        effect.targetType === "monster" ? "stereotype" : effect.targetType;
     }
   }
 

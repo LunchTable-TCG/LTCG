@@ -25,9 +25,9 @@ export function ActivateCardModal({
   if (!card) return null;
 
   const isSpell =
-    card.cardType === "spell" || card.cardType === "equipment" || card.cardType === "field";
+    card.cardType === "spell" || card.cardType === "class" || card.cardType === "field";
   const isTrap = card.cardType === "trap";
-  const isMonster = card.cardType === "monster" || card.cardType === "creature";
+  const isMonster = card.cardType === "monster" || card.cardType === "stereotype";
 
   return (
     <AnimatePresence>

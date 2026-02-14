@@ -68,10 +68,10 @@ const ARCHETYPES = [
 
 const CARD_TYPES = [
   { value: "all", label: "All Types" },
-  { value: "creature", label: "Creature" },
+  { value: "stereotype", label: "Stereotype" },
   { value: "spell", label: "Spell" },
   { value: "trap", label: "Trap" },
-  { value: "equipment", label: "Equipment" },
+  { value: "class", label: "Class" },
 ];
 
 const RARITIES = [
@@ -128,7 +128,7 @@ export default function BatchRenderPage() {
   const stats = useMemo(() => {
     const total = ALL_CARDS.length;
     const withImages = 0; // TODO: Check actual image availability
-    const creatures = ALL_CARDS.filter((c) => c.cardType === "creature").length;
+    const stereotypes = ALL_CARDS.filter((c) => c.cardType === "stereotype").length;
     const spells = ALL_CARDS.filter((c) => c.cardType === "spell").length;
     const traps = ALL_CARDS.filter((c) => c.cardType === "trap").length;
 
@@ -136,7 +136,7 @@ export default function BatchRenderPage() {
       total,
       withImages,
       missingImages: total - withImages,
-      creatures,
+      stereotypes,
       spells,
       traps,
       byArchetype: {
@@ -246,8 +246,8 @@ export default function BatchRenderPage() {
         </Card>
         <Card>
           <div className="text-center">
-            <Text className="text-2xl font-bold">{stats.creatures}</Text>
-            <Text className="text-sm text-muted-foreground">Creatures</Text>
+            <Text className="text-2xl font-bold">{stats.stereotypes}</Text>
+            <Text className="text-sm text-muted-foreground">Stereotypes</Text>
           </div>
         </Card>
         <Card>

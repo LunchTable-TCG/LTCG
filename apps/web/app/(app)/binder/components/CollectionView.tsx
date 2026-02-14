@@ -51,7 +51,7 @@ interface CollectionViewProps {
   searchQuery: string;
   selectedRarity: Rarity | "all";
   selectedElement: Element | "all";
-  selectedType: "creature" | "spell" | "trap" | "equipment" | "all";
+  selectedType: "stereotype" | "spell" | "trap" | "class" | "all";
   sortBy: SortOption;
   sortOrder: "asc" | "desc";
   showFilters: boolean;
@@ -61,7 +61,7 @@ interface CollectionViewProps {
   onSearchChange: (query: string) => void;
   onRarityChange: (rarity: Rarity | "all") => void;
   onElementChange: (element: Element | "all") => void;
-  onTypeChange: (type: "creature" | "spell" | "trap" | "equipment" | "all") => void;
+  onTypeChange: (type: "stereotype" | "spell" | "trap" | "class" | "all") => void;
   onSortByChange: (sort: SortOption) => void;
   onSortOrderToggle: () => void;
   onToggleFilters: () => void;
@@ -308,7 +308,7 @@ export function CollectionView({
                 Card Type
               </span>
               <div className="flex gap-2">
-                {(["all", "creature", "spell", "trap", "equipment"] as const).map((type) => (
+                {(["all", "stereotype", "spell", "trap", "class"] as const).map((type) => (
                   <button
                     type="button"
                     key={type}

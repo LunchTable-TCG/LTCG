@@ -185,7 +185,7 @@ describe("ConvexRealtimeClient", () => {
         lobbyId: TEST_GAME_ID,
         status: "active",
         isHost: true,
-        currentPhase: "main1",
+        currentPhase: "main",
         turnNumber: 3,
         hostId: "host-123",
         opponentId: "opponent-456",
@@ -208,7 +208,7 @@ describe("ConvexRealtimeClient", () => {
         expect.objectContaining({
           gameId: TEST_GAME_ID,
           status: "active",
-          phase: "main1",
+          phase: "main",
           turnNumber: 3,
         })
       );
@@ -415,7 +415,7 @@ describe("ConvexRealtimeClient", () => {
         eventId: "event-1",
         gameId: TEST_GAME_ID,
         turnNumber: 1,
-        phase: "main1",
+        phase: "main",
         eventType: "summon",
         playerId: "player-123",
         description: "Summoned Infernal God Dragon",
@@ -426,7 +426,7 @@ describe("ConvexRealtimeClient", () => {
         eventId: "event-2",
         gameId: TEST_GAME_ID,
         turnNumber: 1,
-        phase: "battle",
+        phase: "combat",
         eventType: "attack",
         playerId: "player-123",
         description: "Attacked with Infernal God Dragon",

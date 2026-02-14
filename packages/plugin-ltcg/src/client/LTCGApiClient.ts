@@ -1489,63 +1489,6 @@ export class LTCGApiClient {
     });
   }
 
-  // ============================================================================
-  // Streaming Configuration
-  // ============================================================================
-
-  /**
-   * Get agent streaming configuration from the backend.
-   * Returns platform, hasStreamKey, rtmpUrl, and other settings.
-   * Never returns plaintext stream keys.
-   */
-  async getStreamingConfig(agentId: string) {
-    return this.request<{
-      enabled: boolean;
-      platform: string | null;
-      hasStreamKey: boolean;
-      rtmpUrl: string | null;
-      autoStart: boolean;
-      keepAlive: boolean;
-      voiceTrackUrl: string | null;
-      voiceVolume: number | null;
-      voiceLoop: boolean;
-      visualMode: "webcam" | "profile-picture";
-      profilePictureUrl: string | null;
-    }>(
-      `${this.getAppBaseUrl()}/api/agents/streaming-config?agentId=${encodeURIComponent(agentId)}`,
-      {
-        method: "GET",
-      },
-    );
-  }
-
-  /**
-   * Start a stream using stored backend credentials.
-   * The server decrypts the stream key server-side — no credentials exposed to the plugin.
-   */
-  async startStreamWithStoredCredentials(params: {
-    agentId: string;
-    platform?: string;
-    streamTitle?: string;
-    lobbyId?: string;
-  }) {
-    return this.request<{
-      sessionId: string;
-      overlayUrl: string;
-      status: string;
-    }>(`${this.getAppBaseUrl()}/api/streaming/start`, {
-      method: "POST",
-      body: JSON.stringify({
-        agentId: params.agentId,
-        streamType: "agent",
-        platform: params.platform,
-        useStoredCredentials: true,
-        streamTitle: params.streamTitle,
-        lobbyId: params.lobbyId,
-      }),
-    });
-  }
-
   /**
    * Check if x402 payments are enabled for this client
    */

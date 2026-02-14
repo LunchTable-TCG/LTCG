@@ -317,11 +317,11 @@ export const availableActions = authHttpAction(async (ctx, request, auth) => {
     const myMonsters: FieldMonster[] = state.myBoard || [];
     const mySpellTraps: FieldSpellTrap[] = state.mySpellTrapZone || [];
 
-    if (phase === "main1" || phase === "main2") {
+    if (phase === "main") {
       // Can summon if haven't already
       if (!state.normalSummonedThisTurn) {
         const summonableMonsters = state.hand.filter(
-          (card: HandCard) => card.cardType === "creature" && (card.cost || 0) <= 4
+          (card: HandCard) => card.cardType === "stereotype" && (card.cost || 0) <= 4
         );
         if (summonableMonsters.length > 0) {
           actions.push({
@@ -348,15 +348,15 @@ export const availableActions = authHttpAction(async (ctx, request, auth) => {
         });
       }
 
-      // Can enter battle phase from main1 if we have attackable monsters
-      if (phase === "main1" && myMonsters.length > 0) {
+      // Can enter combat phase if we have attackable monsters
+      if (myMonsters.length > 0) {
         const attackableMonsters = myMonsters.filter(
           (m: FieldMonster) => m && !m.isFaceDown && m.position === 1 && !m.hasAttacked
         );
         if (attackableMonsters.length > 0) {
           actions.push({
             action: "ENTER_BATTLE_PHASE",
-            description: "Enter Battle Phase to attack",
+            description: "Enter Combat Phase to attack",
             attackableMonsters: attackableMonsters.length,
           });
         }
@@ -384,7 +384,7 @@ export const availableActions = authHttpAction(async (ctx, request, auth) => {
     }
 
     // Battle phase actions
-    if (phase === "battle") {
+    if (phase === "combat") {
       const monstersCanAttack = myMonsters.filter(
         (monster: FieldMonster) =>
           monster && !monster.isFaceDown && !monster.hasAttacked && monster.position === 1 // attack position
@@ -750,11 +750,11 @@ export const changeMonsterPosition = authHttpAction(async (ctx, request, auth) =
       }
       if (
         error.message.includes("Cannot change position") ||
-        error.message.includes("Battle Phase")
+        error.message.includes("Combat Phase")
       ) {
         return errorResponse(
           "CANNOT_CHANGE_POSITION",
-          "Cannot change monster position during Battle Phase",
+          "Cannot change monster position during Combat Phase",
           400
         );
       }
@@ -1106,8 +1106,8 @@ export const attackMonster = authHttpAction(async (ctx, request, auth) => {
       if (error.message.includes("NOT_YOUR_TURN")) {
         return errorResponse("NOT_YOUR_TURN", "It's not your turn", 403);
       }
-      if (error.message.includes("INVALID_PHASE") || error.message.includes("Battle Phase")) {
-        return errorResponse("INVALID_PHASE", "Can only attack during Battle Phase", 400);
+      if (error.message.includes("INVALID_PHASE") || error.message.includes("Combat Phase")) {
+        return errorResponse("INVALID_PHASE", "Can only attack during Combat Phase", 400);
       }
       if (error.message.includes("already attacked")) {
         return errorResponse(
@@ -1194,7 +1194,7 @@ export const passResponseWindow = authHttpAction(async (ctx, request, auth) => {
 /**
  * POST /api/agents/games/actions/enter-battle
  *
- * Enter Battle Phase from Main Phase 1.
+ * Enter Combat Phase from Main Phase.
  * Requires API key authentication.
  */
 export const enterBattlePhase = authHttpAction(async (ctx, request, auth) => {
@@ -1229,36 +1229,36 @@ export const enterBattlePhase = authHttpAction(async (ctx, request, auth) => {
       return errorResponse("NOT_YOUR_TURN", "It's not your turn", 403);
     }
 
-    // Verify we're in main1
-    if (state.currentPhase !== "main1") {
-      return errorResponse("INVALID_PHASE", "Can only enter Battle Phase from Main Phase 1", 400);
+    // Verify we're in main phase
+    if (state.currentPhase !== "main") {
+      return errorResponse("INVALID_PHASE", "Can only enter Combat Phase from Main Phase", 400);
     }
 
-    // Update phase to battle
-    await ctx.runMutation(internalAny.gameplay.gameEngine.phases.advanceToBattlePhaseInternal, {
+    // Update phase to combat
+    await ctx.runMutation(internalAny.gameplay.gameEngine.phases.advanceToCombatPhaseInternal, {
       gameId: body.gameId,
       userId: auth.userId,
     });
 
     return successResponse({
       success: true,
-      phase: "battle",
-      message: "Entered Battle Phase",
+      phase: "combat",
+      message: "Entered Combat Phase",
     });
   } catch (error) {
-    return errorResponse("PHASE_CHANGE_FAILED", "Failed to enter Battle Phase", 500, {
+    return errorResponse("PHASE_CHANGE_FAILED", "Failed to enter Combat Phase", 500, {
       error: error instanceof Error ? error.message : String(error),
     });
   }
 });
 
 /**
- * POST /api/agents/games/actions/enter-main2
+ * POST /api/agents/games/actions/enter-breakdown-check
  *
- * Enter Main Phase 2 from Battle Phase.
+ * Enter Breakdown Check Phase from Combat Phase.
  * Requires API key authentication.
  */
-export const enterMain2 = authHttpAction(async (ctx, request, auth) => {
+export const enterBreakdownCheck = authHttpAction(async (ctx, request, auth) => {
   if (request.method === "OPTIONS") {
     return corsPreflightResponse();
   }
@@ -1290,24 +1290,24 @@ export const enterMain2 = authHttpAction(async (ctx, request, auth) => {
       return errorResponse("NOT_YOUR_TURN", "It's not your turn", 403);
     }
 
-    // Verify we're in battle phase
-    if (state.currentPhase !== "battle") {
-      return errorResponse("INVALID_PHASE", "Can only enter Main Phase 2 from Battle Phase", 400);
+    // Verify we're in combat phase
+    if (state.currentPhase !== "combat") {
+      return errorResponse("INVALID_PHASE", "Can only enter Breakdown Check from Combat Phase", 400);
     }
 
-    // Update phase to main2
-    await ctx.runMutation(internalAny.gameplay.gameEngine.phases.advanceToMainPhase2Internal, {
+    // Update phase to breakdown_check
+    await ctx.runMutation(internalAny.gameplay.gameEngine.phases.advanceToBreakdownCheckInternal, {
       gameId: body.gameId,
       userId: auth.userId,
     });
 
     return successResponse({
       success: true,
-      phase: "main2",
-      message: "Entered Main Phase 2",
+      phase: "breakdown_check",
+      message: "Entered Breakdown Check Phase",
     });
   } catch (error) {
-    return errorResponse("PHASE_CHANGE_FAILED", "Failed to enter Main Phase 2", 500, {
+    return errorResponse("PHASE_CHANGE_FAILED", "Failed to enter Breakdown Check Phase", 500, {
       error: error instanceof Error ? error.message : String(error),
     });
   }
@@ -1364,11 +1364,11 @@ export const endPlayerTurn = authHttpAction(async (ctx, request, auth) => {
       }
       if (
         error.message.includes("INVALID_PHASE") ||
-        error.message.includes("Main Phase 2 or End Phase")
+        error.message.includes("End Phase")
       ) {
         return errorResponse(
           "INVALID_PHASE",
-          "Must be in Main Phase 2 or End Phase to end turn",
+          "Must be in End Phase to end turn",
           400
         );
       }
@@ -1659,7 +1659,7 @@ export const phaseAdvance = authHttpAction(async (ctx, request, auth) => {
 /**
  * POST /api/agents/games/actions/phase-skip-battle
  *
- * Skip the Battle Phase (go directly to Main Phase 2).
+ * Skip the Combat Phase (go directly to Breakdown Check).
  * Requires API key authentication.
  */
 export const phaseSkipBattle = authHttpAction(async (ctx, request, auth) => {
@@ -1692,8 +1692,8 @@ export const phaseSkipBattle = authHttpAction(async (ctx, request, auth) => {
       if (error.message.includes("not your turn")) {
         return errorResponse("NOT_YOUR_TURN", "It's not your turn", 403);
       }
-      if (error.message.includes("Can only skip Battle Phase")) {
-        return errorResponse("INVALID_PHASE", "Can only skip Battle Phase from Main Phase 1", 400);
+      if (error.message.includes("Can only skip Combat Phase")) {
+        return errorResponse("INVALID_PHASE", "Can only skip Combat Phase from Main Phase", 400);
       }
     }
 

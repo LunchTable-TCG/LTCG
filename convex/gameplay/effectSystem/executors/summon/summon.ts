@@ -12,8 +12,8 @@ export async function executeSpecialSummon(
   const board = isHost ? gameState.hostBoard : gameState.opponentBoard;
 
   // Check board space (max 5)
-  if (board.length >= 5) {
-    return { success: false, message: "Monster zone is full" };
+  if (board.length >= 3) {
+    return { success: false, message: "Stereotype Zone is full" };
   }
 
   // Get card details
@@ -23,8 +23,8 @@ export async function executeSpecialSummon(
   }
 
   // Validate it's a monster
-  if (card.cardType !== "creature") {
-    return { success: false, message: "Can only summon monsters" };
+  if (card.cardType !== "stereotype") {
+    return { success: false, message: "Can only summon stereotypes" };
   }
 
   // Remove from source location

@@ -45,7 +45,7 @@ export const changePositionAction: Action = {
       }
 
       // Must be Main Phase
-      if (gameState.phase !== "main1" && gameState.phase !== "main2") {
+      if (gameState.phase !== "main") {
         logger.debug(`Cannot change position in ${gameState.phase} phase`);
         return false;
       }
@@ -179,7 +179,7 @@ Respond with JSON: { "monsterIndex": <index>, "reasoning": "<brief explanation>"
       await callback({
         text: responseText,
         actions: ["CHANGE_POSITION"],
-        thought: `Switching ${selected.monster.name} to ${newPosition} position to ${newPosition === "defense" ? "protect against stronger opponent monsters" : "prepare for offensive battle phase"}`,
+        thought: `Switching ${selected.monster.name} to ${newPosition} position to ${newPosition === "defense" ? "protect against stronger opponent monsters" : "prepare for offensive combat phase"}`,
       } as Content);
 
       return {

@@ -67,6 +67,9 @@ const monsterZoneCardValidator = v.object({
   defense: v.number(),
   hasAttacked: v.boolean(),
   isFaceDown: v.boolean(), // For set monsters
+  // Vice tracking
+  viceCounters: v.optional(v.number()),
+  viceType: v.optional(v.string()),
   // Protection flags
   cannotBeDestroyedByBattle: v.optional(v.boolean()),
   cannotBeDestroyedByEffects: v.optional(v.boolean()),
@@ -221,16 +224,19 @@ export default defineSchema({
     // Game resources
     hostLifePoints: v.number(),
     opponentLifePoints: v.number(),
-    hostMana: v.number(),
-    opponentMana: v.number(),
+    hostClout: v.number(),
+    opponentClout: v.number(),
+    // Breakdown tracking (3 breakdowns = alt win condition)
+    hostBreakdownsCaused: v.number(),
+    opponentBreakdownsCaused: v.number(),
 
     // Turn tracking
     currentTurnPlayerId: v.string(), // cross-component: users
     turnNumber: v.number(),
 
-    // Phase Management (Yu-Gi-Oh turn structure)
+    // Phase Management (LunchTable turn structure)
     currentPhase: v.optional(
-      literals("draw", "standby", "main1", "battle_start", "battle", "battle_end", "main2", "end")
+      literals("draw", "main", "combat", "breakdown_check", "end")
     ),
 
     // Turn Flags
