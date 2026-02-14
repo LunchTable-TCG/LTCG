@@ -302,7 +302,7 @@ export default function TreasuryTransactionsPage() {
                       <TableCell>
                         {tx.signature ? (
                           <a
-                            href={`https://solscan.io/tx/${tx.signature}`}
+                            href={`${process.env.NEXT_PUBLIC_SOLANA_EXPLORER_URL || "https://solscan.io"}/tx/${tx.signature}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="font-mono text-xs text-blue-500 hover:underline"

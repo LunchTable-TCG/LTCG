@@ -11,6 +11,7 @@
 
 import { type IAgentRuntime, Service, logger } from "@elizaos/core";
 import { LTCGApiClient } from "../client/LTCGApiClient";
+import { LTCG_PRODUCTION_CONFIG } from "../constants";
 import { LTCGEventType, emitLTCGEvent } from "../events/types";
 import type { MatchmakingEvent, MatchmakingStatus } from "../frontend/types/panel";
 import type { GameStateResponse } from "../types/api";
@@ -533,7 +534,7 @@ export class LTCGPollingService extends Service {
     // 2. Update streaming session with match result (shows win/loss overlay)
     if (this.currentStreamingSessionId && this.client) {
       try {
-        const appBaseUrl = (process.env.LTCG_APP_URL || "https://www.lunchtable.cards").replace(/\/$/, "");
+        const appBaseUrl = (process.env.LTCG_APP_URL || LTCG_PRODUCTION_CONFIG.APP_URL).replace(/\/$/, "");
         const internalAuth = process.env.INTERNAL_API_SECRET?.trim();
         if (internalAuth) {
           const response = await fetch(`${appBaseUrl}/api/streaming/match-result`, {
@@ -658,9 +659,9 @@ export class LTCGPollingService extends Service {
     const agentId = firstNonEmpty(process.env.LTCG_AGENT_ID);
     const configuredAppUrl =
       firstNonEmpty(process.env.LTCG_APP_URL, process.env.NEXT_PUBLIC_APP_URL) ??
-      "https://www.lunchtable.cards";
+      LTCG_PRODUCTION_CONFIG.APP_URL;
     const appBaseUrl = configuredAppUrl.includes(".convex.site")
-      ? "https://www.lunchtable.cards"
+      ? LTCG_PRODUCTION_CONFIG.APP_URL
       : configuredAppUrl.replace(/\/+$/, "");
 
     if (!apiKey || !agentId) {

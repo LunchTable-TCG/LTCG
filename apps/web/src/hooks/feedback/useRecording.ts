@@ -12,7 +12,7 @@ interface UseRecordingReturn {
   recordingDuration: number;
 }
 
-const MAX_RECORDING_DURATION = 30000; // 30 seconds max
+const MAX_RECORDING_DURATION = Number(process.env.NEXT_PUBLIC_MAX_RECORDING_DURATION_MS || 30000);
 
 /**
  * Hook for recording the user's screen.

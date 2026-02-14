@@ -47,7 +47,7 @@ export async function POST(request: Request): Promise<NextResponse> {
         return {
           allowedContentTypes: ALLOWED_CONTENT_TYPES,
           addRandomSuffix: true, // Add random suffix to prevent naming conflicts
-          maximumSizeInBytes: 50 * 1024 * 1024, // 50MB max for screen recordings
+          maximumSizeInBytes: Number(process.env.MAX_UPLOAD_SIZE_BYTES || 50 * 1024 * 1024),
           tokenPayload: JSON.stringify({
             feedbackType: parsedPayload.feedbackType || "bug",
             mediaType: parsedPayload.mediaType || "screenshot",

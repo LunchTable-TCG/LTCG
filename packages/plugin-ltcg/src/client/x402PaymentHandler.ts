@@ -390,8 +390,9 @@ export class X402PaymentHandler {
     );
 
     // Use Privy's wallet RPC to sign (not signAndSend — the server broadcasts)
+    const privyApiBaseUrl = process.env.PRIVY_API_BASE_URL || "https://api.privy.io";
     const signResponse = await fetch(
-      `https://api.privy.io/v1/wallets/${agentPrivyUserId}/rpc`,
+      `${privyApiBaseUrl}/v1/wallets/${agentPrivyUserId}/rpc`,
       {
         method: "POST",
         headers: {

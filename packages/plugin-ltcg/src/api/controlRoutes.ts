@@ -9,6 +9,7 @@
 
 import type { IAgentRuntime, RouteRequest, RouteResponse } from "@elizaos/core";
 import { logger } from "@elizaos/core";
+import { LTCG_PRODUCTION_CONFIG } from "../constants";
 import { validateControlRequest } from "./authMiddleware";
 import { type IPollingService, SERVICE_TYPES } from "../services/types";
 
@@ -164,9 +165,9 @@ async function startStreamForPlatform(
   const configuredAppUrl =
     process.env.LTCG_APP_URL ||
     process.env.NEXT_PUBLIC_APP_URL ||
-    "https://www.lunchtable.cards";
+    LTCG_PRODUCTION_CONFIG.APP_URL;
   const appUrl = configuredAppUrl.includes(".convex.site")
-    ? "https://www.lunchtable.cards"
+    ? LTCG_PRODUCTION_CONFIG.APP_URL
     : configuredAppUrl;
   const ltcgApiKey = process.env.LTCG_API_KEY;
   const forceRestart = process.env.LTCG_STREAM_FORCE_RESTART === "true";

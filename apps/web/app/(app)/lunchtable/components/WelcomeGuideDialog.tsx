@@ -1,5 +1,7 @@
 "use client";
 
+import { typedApi, useConvexQuery } from "@/lib/convexHelpers";
+import { getArchetypeTheme } from "@/lib/archetypeThemes";
 import { cn } from "@/lib/utils";
 import {
   BookOpen,
@@ -8,6 +10,7 @@ import {
   Flame,
   Loader2,
   Shield,
+  Skull,
   Sparkles,
   Swords,
   Waves,
@@ -24,64 +27,20 @@ interface WelcomeGuideDialogProps {
 
 type Step = "welcome" | "deck";
 
-const STARTER_DECKS = [
-  {
-    id: "fire",
-    name: "Infernal Dragons",
-    archetype: "fire",
-    icon: Flame,
-    color: "text-red-500",
-    bg: "bg-red-500/10",
-    border: "border-red-500/30",
-    selectedBorder: "border-red-500",
-    glow: "shadow-red-500/20",
-    description: "Aggressive beatdown with burn damage",
-    playstyle: "Aggro",
-    quote: '"Strike fast, burn bright."',
-  },
-  {
-    id: "water",
-    name: "Abyssal Depths",
-    archetype: "water",
-    icon: Waves,
-    color: "text-blue-500",
-    bg: "bg-blue-500/10",
-    border: "border-blue-500/30",
-    selectedBorder: "border-blue-500",
-    glow: "shadow-blue-500/20",
-    description: "Control the tides with bounce and freeze",
-    playstyle: "Control",
-    quote: '"Patience wins wars."',
-  },
-  {
-    id: "earth",
-    name: "Iron Legion",
-    archetype: "earth",
-    icon: Shield,
-    color: "text-slate-400",
-    bg: "bg-slate-500/10",
-    border: "border-slate-400/30",
-    selectedBorder: "border-slate-400",
-    glow: "shadow-slate-500/20",
-    description: "Build an unbreakable defense",
-    playstyle: "Midrange",
-    quote: '"Stand firm, outlast all."',
-  },
-  {
-    id: "wind",
-    name: "Storm Riders",
-    archetype: "wind",
-    icon: Zap,
-    color: "text-yellow-500",
-    bg: "bg-yellow-500/10",
-    border: "border-yellow-500/30",
-    selectedBorder: "border-yellow-500",
-    glow: "shadow-yellow-500/20",
-    description: "Strike fast with tempo plays",
-    playstyle: "Tempo",
-    quote: '"Swift as lightning."',
-  },
-];
+/** Map archetype/element to a Lucide icon */
+const ARCHETYPE_ICONS: Record<string, typeof Flame> = {
+  fire: Flame,
+  water: Waves,
+  earth: Shield,
+  wind: Zap,
+  dark: Skull,
+  infernal_dragons: Flame,
+  abyssal_depths: Waves,
+  iron_legion: Shield,
+  storm_riders: Zap,
+  storm_elementals: Zap,
+  necro_empire: Skull,
+};
 
 export function WelcomeGuideDialog({
   isOpen,
@@ -92,6 +51,8 @@ export function WelcomeGuideDialog({
   const [step, setStep] = useState<Step>("welcome");
   const [selectedDeck, setSelectedDeck] = useState<string | null>(null);
 
+  const starterDecks = useConvexQuery(typedApi.agents.agents.getStarterDecks, isOpen ? {} : "skip");
+
   if (!isOpen) return null;
 
   const handleComplete = () => {
@@ -100,7 +61,13 @@ export function WelcomeGuideDialog({
     }
   };
 
-  const selectedDeckInfo = STARTER_DECKS.find((d) => d.id === selectedDeck);
+  const selectedDeckData = starterDecks?.find(
+    (d: { deckCode: string }) => d.deckCode === selectedDeck
+  );
+  const selectedTheme = selectedDeckData ? getArchetypeTheme(selectedDeckData.archetype) : null;
+  const SelectedIcon = selectedDeckData
+    ? ARCHETYPE_ICONS[selectedDeckData.archetype] ?? Shield
+    : Shield;
 
   return (
     <div className="fixed inset-0 z-110 flex items-center justify-center">
@@ -198,104 +165,106 @@ export function WelcomeGuideDialog({
             </div>
 
             {/* Deck grid */}
-            <div className="grid grid-cols-2 gap-4 mb-6">
-              {STARTER_DECKS.map((deck) => {
-                const Icon = deck.icon;
-                const isSelected = selectedDeck === deck.id;
+            {!starterDecks ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-8 h-8 animate-spin text-[#d4af37]" />
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                {starterDecks.map((deck: { deckCode: string; name: string; archetype: string; description: string; playstyle: string }) => {
+                  const theme = getArchetypeTheme(deck.archetype);
+                  const Icon = ARCHETYPE_ICONS[deck.archetype] ?? Shield;
+                  const isSelected = selectedDeck === deck.deckCode;
+                  const colorClass = `text-${theme.color}-500`;
+                  const bgClass = `bg-${theme.color}-500/10`;
 
-                return (
-                  <button
-                    type="button"
-                    key={deck.id}
-                    onClick={() => setSelectedDeck(deck.id)}
-                    className={cn(
-                      "relative p-5 rounded-xl border-2 transition-all text-left group",
-                      isSelected
-                        ? `${deck.bg} ${deck.selectedBorder} shadow-lg ${deck.glow}`
-                        : "bg-black/20 border-[#3d2b1f] hover:border-[#d4af37]/30"
-                    )}
-                  >
-                    {/* Selected indicator */}
-                    {isSelected && (
+                  return (
+                    <button
+                      type="button"
+                      key={deck.deckCode}
+                      onClick={() => setSelectedDeck(deck.deckCode)}
+                      className={cn(
+                        "relative p-5 rounded-xl border-2 transition-all text-left group",
+                        isSelected
+                          ? `${bgClass} border-${theme.color}-500 shadow-lg ${theme.glowColor}`
+                          : "bg-black/20 border-[#3d2b1f] hover:border-[#d4af37]/30"
+                      )}
+                    >
+                      {/* Selected indicator */}
+                      {isSelected && (
+                        <div
+                          className={cn(
+                            "absolute top-3 right-3 w-6 h-6 rounded-full flex items-center justify-center",
+                            bgClass
+                          )}
+                        >
+                          <Check className={cn("w-4 h-4", colorClass)} />
+                        </div>
+                      )}
+
+                      {/* Icon */}
                       <div
                         className={cn(
-                          "absolute top-3 right-3 w-6 h-6 rounded-full flex items-center justify-center",
-                          deck.bg
+                          "w-12 h-12 rounded-xl flex items-center justify-center mb-3 transition-all",
+                          isSelected ? bgClass : "bg-black/40 group-hover:bg-black/60"
                         )}
                       >
-                        <Check className={cn("w-4 h-4", deck.color)} />
+                        <Icon
+                          className={cn(
+                            "w-6 h-6 transition-all",
+                            isSelected ? colorClass : "text-[#a89f94] group-hover:text-[#e8e0d5]"
+                          )}
+                        />
                       </div>
-                    )}
 
-                    {/* Icon */}
-                    <div
-                      className={cn(
-                        "w-12 h-12 rounded-xl flex items-center justify-center mb-3 transition-all",
-                        isSelected ? deck.bg : "bg-black/40 group-hover:bg-black/60"
-                      )}
-                    >
-                      <Icon
+                      {/* Name */}
+                      <h3
                         className={cn(
-                          "w-6 h-6 transition-all",
-                          isSelected ? deck.color : "text-[#a89f94] group-hover:text-[#e8e0d5]"
+                          "font-black text-base uppercase tracking-wide mb-1",
+                          isSelected ? colorClass : "text-[#e8e0d5]"
                         )}
-                      />
-                    </div>
+                      >
+                        {deck.name}
+                      </h3>
 
-                    {/* Name */}
-                    <h3
-                      className={cn(
-                        "font-black text-base uppercase tracking-wide mb-1",
-                        isSelected ? deck.color : "text-[#e8e0d5]"
-                      )}
-                    >
-                      {deck.name}
-                    </h3>
-
-                    {/* Description */}
-                    <p className="text-xs text-[#a89f94] mb-2 leading-relaxed">
-                      {deck.description}
-                    </p>
-
-                    {/* Playstyle badge */}
-                    <span
-                      className={cn(
-                        "inline-block px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider",
-                        isSelected ? `${deck.bg} ${deck.color}` : "bg-black/40 text-[#a89f94]"
-                      )}
-                    >
-                      {deck.playstyle}
-                    </span>
-
-                    {/* Quote - only show when selected */}
-                    {isSelected && (
-                      <p className="mt-3 pt-3 border-t border-current/20 text-[10px] italic text-[#a89f94]">
-                        {deck.quote}
+                      {/* Description */}
+                      <p className="text-xs text-[#a89f94] mb-2 leading-relaxed">
+                        {deck.description}
                       </p>
-                    )}
-                  </button>
-                );
-              })}
-            </div>
+
+                      {/* Playstyle badge */}
+                      <span
+                        className={cn(
+                          "inline-block px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wider",
+                          isSelected ? `${bgClass} ${colorClass}` : "bg-black/40 text-[#a89f94]"
+                        )}
+                      >
+                        {deck.playstyle}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
 
             {/* Selected deck summary */}
-            {selectedDeckInfo && (
+            {selectedDeckData && selectedTheme && (
               <div className="p-4 rounded-xl bg-black/30 border border-[#d4af37]/30 mb-6">
                 <div className="flex items-center gap-4">
                   <div
                     className={cn(
                       "w-14 h-14 rounded-xl flex items-center justify-center",
-                      selectedDeckInfo.bg
+                      `bg-${selectedTheme.color}-500/10`
                     )}
                   >
-                    <selectedDeckInfo.icon className={cn("w-7 h-7", selectedDeckInfo.color)} />
+                    <SelectedIcon className={cn("w-7 h-7", `text-${selectedTheme.color}-500`)} />
                   </div>
                   <div className="flex-1">
                     <p className="text-[10px] text-[#a89f94] uppercase tracking-widest mb-1">
                       Your Chosen Deck
                     </p>
-                    <p className={cn("font-black uppercase tracking-wide", selectedDeckInfo.color)}>
-                      {selectedDeckInfo.name}
+                    <p className={cn("font-black uppercase tracking-wide", `text-${selectedTheme.color}-500`)}>
+                      {selectedDeckData.name}
                     </p>
                   </div>
                 </div>

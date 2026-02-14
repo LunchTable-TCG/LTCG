@@ -71,18 +71,18 @@ export function buildRtmpUrl(
   switch (platform) {
     case "twitch":
       return withStreamKey(
-        normalizeOptionalOverride(customRtmpUrl, platform) ?? "rtmps://live.twitch.tv/app",
+        normalizeOptionalOverride(customRtmpUrl, platform) ?? process.env.NEXT_PUBLIC_TWITCH_RTMP_URL ?? "rtmps://live.twitch.tv/app",
         normalizedStreamKey
       );
     case "youtube":
       return withStreamKey(
-        normalizeOptionalOverride(customRtmpUrl, platform) ?? "rtmps://a.rtmp.youtube.com/live2",
+        normalizeOptionalOverride(customRtmpUrl, platform) ?? process.env.NEXT_PUBLIC_YOUTUBE_RTMP_URL ?? "rtmps://a.rtmp.youtube.com/live2",
         normalizedStreamKey
       );
     case "kick":
       return withStreamKey(
         normalizeOptionalOverride(customRtmpUrl, platform) ??
-          "rtmps://fa723fc1b171.global-contribute.live-video.net:443/app",
+          process.env.NEXT_PUBLIC_KICK_RTMP_URL ?? "rtmps://fa723fc1b171.global-contribute.live-video.net:443/app",
         normalizedStreamKey
       );
     case "custom":

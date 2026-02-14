@@ -415,7 +415,7 @@ export default function TreasuryWalletsPage() {
                       {wallet.address && (
                         <Button variant="outline" size="sm" asChild>
                           <a
-                            href={`https://solscan.io/account/${wallet.address}`}
+                            href={`${process.env.NEXT_PUBLIC_SOLANA_EXPLORER_URL || "https://solscan.io"}/account/${wallet.address}`}
                             target="_blank"
                             rel="noopener noreferrer"
                           >

@@ -197,7 +197,7 @@ export function TransactionHistory({
                   <CurrencyIcon currency={tx.currencyType} />
                   {"signature" in tx && tx.signature && (
                     <a
-                      href={`https://solscan.io/tx/${tx.signature}`}
+                      href={`${process.env.NEXT_PUBLIC_SOLANA_EXPLORER_URL || "https://solscan.io"}/tx/${tx.signature}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="p-1 rounded hover:bg-[#2a2118] transition-colors"

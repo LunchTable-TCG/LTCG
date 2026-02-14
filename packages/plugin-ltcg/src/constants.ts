@@ -5,28 +5,29 @@
 /**
  * Production deployment URLs
  *
- * IMPORTANT: Update these URLs before publishing the plugin to NPM.
- * These are the centralized LTCG game service URLs that all agents connect to.
- *
+ * All URLs are configurable via environment variables.
  * Users can override these in their .env for development/testing:
- * - LTCG_API_URL - Override API base URL
- * - LTCG_CONVEX_URL - Override Convex deployment URL
+ * - LTCG_API_URL / LTCG_PRODUCTION_API_URL - Override API base URL
+ * - LTCG_CONVEX_URL / LTCG_PRODUCTION_CONVEX_URL - Override Convex deployment URL
+ * - RETAKE_BASE_URL - Override Retake.tv chat API base URL
+ * - LTCG_APP_URL - Override app URL for links
  */
 export const LTCG_PRODUCTION_CONFIG = {
-  /**
-   * Production API URL
-   * TODO: Update this to your deployed LTCG API URL before publishing
-   */
+  /** Production API URL - set via LTCG_PRODUCTION_API_URL env var */
   API_URL:
-    process.env.LTCG_PRODUCTION_API_URL || "https://ltcg-production.vercel.app",
+    process.env.LTCG_PRODUCTION_API_URL || process.env.LTCG_API_URL || "",
 
-  /**
-   * Production Convex deployment URL
-   * TODO: Update this to your production Convex deployment URL before publishing
-   */
+  /** Production Convex deployment URL - set via LTCG_PRODUCTION_CONVEX_URL env var */
   CONVEX_URL:
-    process.env.LTCG_PRODUCTION_CONVEX_URL ||
-    "https://calm-pelican-123.convex.cloud",
+    process.env.LTCG_PRODUCTION_CONVEX_URL || process.env.LTCG_CONVEX_URL || "",
+
+  /** Retake.tv chat API base URL */
+  RETAKE_BASE_URL:
+    process.env.RETAKE_BASE_URL || "https://chat.retake.tv",
+
+  /** App URL for links and notifications */
+  APP_URL:
+    process.env.LTCG_APP_URL || process.env.NEXT_PUBLIC_APP_URL || "https://www.lunchtable.cards",
 } as const;
 
 /**

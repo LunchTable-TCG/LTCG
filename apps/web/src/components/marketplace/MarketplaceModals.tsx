@@ -15,7 +15,7 @@ const RARITY_COLORS: Record<Rarity, string> = {
   legendary: "text-yellow-400",
 };
 
-const PLATFORM_FEE = 0.05;
+const PLATFORM_FEE = Number(process.env.NEXT_PUBLIC_MARKETPLACE_FEE_PCT || 0.05);
 
 interface ShopPurchaseModalProps {
   item: ShopItem | null;

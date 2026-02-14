@@ -68,6 +68,46 @@ export const ARCHETYPE_THEMES: Record<string, ArchetypeTheme> = {
     glowColor: "shadow-purple-500/30",
   },
 
+  // Water archetypes (current)
+  abyssal_depths: {
+    gradient: "from-blue-700 via-cyan-600 to-teal-500",
+    icon: "🌊",
+    iconPath: "/brand/icons/archetypes/abyssal_horrors.png",
+    color: "blue",
+    borderColor: "border-blue-500/50",
+    glowColor: "shadow-blue-500/30",
+  },
+
+  // Earth archetypes (current)
+  iron_legion: {
+    gradient: "from-slate-600 via-zinc-500 to-stone-400",
+    icon: "🛡️",
+    iconPath: "/brand/icons/archetypes/nature_spirits.png",
+    color: "slate",
+    borderColor: "border-slate-400/50",
+    glowColor: "shadow-slate-400/30",
+  },
+
+  // Wind archetypes (current alias)
+  storm_riders: {
+    gradient: "from-yellow-500 via-amber-400 to-orange-400",
+    icon: "⚡",
+    iconPath: "/brand/icons/archetypes/storm_elementals.png",
+    color: "yellow",
+    borderColor: "border-yellow-500/50",
+    glowColor: "shadow-yellow-500/30",
+  },
+
+  // Dark archetypes (current)
+  necro_empire: {
+    gradient: "from-purple-800 via-violet-700 to-purple-500",
+    icon: "💀",
+    iconPath: "/brand/icons/archetypes/undead_legion.png",
+    color: "purple",
+    borderColor: "border-purple-500/50",
+    glowColor: "shadow-purple-500/30",
+  },
+
   // Shadow/Dark archetypes
   shadow_assassins: {
     gradient: "from-gray-900 via-slate-700 to-gray-600",

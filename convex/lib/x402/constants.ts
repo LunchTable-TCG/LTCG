@@ -79,10 +79,10 @@ export const X402_CONFIG = {
   TOKEN_DECIMALS: TOKEN.DECIMALS,
 
   /** Facilitator API timeout in milliseconds */
-  FACILITATOR_TIMEOUT_MS: 30_000,
+  FACILITATOR_TIMEOUT_MS: Number(process.env["X402_FACILITATOR_TIMEOUT_MS"] || 30_000),
 
   /** Maximum retries for facilitator API calls */
-  FACILITATOR_MAX_RETRIES: 2,
+  FACILITATOR_MAX_RETRIES: Number(process.env["X402_FACILITATOR_MAX_RETRIES"] || 2),
 } as const;
 
 /**

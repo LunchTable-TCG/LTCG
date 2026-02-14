@@ -8,7 +8,7 @@ import { useState } from "react";
 import { type Agent, AgentCard } from "./AgentCard";
 import { RegisterAgentModal } from "./RegisterAgentModal";
 
-const MAX_AGENTS = 3;
+const MAX_AGENTS = Number(process.env.NEXT_PUBLIC_MAX_AGENTS_PER_USER || 3);
 
 export function AgentManagement() {
   const { isAuthenticated } = useAuth();

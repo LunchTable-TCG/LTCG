@@ -37,7 +37,12 @@ export function getConfig(): Config {
     );
   }
 
-  const apiUrl = process.env.CONVEX_SITE_URL || "https://lunchtable.convex.site";
+  const apiUrl = process.env.CONVEX_SITE_URL;
+  if (!apiUrl) {
+    throw new Error(
+      "CONVEX_SITE_URL environment variable is required. Set it to your Convex deployment site URL (e.g., https://your-deployment.convex.site)."
+    );
+  }
 
   const transport = (process.env.MCP_TRANSPORT || "stdio") as "stdio" | "http";
   if (transport !== "stdio" && transport !== "http") {

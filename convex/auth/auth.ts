@@ -8,7 +8,6 @@
  */
 
 import { query } from "../_generated/server";
-import { fullUserValidator } from "../lib/returnValidators";
 
 /**
  * Get the currently logged in user's full profile
@@ -16,7 +15,6 @@ import { fullUserValidator } from "../lib/returnValidators";
  */
 export const loggedInUser = query({
   args: {},
-  returns: fullUserValidator,
   handler: async (ctx) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) {

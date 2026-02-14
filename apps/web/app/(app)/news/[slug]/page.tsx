@@ -239,7 +239,7 @@ function ArticleContent() {
                 </Link>{" "}
                 and join our{" "}
                 <Link
-                  href="https://discord.gg/hgjCJJZh"
+                  href={process.env.NEXT_PUBLIC_DISCORD_URL || "https://discord.gg/hgjCJJZh"}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-[#d4af37] hover:underline"

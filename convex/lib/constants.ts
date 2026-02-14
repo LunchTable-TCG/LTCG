@@ -525,7 +525,7 @@ export const SALES_CONFIG = {
  */
 export const ELIZAOS_TOKEN = {
   /** ElizaOS SPL token mint address */
-  MINT_ADDRESS: "DuMbhu7mvQvqQHGcnikDgb4XegXJRyhUBfdU22uELiZA",
+  MINT_ADDRESS: process.env["ELIZAOS_TOKEN_MINT"] || "DuMbhu7mvQvqQHGcnikDgb4XegXJRyhUBfdU22uELiZA",
 
   /** Token decimals (standard SPL token decimals) */
   DECIMALS: 9,

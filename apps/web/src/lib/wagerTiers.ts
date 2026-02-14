@@ -22,14 +22,14 @@ export const SOL_DECIMALS = 9;
 export const USDC_DECIMALS = 6;
 
 export const SOL_MINT = "11111111111111111111111111111111";
-export const USDC_MINT = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
+export const USDC_MINT = process.env.NEXT_PUBLIC_USDC_MINT || "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
 
 // ============================================================================
 // FEE CONFIGURATION
 // ============================================================================
 
-export const CRYPTO_WAGER_FEE_BPS = 1000;
-export const CRYPTO_WAGER_WINNER_PERCENTAGE = 0.9;
+export const CRYPTO_WAGER_FEE_BPS = Number(process.env.NEXT_PUBLIC_CRYPTO_WAGER_FEE_BPS || 1000);
+export const CRYPTO_WAGER_WINNER_PERCENTAGE = Number(process.env.NEXT_PUBLIC_CRYPTO_WAGER_WINNER_PCT || 0.9);
 
 // ============================================================================
 // VALIDATION & FORMATTING

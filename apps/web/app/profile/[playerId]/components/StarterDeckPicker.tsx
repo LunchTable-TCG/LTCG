@@ -1,5 +1,6 @@
 "use client";
 
+import { getArchetypeTheme } from "@/lib/archetypeThemes";
 import { cn } from "@/lib/utils";
 import { Check, Flame, Shield, Skull, Waves, Zap } from "lucide-react";
 
@@ -18,51 +19,19 @@ interface StarterDeckPickerProps {
   onSelect: (deckCode: string) => void;
 }
 
-const DECK_CONFIG: Record<
-  string,
-  {
-    icon: typeof Flame;
-    gradient: string;
-    border: string;
-    iconColor: string;
-    selectedBg: string;
-  }
-> = {
-  INFERNAL_DRAGONS: {
-    icon: Flame,
-    gradient: "from-red-600/20 to-orange-600/20",
-    border: "border-red-500/30 hover:border-red-500/60",
-    iconColor: "text-red-500",
-    selectedBg: "bg-red-500/20",
-  },
-  ABYSSAL_DEPTHS: {
-    icon: Waves,
-    gradient: "from-blue-600/20 to-cyan-600/20",
-    border: "border-blue-500/30 hover:border-blue-500/60",
-    iconColor: "text-blue-500",
-    selectedBg: "bg-blue-500/20",
-  },
-  IRON_LEGION: {
-    icon: Shield,
-    gradient: "from-slate-500/20 to-zinc-600/20",
-    border: "border-slate-400/30 hover:border-slate-400/60",
-    iconColor: "text-slate-400",
-    selectedBg: "bg-slate-500/20",
-  },
-  STORM_RIDERS: {
-    icon: Zap,
-    gradient: "from-yellow-500/20 to-amber-600/20",
-    border: "border-yellow-500/30 hover:border-yellow-500/60",
-    iconColor: "text-yellow-500",
-    selectedBg: "bg-yellow-500/20",
-  },
-  NECRO_EMPIRE: {
-    icon: Skull,
-    gradient: "from-purple-600/20 to-violet-800/20",
-    border: "border-purple-500/30 hover:border-purple-500/60",
-    iconColor: "text-purple-500",
-    selectedBg: "bg-purple-500/20",
-  },
+/** Map archetype/element to a Lucide icon */
+const ARCHETYPE_ICONS: Record<string, typeof Flame> = {
+  fire: Flame,
+  water: Waves,
+  earth: Shield,
+  wind: Zap,
+  dark: Skull,
+  infernal_dragons: Flame,
+  abyssal_depths: Waves,
+  iron_legion: Shield,
+  storm_riders: Zap,
+  storm_elementals: Zap,
+  necro_empire: Skull,
 };
 
 export function StarterDeckPicker({ decks, selectedDeck, onSelect }: StarterDeckPickerProps) {
@@ -79,15 +48,8 @@ export function StarterDeckPicker({ decks, selectedDeck, onSelect }: StarterDeck
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
         {decks.map((deck) => {
-          const defaultConfig = {
-            icon: Shield,
-            gradient: "from-slate-500/20 to-zinc-600/20",
-            border: "border-slate-400/30 hover:border-slate-400/60",
-            iconColor: "text-slate-400",
-            selectedBg: "bg-slate-500/20",
-          };
-          const config = DECK_CONFIG[deck.deckCode] || defaultConfig;
-          const Icon = config.icon;
+          const theme = getArchetypeTheme(deck.archetype);
+          const Icon = ARCHETYPE_ICONS[deck.archetype] ?? Shield;
           const isSelected = selectedDeck === deck.deckCode;
 
           return (
@@ -98,10 +60,10 @@ export function StarterDeckPicker({ decks, selectedDeck, onSelect }: StarterDeck
               className={cn(
                 "relative p-3 rounded-lg border-2 transition-all duration-300 text-left group",
                 "bg-linear-to-br",
-                config.gradient,
+                `from-${theme.color}-600/20 to-${theme.color}-500/10`,
                 isSelected
-                  ? `${config.selectedBg} border-[#d4af37] ring-1 ring-[#d4af37]/30`
-                  : config.border
+                  ? `bg-${theme.color}-500/20 border-[#d4af37] ring-1 ring-[#d4af37]/30`
+                  : `${theme.borderColor} hover:border-${theme.color}-500/60`
               )}
             >
               {/* Selected Indicator */}
@@ -119,7 +81,7 @@ export function StarterDeckPicker({ decks, selectedDeck, onSelect }: StarterDeck
                   "group-hover:scale-110 transition-transform"
                 )}
               >
-                <Icon className={cn("w-5 h-5", config.iconColor)} />
+                <Icon className={cn("w-5 h-5", `text-${theme.color}-500`)} />
               </div>
 
               {/* Name */}

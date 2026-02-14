@@ -29,7 +29,7 @@ Communication style:
 - If you don't know something specific about the game, be honest about it`,
 
   settings: {
-    model: "anthropic/claude-3.5-sonnet",
+    model: process.env.NEXT_PUBLIC_AI_MODEL || "anthropic/claude-3.5-sonnet",
   },
   style: {
     all: [

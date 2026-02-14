@@ -17,8 +17,9 @@ const apiAny = (generatedApi as any).api;
 // CORS helper - dynamically set origin based on request
 function getCorsHeaders(request?: Request) {
   const origin = request?.headers.get("origin") || "";
+  const extraOrigins = process.env["ADMIN_ALLOWED_ORIGINS"]?.split(",").map(s => s.trim()) || [];
   const allowedOrigins = [
-    "https://ltcg-admin.vercel.app",
+    ...extraOrigins,
     "http://localhost:3001",
     "http://127.0.0.1:3001",
     process.env["ADMIN_APP_URL"],
@@ -142,7 +143,7 @@ export async function POST(request: Request): Promise<NextResponse> {
         return {
           allowedContentTypes: ALLOWED_CONTENT_TYPES,
           addRandomSuffix: false, // Keep original filenames for asset management
-          maximumSizeInBytes: 50 * 1024 * 1024, // 50MB max
+          maximumSizeInBytes: Number(process.env.MAX_UPLOAD_SIZE_BYTES || 50 * 1024 * 1024),
           tokenPayload: JSON.stringify({
             category: parsedPayload.category || "other",
             description: parsedPayload.description || "",

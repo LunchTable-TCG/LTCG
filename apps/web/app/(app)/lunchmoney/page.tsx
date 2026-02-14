@@ -284,7 +284,7 @@ export default function LunchMoneyPage() {
               </h2>
               <div className="relative w-full" style={{ paddingBottom: "65%" }}>
                 <iframe
-                  src="https://dexscreener.com/solana/BdDkntHfNoe77xjXDACaXJCVa6DksrgcHKn6gfr7dTPU?embed=1&loadChartSettings=0&chartLeftToolbar=0&chartTheme=dark&theme=dark&chartStyle=0&chartType=usd&interval=15"
+                  src={`https://dexscreener.com/solana/${process.env.NEXT_PUBLIC_DEXSCREENER_PAIR_ADDRESS || "BdDkntHfNoe77xjXDACaXJCVa6DksrgcHKn6gfr7dTPU"}?embed=1&loadChartSettings=0&chartLeftToolbar=0&chartTheme=dark&theme=dark&chartStyle=0&chartType=usd&interval=15`}
                   className="absolute top-0 left-0 w-full h-full rounded-lg"
                   style={{ border: 0 }}
                   title="LUNCH Token DexScreener Chart"

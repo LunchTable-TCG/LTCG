@@ -67,13 +67,14 @@ export async function POST(req: NextRequest) {
     }
 
     const voiceId =
-      body.voiceId?.trim() || process.env.ELEVENLABS_VOICE_ID?.trim() || "EXAVITQu4vr4xnSDxMaL";
+      body.voiceId?.trim() || process.env.ELEVENLABS_VOICE_ID?.trim() || process.env.ELEVENLABS_DEFAULT_VOICE_ID?.trim() || "EXAVITQu4vr4xnSDxMaL";
     const modelId =
-      body.modelId?.trim() || process.env.ELEVENLABS_MODEL_ID?.trim() || "eleven_multilingual_v2";
-    const outputFormat = body.outputFormat?.trim() || "mp3_44100_128";
+      body.modelId?.trim() || process.env.ELEVENLABS_MODEL_ID?.trim() || process.env.ELEVENLABS_DEFAULT_MODEL_ID?.trim() || "eleven_multilingual_v2";
+    const outputFormat = body.outputFormat?.trim() || process.env.ELEVENLABS_OUTPUT_FORMAT?.trim() || "mp3_44100_128";
 
+    const elevenlabsBaseUrl = process.env.ELEVENLABS_API_BASE_URL || "https://api.elevenlabs.io";
     const upstreamResponse = await fetch(
-      `https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(voiceId)}?output_format=${encodeURIComponent(outputFormat)}`,
+      `${elevenlabsBaseUrl}/v1/text-to-speech/${encodeURIComponent(voiceId)}?output_format=${encodeURIComponent(outputFormat)}`,
       {
         method: "POST",
         headers: {

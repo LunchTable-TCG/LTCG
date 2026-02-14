@@ -66,7 +66,7 @@ export const register = httpAction(async (ctx, request) => {
       name: body.name,
       profilePictureUrl: undefined, // Optional
       socialLink: undefined, // Optional
-      starterDeckCode: body.starterDeckCode || "INFERNAL_DRAGONS", // Default deck
+      starterDeckCode: body.starterDeckCode, // Must be provided or handled by registerAgentInternal
       callbackUrl: body.callbackUrl, // Webhook URL for real-time notifications
     });
 

@@ -13,18 +13,18 @@ const footerLinks = {
   developers: {
     title: "Developers",
     links: [
-      { href: "https://docs.lunchtable.cards", label: "Documentation", external: true },
-      { href: "https://agents.lunchtable.cards", label: "Agent SDK", external: true },
-      { href: "https://dev.lunchtable.cards", label: "Developer Portal", external: true },
-      { href: "https://github.com/LunchTable-TCG/LTCG", label: "GitHub", external: true },
+      { href: process.env.NEXT_PUBLIC_DOCS_URL || "https://docs.lunchtable.cards", label: "Documentation", external: true },
+      { href: process.env.NEXT_PUBLIC_AGENT_SDK_URL || "https://agents.lunchtable.cards", label: "Agent SDK", external: true },
+      { href: process.env.NEXT_PUBLIC_DEV_PORTAL_URL || "https://dev.lunchtable.cards", label: "Developer Portal", external: true },
+      { href: process.env.NEXT_PUBLIC_GITHUB_URL || "https://github.com/LunchTable-TCG/LTCG", label: "GitHub", external: true },
     ],
   },
   community: {
     title: "Guild",
     links: [
       { href: "/social", label: "Guild Hall" },
-      { href: "https://discord.gg/hgjCJJZh", label: "Discord", external: true },
-      { href: "https://x.com/LunchTableTCG", label: "X", external: true },
+      { href: process.env.NEXT_PUBLIC_DISCORD_URL || "https://discord.gg/hgjCJJZh", label: "Discord", external: true },
+      { href: process.env.NEXT_PUBLIC_TWITTER_URL || "https://x.com/LunchTableTCG", label: "X", external: true },
     ],
   },
   legal: {

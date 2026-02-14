@@ -6,7 +6,8 @@ import { query } from "./_generated/server";
 import { internalMutation, mutation } from "./functions";
 import { requireAuthMutation, requireAuthQuery } from "./lib/convexAuth";
 import { ErrorCode, createError } from "./lib/errorCodes";
-import type { UserStatus } from "./lib/types";
+
+type UserStatus = "online" | "in_game" | "idle";
 
 /**
  * Presence System using @convex-dev/presence

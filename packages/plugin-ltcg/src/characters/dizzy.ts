@@ -29,7 +29,7 @@ export const dizzy: Character = {
         RETAKE_USER_DB_ID: process.env.DIZZY_RETAKE_USER_DB_ID,
       }),
     },
-    avatar: "https://lunchtable.cards/logo.png",
+    avatar: process.env.LTCG_DEFAULT_AVATAR_URL || "https://lunchtable.cards/logo.png",
   },
 
   plugins: [

@@ -5,7 +5,7 @@
  * Docs: https://retake.tv/skill.md
  */
 
-const RETAKE_BASE_URL = "https://chat.retake.tv";
+const RETAKE_BASE_URL = process.env.NEXT_PUBLIC_RETAKE_BASE_URL || "https://chat.retake.tv";
 
 export interface RetakeRegistration {
   agent_name: string;
@@ -124,7 +124,8 @@ export async function getRetakeRTMPCredentials(accessToken: string): Promise<Ret
  * Format: rtmps://global-live.mux.com:443/app/STREAM_KEY
  */
 export function buildRetakeRTMPUrl(streamKey: string): string {
-  return `rtmps://global-live.mux.com:443/app/${streamKey}`;
+  const muxIngestUrl = process.env.NEXT_PUBLIC_MUX_RTMP_URL || "rtmps://global-live.mux.com:443/app";
+  return `${muxIngestUrl}/${streamKey}`;
 }
 
 /**

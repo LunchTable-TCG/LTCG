@@ -26,9 +26,6 @@ import { storyModeAction } from "./storyModeAction";
 import { summonAction } from "./summonAction";
 import { surrenderAction } from "./surrenderAction";
 import { trashTalkAction } from "./trashTalkAction";
-import stopRetakeStreamAction from "./stopRetakeStreamAction";
-import respondToRetakeChatAction from "./respondToRetakeChatAction";
-import startXStreamAction from "./startXStreamAction";
 
 /**
  * All LTCG game actions
@@ -93,11 +90,6 @@ export const ltcgActions = [
   reactToPlayAction,
   ggAction,
   sendChatMessageAction,
-
-  // Streaming Actions
-  stopRetakeStreamAction,
-  respondToRetakeChatAction,
-  startXStreamAction,
 ];
 
 // Export individual actions for convenience
@@ -128,8 +120,4 @@ export {
   reactToPlayAction,
   ggAction,
   sendChatMessageAction,
-  // Streaming
-  stopRetakeStreamAction,
-  respondToRetakeChatAction,
-  startXStreamAction,
 };
