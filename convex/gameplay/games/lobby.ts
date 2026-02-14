@@ -7,10 +7,10 @@ import type { MutationCtx } from "../../_generated/server";
 import { adjustPlayerCurrencyHelper } from "../../economy/economy";
 import { internalMutation, mutation } from "../../functions";
 import { totalGamesCounter } from "../../infrastructure/shardedCounters";
-import { ELO_SYSTEM } from "../../lib/constants";
 import { requireAuthMutation } from "../../lib/convexAuth";
 import { createTraceContext, logMatchmaking, logger, performance } from "../../lib/debug";
 import { ErrorCode, createError } from "../../lib/errorCodes";
+import { getGameConfig } from "../../lib/gameConfig";
 import { getRankFromRating } from "../../lib/helpers";
 import { checkRateLimitWrapper } from "../../lib/rateLimit";
 import { validateLobbyCapacity, validateLobbyStatus } from "../../lib/validation";
@@ -138,6 +138,8 @@ async function validateUserCanCreateGameInternal(
   rankedElo: number;
   casualRating: number;
 }> {
+  const config = await getGameConfig(ctx);
+
   // Get user and active deck
   const user = await ctx.db.get(userId);
   if (!user) {
@@ -216,8 +218,8 @@ async function validateUserCanCreateGameInternal(
     username,
     deckId: activeDeckId,
     deckArchetype: deck.deckArchetype || "unknown",
-    rankedElo: user.rankedElo ?? ELO_SYSTEM.DEFAULT_RATING,
-    casualRating: user.casualRating ?? ELO_SYSTEM.DEFAULT_RATING,
+    rankedElo: user.rankedElo ?? config.competitive.elo.defaultRating,
+    casualRating: user.casualRating ?? config.competitive.elo.defaultRating,
   };
 }
 

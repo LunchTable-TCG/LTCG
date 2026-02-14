@@ -5,8 +5,8 @@
  * Used by elizaOS agents to find and join games.
  */
 
+import { DEFAULT_LTCG_CONFIG } from "@lunchtable-tcg/config";
 import type { Doc, Id } from "../_generated/dataModel";
-import { ELO_SYSTEM } from "../lib/constants";
 import {
   type WagerCurrency,
   formatWagerAmount,
@@ -156,7 +156,7 @@ function checkEligibility(
 
   // For ranked mode, check rating difference
   if (lobby.mode === "ranked" && lobby.hostRating !== undefined) {
-    const userRating = user.rankedElo || ELO_SYSTEM.DEFAULT_RATING;
+    const userRating = user.rankedElo || DEFAULT_LTCG_CONFIG.competitive.elo.defaultRating;
     const maxDiff = lobby.maxRatingDiff || 300; // Default 300 rating difference
     const ratingDiff = Math.abs(userRating - lobby.hostRating);
 
@@ -203,7 +203,7 @@ export const lobbies = authHttpAction(async (ctx, request, auth) => {
       return errorResponse("ACCOUNT_SUSPENDED", "Your account is suspended from matchmaking", 403);
     }
 
-    const userRating = user?.rankedElo || ELO_SYSTEM.DEFAULT_RATING;
+    const userRating = user?.rankedElo || DEFAULT_LTCG_CONFIG.competitive.elo.defaultRating;
 
     // List waiting lobbies
     const waitingLobbies = await ctx.runQuery(listWaitingLobbiesQuery, {

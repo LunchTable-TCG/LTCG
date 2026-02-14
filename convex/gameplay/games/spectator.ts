@@ -1,8 +1,8 @@
 import { v } from "convex/values";
 import { mutation } from "../../functions";
 import { spectatorCounter } from "../../infrastructure/shardedCounters";
-import { SPECTATOR } from "../../lib/constants";
 import { ErrorCode, createError } from "../../lib/errorCodes";
+import { getGameConfig } from "../../lib/gameConfig";
 
 // ============================================================================
 // SPECTATOR MUTATIONS
@@ -22,6 +22,7 @@ export const joinAsSpectator = mutation({
     lobbyId: v.id("gameLobbies"),
   },
   handler: async (ctx, { lobbyId }) => {
+    const config = await getGameConfig(ctx);
     const lobby = await ctx.db.get(lobbyId);
 
     if (!lobby) {
@@ -46,7 +47,7 @@ export const joinAsSpectator = mutation({
     // Enforce max spectators - check current sharded counter value
     // Note: Due to eventual consistency, this may briefly allow 1-2 extra spectators
     // during high concurrency, but this is acceptable for spectating
-    const maxSpectators = lobby.maxSpectators || SPECTATOR.MAX_SPECTATORS_PER_GAME;
+    const maxSpectators = lobby.maxSpectators || config.social.spectator.maxPerGame;
     const currentCount = await spectatorCounter.count(ctx, lobbyId);
 
     if (currentCount >= maxSpectators) {

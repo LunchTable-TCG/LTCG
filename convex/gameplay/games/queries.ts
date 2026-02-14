@@ -1,9 +1,9 @@
 import { v } from "convex/values";
 import type { Doc, Id } from "../../_generated/dataModel";
 import { internalQuery, query } from "../../_generated/server";
-import { ELO_SYSTEM } from "../../lib/constants";
 import { requireAuthQuery } from "../../lib/convexAuth";
 import { ErrorCode, createError } from "../../lib/errorCodes";
+import { getGameConfig } from "../../lib/gameConfig";
 import { DEFAULT_TIMEOUT_CONFIG } from "../timeoutSystem";
 
 // ============================================================================
@@ -34,8 +34,9 @@ export const listWaitingLobbies = query({
     userRating: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
+    const config = await getGameConfig(ctx);
     const mode = args.mode || "all";
-    const userRating = args.userRating || ELO_SYSTEM.DEFAULT_RATING;
+    const userRating = args.userRating || config.competitive.elo.defaultRating;
 
     // Query waiting lobbies
     const allLobbies = await (mode === "all"
