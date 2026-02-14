@@ -8,6 +8,7 @@
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { economy } from "./componentClients";
+import { getGameConfig } from "./gameConfig";
 // Types previously from economy/rngConfig — now inline since economy module moved to component
 export type RarityWeights = {
   common: number;
@@ -37,15 +38,16 @@ type FullRngConfig = {
  * Falls back to hardcoded constants when no DB config exists.
  */
 async function getFullRngConfig(ctx: QueryCtx | MutationCtx): Promise<FullRngConfig> {
+  const config = await getGameConfig(ctx);
   const DEFAULTS: FullRngConfig = {
-    rarityWeights: RARITY_WEIGHTS as unknown as RarityWeights,
+    rarityWeights: config.economy.rarityWeights as unknown as RarityWeights,
     variantRates: {
-      standard: VARIANT_CONFIG.BASE_RATES.standard,
-      foil: VARIANT_CONFIG.BASE_RATES.foil,
-      altArt: VARIANT_CONFIG.BASE_RATES.alt_art,
-      fullArt: VARIANT_CONFIG.BASE_RATES.full_art,
+      standard: config.economy.variantBaseRates.standard,
+      foil: config.economy.variantBaseRates.foil,
+      altArt: config.economy.variantBaseRates.altArt,
+      fullArt: config.economy.variantBaseRates.fullArt,
     },
-    pityThresholds: PITY_THRESHOLDS as unknown as PityThresholds,
+    pityThresholds: config.economy.pityThresholds as unknown as PityThresholds,
   };
 
   try {
@@ -57,8 +59,8 @@ async function getFullRngConfig(ctx: QueryCtx | MutationCtx): Promise<FullRngCon
       variantRates: dbConfig.variantRates,
       pityThresholds: dbConfig.pityThresholds,
     };
-  } catch {
-    // If the component query fails (e.g. table doesn't exist yet), use defaults
+  } catch (err) {
+    console.warn("getFullRngConfig: economy component query failed, using defaults", err);
     return DEFAULTS;
   }
 }
@@ -659,7 +661,8 @@ export async function openPack(
 export function calculateEloChange(
   winnerRating: number,
   loserRating: number,
-  kFactor: number = ELO_SYSTEM.K_FACTOR
+  kFactor: number = ELO_SYSTEM.K_FACTOR,
+  ratingFloor: number = ELO_SYSTEM.RATING_FLOOR
 ): { winnerNewRating: number; loserNewRating: number } {
   // Calculate expected win probability for both players
   const expectedWinner = 1 / (1 + 10 ** ((loserRating - winnerRating) / 400));
@@ -671,8 +674,8 @@ export function calculateEloChange(
   const loserChange = Math.round(kFactor * (0 - expectedLoser));
 
   return {
-    winnerNewRating: Math.max(ELO_SYSTEM.RATING_FLOOR, winnerRating + winnerChange),
-    loserNewRating: Math.max(ELO_SYSTEM.RATING_FLOOR, loserRating + loserChange),
+    winnerNewRating: Math.max(ratingFloor, winnerRating + winnerChange),
+    loserNewRating: Math.max(ratingFloor, loserRating + loserChange),
   };
 }
 
@@ -723,18 +726,21 @@ export function calculateWinRate(
  * Platinum (1600-1799), Diamond (1800-1999), Master (2000-2199), Legend (2200+)
  *
  * @param rating - ELO rating value
+ * @param thresholds - Optional rank thresholds (defaults to RANK_THRESHOLDS constant)
  * @returns Rank tier name (e.g., "Gold", "Diamond", "Legend")
  * @example
  * getRankFromRating(1500) // "Gold"
  * getRankFromRating(2200) // "Legend"
  * getRankFromRating(800) // "Bronze"
  */
-export function getRankFromRating(rating: number): string {
-  if (rating >= RANK_THRESHOLDS.Legend) return "Legend";
-  if (rating >= RANK_THRESHOLDS.Master) return "Master";
-  if (rating >= RANK_THRESHOLDS.Diamond) return "Diamond";
-  if (rating >= RANK_THRESHOLDS.Platinum) return "Platinum";
-  if (rating >= RANK_THRESHOLDS.Gold) return "Gold";
-  if (rating >= RANK_THRESHOLDS.Silver) return "Silver";
+export function getRankFromRating(
+  rating: number,
+  thresholds: Record<string, number> = RANK_THRESHOLDS
+): string {
+  // Sort thresholds descending by value
+  const sorted = Object.entries(thresholds).sort(([, a], [, b]) => b - a);
+  for (const [rank, threshold] of sorted) {
+    if (rating >= threshold) return rank;
+  }
   return "Bronze";
 }
