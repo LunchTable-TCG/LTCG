@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { defineCards, validateDeck } from "../cards.js";
 import type { CardDefinition } from "../types/index.js";
+import { EXAMPLE_CARDS } from "./fixtures/example-card-set.js";
 
 const sampleCards: CardDefinition[] = [
   {
@@ -153,5 +154,18 @@ describe("card validation", () => {
         { id: "", name: "Test", type: "spell", description: "", rarity: "common", spellType: "normal" },
       ])
     ).toThrow("Card must have an id");
+  });
+});
+
+describe("example card set", () => {
+  it("validates the complete example set", () => {
+    const lookup = defineCards(EXAMPLE_CARDS);
+    expect(Object.keys(lookup)).toHaveLength(6);
+  });
+
+  it("includes all card types", () => {
+    const lookup = defineCards(EXAMPLE_CARDS);
+    const types = new Set(Object.values(lookup).map((c) => c.type));
+    expect(types).toEqual(new Set(["stereotype", "spell", "trap"]));
   });
 });
