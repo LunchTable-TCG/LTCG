@@ -87,3 +87,71 @@ describe("validateDeck", () => {
     expect(result.errors[0]).toContain("Unknown card");
   });
 });
+
+describe("card validation", () => {
+  it("rejects spell without spellType", () => {
+    expect(() =>
+      defineCards([
+        { id: "bad-spell", name: "Bad", type: "spell", description: "", rarity: "common" },
+      ])
+    ).toThrow('Spell "bad-spell" must have a spellType');
+  });
+
+  it("rejects trap without trapType", () => {
+    expect(() =>
+      defineCards([
+        { id: "bad-trap", name: "Bad", type: "trap", description: "", rarity: "common" },
+      ])
+    ).toThrow('Trap "bad-trap" must have a trapType');
+  });
+
+  it("rejects stereotype with negative attack", () => {
+    expect(() =>
+      defineCards([
+        {
+          id: "neg-atk",
+          name: "Bad",
+          type: "stereotype",
+          description: "",
+          rarity: "common",
+          attack: -100,
+          defense: 1000,
+          level: 4,
+        },
+      ])
+    ).toThrow('Stereotype "neg-atk" attack must be non-negative');
+  });
+
+  it("rejects stereotype with level out of range", () => {
+    expect(() =>
+      defineCards([
+        {
+          id: "bad-level",
+          name: "Bad",
+          type: "stereotype",
+          description: "",
+          rarity: "common",
+          attack: 1000,
+          defense: 1000,
+          level: 0,
+        },
+      ])
+    ).toThrow('Stereotype "bad-level" level must be between 1 and 12');
+  });
+
+  it("rejects cards with empty name", () => {
+    expect(() =>
+      defineCards([
+        { id: "no-name", name: "", type: "spell", description: "", rarity: "common", spellType: "normal" },
+      ])
+    ).toThrow('Card "no-name" must have a name');
+  });
+
+  it("rejects cards with empty id", () => {
+    expect(() =>
+      defineCards([
+        { id: "", name: "Test", type: "spell", description: "", rarity: "common", spellType: "normal" },
+      ])
+    ).toThrow("Card must have an id");
+  });
+});
