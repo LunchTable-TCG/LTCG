@@ -7,6 +7,7 @@ import { DEFAULT_CONFIG } from "./types/config.js";
 import { nextPhase, opponentSeat } from "./rules/phases.js";
 import { decideSummon, decideSetMonster, decideFlipSummon, evolveSummon } from "./rules/summoning.js";
 import { decideSetSpellTrap, decideActivateSpell, decideActivateTrap, evolveSpellTrap } from "./rules/spellsTraps.js";
+import { decideDeclareAttack, evolveCombat } from "./rules/combat.js";
 
 export interface EngineOptions {
   config?: Partial<EngineConfig>;
@@ -261,6 +262,11 @@ function decide(state: GameState, command: Command, seat: Seat): EngineEvent[] {
       break;
     }
 
+    case "DECLARE_ATTACK": {
+      events.push(...decideDeclareAttack(state, seat, command));
+      break;
+    }
+
     // TODO: Handle other commands
     default:
       break;
@@ -314,6 +320,13 @@ function evolve(state: GameState, events: EngineEvent[]): GameState {
         // Both summoning and spellsTraps can handle this event
         newState = evolveSummon(newState, event);
         newState = evolveSpellTrap(newState, event);
+        break;
+
+      case "ATTACK_DECLARED":
+      case "DAMAGE_DEALT":
+      case "CARD_DESTROYED":
+      case "BATTLE_RESOLVED":
+        newState = evolveCombat(newState, event);
         break;
 
       // TODO: Handle other events (CARD_DRAWN, etc.)
