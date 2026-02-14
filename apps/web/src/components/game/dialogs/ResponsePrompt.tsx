@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import type { Id } from "@convex/_generated/dataModel";
 import { AnimatePresence, motion } from "framer-motion";
 import { Clock, X, Zap } from "lucide-react";
-import Image from "next/image";
+import { Image } from "@/components/ui/image";
 import { useCallback, useEffect, useState } from "react";
 import type { CardInZone } from "../hooks/useGameBoard";
 

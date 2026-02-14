@@ -40,8 +40,8 @@ export interface GameEndedEvent {
   wagerAmount: number;
   /** Whether wager was already paid (to prevent double-pay) */
   wagerPaid: boolean;
-  /** Story stage ID if story mode */
-  stageId?: Id<"storyStages">;
+  /** Story stage ID if story mode (cross-component reference) */
+  stageId?: string;
   /** Host's final LP (for story mode completion) */
   hostFinalLP: number;
   /** Whether the host is the winner */
@@ -129,7 +129,8 @@ export interface MatchCompletedEvent {
 export interface StoryStageCompletedEvent {
   type: "story:stage_completed";
   userId: Id<"users">;
-  stageId: Id<"storyStages">;
+  /** Story stage ID (cross-component reference) */
+  stageId: string;
   won: boolean;
   finalLP: number;
   timestamp: number;

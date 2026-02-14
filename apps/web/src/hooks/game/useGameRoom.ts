@@ -3,11 +3,11 @@
 import { useAuth } from "@/hooks/auth/useConvexAuthHook";
 import { typedApi, useConvexQuery } from "@/lib/convexHelpers";
 import type { Id } from "@convex/_generated/dataModel";
-import { useRouter } from "next/navigation";
+import { useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
 
 export function useGameRoom(lobbyId: Id<"gameLobbies">) {
-  const router = useRouter();
+  const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
 
   const currentUser = useConvexQuery(
@@ -29,9 +29,9 @@ export function useGameRoom(lobbyId: Id<"gameLobbies">) {
   // Redirect to lunchtable if game doesn't exist or is closed
   useEffect(() => {
     if (gameState === null || lobby === null) {
-      router.push("/lunchtable");
+      navigate({ to: "/lunchtable" });
     }
-  }, [gameState, lobby, router]);
+  }, [gameState, lobby, navigate]);
 
   const isLoading = !currentUser || lobby === undefined || gameState === undefined;
 

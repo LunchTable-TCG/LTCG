@@ -6,7 +6,7 @@ import { type WagerCurrency, formatWagerAmount } from "@/lib/wagerTiers";
 import type { MatchMode } from "@/types/common";
 import type { Id } from "@convex/_generated/dataModel";
 import { useMutation, useQuery } from "convex/react";
-import { useRouter } from "next/navigation";
+import { useNavigate } from "@tanstack/react-router";
 import { toast } from "sonner";
 import { useAuth } from "../auth/useConvexAuthHook";
 
@@ -39,7 +39,7 @@ const sendChallengeMutation = typedApi.social.challenges.sendChallenge;
  * ```
  */
 export function usePlayerCard(userId: Id<"users"> | null) {
-  const router = useRouter();
+  const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
 
   // Query player data when userId is provided
@@ -136,7 +136,7 @@ export function usePlayerCard(userId: Id<"users"> | null) {
       toast.success(`Challenge sent${wagerText}!`, {
         description: `Redirecting to ${mode} game lobby...`,
       });
-      router.push(`/game/${lobbyId}`);
+      navigate({ to: `/game/${lobbyId}` });
       return lobbyId;
     } catch (error) {
       const message = handleHookError(error, "Failed to send challenge");

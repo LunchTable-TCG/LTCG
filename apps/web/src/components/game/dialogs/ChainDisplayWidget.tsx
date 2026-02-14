@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import type { Id } from "@convex/_generated/dataModel";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowDown, Layers, Zap } from "lucide-react";
-import Image from "next/image";
+import { Image } from "@/components/ui/image";
 
 interface ChainLink {
   chainPosition: number;

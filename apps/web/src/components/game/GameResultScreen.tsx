@@ -20,7 +20,7 @@ import {
   Trophy,
   Zap,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 
 type GameResult = "victory" | "defeat" | "draw";
@@ -65,7 +65,7 @@ export function GameResultScreen({
   onReturnToMenu,
   isOpen,
 }: GameResultScreenProps) {
-  const router = useRouter();
+  const navigate = useNavigate();
   const [showRewards, setShowRewards] = useState(false);
   const [showStats, setShowStats] = useState(false);
   const [animationComplete, setAnimationComplete] = useState(false);
@@ -96,7 +96,7 @@ export function GameResultScreen({
     if (onPlayAgain) {
       onPlayAgain();
     } else {
-      router.push("/lunchtable");
+      navigate({ to: "/lunchtable" });
     }
   };
 
@@ -104,7 +104,7 @@ export function GameResultScreen({
     if (onReturnToMenu) {
       onReturnToMenu();
     } else {
-      router.push("/");
+      navigate({ to: "/" });
     }
   };
 
@@ -352,7 +352,7 @@ export function GameResultScreen({
                 </Button>
                 {gameMode === "story" && isVictory && (
                   <Button
-                    onClick={() => router.push("/play/story")}
+                    onClick={() => navigate({ to: "/play/story" })}
                     variant="ghost"
                     className="w-full sm:w-auto text-[#d4af37]"
                   >

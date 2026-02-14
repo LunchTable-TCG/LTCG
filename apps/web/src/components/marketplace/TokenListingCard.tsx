@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import type { Rarity } from "@/types/cards";
 import type { TokenListing } from "@/types/shop";
 import { Gem, Package } from "lucide-react";
-import Image from "next/image";
+import { Image } from "@/components/ui/image";
 
 const RARITY_COLORS: Record<Rarity, string> = {
   common: "text-slate-400",

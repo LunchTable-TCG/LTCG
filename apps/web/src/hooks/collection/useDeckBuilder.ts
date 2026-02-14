@@ -85,17 +85,17 @@ export function useDeckBuilder(): UseDeckBuilderReturn {
 
   // Queries
   const decks = useQuery(
-    (api as any).core.decks.getUserDecks,
+    (api as any).lunchtable_tcg_cards.decks.getUserDecks,
     userId ? { userId } : "skip"
   );
 
   // Mutations
-  const createMutation = useMutation((api as any).core.decks.createDeck);
-  const saveMutation = useMutation((api as any).core.decks.saveDeck);
-  const renameMutation = useMutation((api as any).core.decks.renameDeck);
-  const deleteMutation = useMutation((api as any).core.decks.deleteDeck);
-  const duplicateMutation = useMutation((api as any).core.decks.duplicateDeck);
-  const setActiveMutation = useMutation((api as any).core.decks.setActiveDeck);
+  const createMutation = useMutation((api as any).lunchtable_tcg_cards.decks.createDeck);
+  const saveMutation = useMutation((api as any).lunchtable_tcg_cards.decks.saveDeck);
+  const renameMutation = useMutation((api as any).lunchtable_tcg_cards.decks.renameDeck);
+  const deleteMutation = useMutation((api as any).lunchtable_tcg_cards.decks.deleteDeck);
+  const duplicateMutation = useMutation((api as any).lunchtable_tcg_cards.decks.duplicateDeck);
+  const setActiveMutation = useMutation((api as any).lunchtable_tcg_cards.decks.setActiveDeck);
 
   // Actions
   const createDeck = async (name: string) => {
@@ -236,7 +236,7 @@ export function useDeck(deckId: Id<"userDecks"> | null) {
   const userId = currentUser?._id;
 
   return useQuery(
-    (api as any).core.decks.getDeckWithCards,
+    (api as any).lunchtable_tcg_cards.decks.getDeckWithCards,
     userId && deckId ? { userId, deckId } : "skip"
   );
 }
@@ -283,7 +283,7 @@ export function useValidateDeck(deckId: Id<"userDecks"> | null) {
   const userId = currentUser?._id;
 
   return useQuery(
-    (api as any).core.decks.validateDeck,
+    (api as any).lunchtable_tcg_cards.decks.validateDeck,
     userId && deckId ? { userId, deckId } : "skip"
   );
 }

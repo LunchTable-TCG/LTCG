@@ -26,7 +26,7 @@ import { logger } from "../../lib/debug";
 
 import { executeEffect } from "../effectSystem/index";
 import { recordEventHelper, recordGameEndHelper } from "../gameEvents";
-import { updatePlayerStatsAfterGame } from "../games/stats";
+import { emitEvent } from "../../events/emitter";
 
 // biome-ignore lint/suspicious/noExplicitAny: Convex internal type workaround for TS2589
 const internalAny = (generatedApi as any).internal;
@@ -345,17 +345,34 @@ async function checkLPWinCondition(
       winnerId: gameState.opponentId,
     });
 
-    // Update player stats (opponent wins, host loses)
-    const hostLPGameMode = (lobby?.mode || "casual") as "ranked" | "casual" | "story";
-    await updatePlayerStatsAfterGame(ctx, gameState.opponentId as Id<"users">, gameState.hostId as Id<"users">, hostLPGameMode);
+    // Emit game ended event (replaces direct stats/progression calls)
+    await emitEvent(ctx, {
+      type: "game:ended",
+      gameId,
+      lobbyId,
+      winnerId: gameState.opponentId as Id<"users">,
+      loserId: gameState.hostId as Id<"users">,
+      endReason: "completed",
+      gameMode: (lobby?.mode || "casual") as "ranked" | "casual" | "story",
+      turnCount: turnNumber,
+      wagerAmount: lobby?.wagerAmount ?? 0,
+      wagerPaid: lobby?.wagerPaid ?? false,
+      stageId: lobby?.stageId,
+      hostFinalLP: 0,
+      hostIsWinner: false,
+      hostId: gameState.hostId as Id<"users">,
+      timestamp: Date.now(),
+    });
 
-    // Handle story mode completion (host lost)
+    // Emit story stage completion if story mode (host lost)
     if (lobby?.mode === "story" && lobby.stageId) {
-      await ctx.runMutation(internalAny.progression.storyStages.completeStageInternal, {
+      await emitEvent(ctx, {
+        type: "story:stage_completed",
         userId: gameState.hostId as Id<"users">,
         stageId: lobby.stageId,
         won: false,
         finalLP: 0,
+        timestamp: Date.now(),
       });
       logger.info("Story stage completed (loss)", {
         lobbyId,
@@ -397,17 +414,34 @@ async function checkLPWinCondition(
       winnerId: gameState.hostId,
     });
 
-    // Update player stats (host wins, opponent loses)
-    const oppLPGameMode = (lobby?.mode || "casual") as "ranked" | "casual" | "story";
-    await updatePlayerStatsAfterGame(ctx, gameState.hostId as Id<"users">, gameState.opponentId as Id<"users">, oppLPGameMode);
+    // Emit game ended event (replaces direct stats/progression calls)
+    await emitEvent(ctx, {
+      type: "game:ended",
+      gameId,
+      lobbyId,
+      winnerId: gameState.hostId as Id<"users">,
+      loserId: gameState.opponentId as Id<"users">,
+      endReason: "completed",
+      gameMode: (lobby?.mode || "casual") as "ranked" | "casual" | "story",
+      turnCount: turnNumber,
+      wagerAmount: lobby?.wagerAmount ?? 0,
+      wagerPaid: lobby?.wagerPaid ?? false,
+      stageId: lobby?.stageId,
+      hostFinalLP: gameState.hostLifePoints,
+      hostIsWinner: true,
+      hostId: gameState.hostId as Id<"users">,
+      timestamp: Date.now(),
+    });
 
-    // Handle story mode completion (host won)
+    // Emit story stage completion if story mode (host won)
     if (lobby?.mode === "story" && lobby.stageId) {
-      await ctx.runMutation(internalAny.progression.storyStages.completeStageInternal, {
+      await emitEvent(ctx, {
+        type: "story:stage_completed",
         userId: gameState.hostId as Id<"users">,
         stageId: lobby.stageId,
         won: true,
         finalLP: gameState.hostLifePoints,
+        timestamp: Date.now(),
       });
       logger.info("Story stage completed (win)", {
         lobbyId,
@@ -484,18 +518,35 @@ export async function checkDeckOutCondition(
       winnerId,
     });
 
-    // Update player stats (deck-out loser)
-    const deckOutGameMode = (lobby.mode || "casual") as "ranked" | "casual" | "story";
-    await updatePlayerStatsAfterGame(ctx, winnerId as Id<"users">, playerId, deckOutGameMode);
+    // Emit game ended event (replaces direct stats/progression calls)
+    const hostWon = winnerId === gameState.hostId;
+    await emitEvent(ctx, {
+      type: "game:ended",
+      gameId: lobby.gameId,
+      lobbyId,
+      winnerId: winnerId as Id<"users">,
+      loserId: playerId,
+      endReason: "completed",
+      gameMode: (lobby.mode || "casual") as "ranked" | "casual" | "story",
+      turnCount: turnNumber,
+      wagerAmount: lobby.wagerAmount ?? 0,
+      wagerPaid: lobby.wagerPaid ?? false,
+      stageId: lobby.stageId,
+      hostFinalLP: hostWon ? gameState.hostLifePoints : 0,
+      hostIsWinner: hostWon,
+      hostId: gameState.hostId as Id<"users">,
+      timestamp: Date.now(),
+    });
 
-    // Handle story mode completion (deck out)
+    // Emit story stage completion if story mode (deck out)
     if (lobby.mode === "story" && lobby.stageId) {
-      const hostWon = winnerId === gameState.hostId;
-      await ctx.runMutation(internalAny.progression.storyStages.completeStageInternal, {
+      await emitEvent(ctx, {
+        type: "story:stage_completed",
         userId: gameState.hostId as Id<"users">,
         stageId: lobby.stageId,
         won: hostWon,
         finalLP: hostWon ? gameState.hostLifePoints : 0,
+        timestamp: Date.now(),
       });
       logger.info("Story stage completed (deck out)", {
         lobbyId,
@@ -1265,15 +1316,34 @@ async function checkBreakdownWinCondition(
       winnerId: gameState.hostId,
     });
 
-    const gameMode = (lobby?.mode || "casual") as "ranked" | "casual" | "story";
-    await updatePlayerStatsAfterGame(ctx, gameState.hostId as Id<"users">, gameState.opponentId as Id<"users">, gameMode);
+    // Emit game ended event (replaces direct stats/progression calls)
+    await emitEvent(ctx, {
+      type: "game:ended",
+      gameId,
+      lobbyId,
+      winnerId: gameState.hostId as Id<"users">,
+      loserId: gameState.opponentId as Id<"users">,
+      endReason: "completed",
+      gameMode: (lobby?.mode || "casual") as "ranked" | "casual" | "story",
+      turnCount: turnNumber,
+      wagerAmount: lobby?.wagerAmount ?? 0,
+      wagerPaid: lobby?.wagerPaid ?? false,
+      stageId: lobby?.stageId,
+      hostFinalLP: gameState.hostLifePoints,
+      hostIsWinner: true,
+      hostId: gameState.hostId as Id<"users">,
+      timestamp: Date.now(),
+    });
 
+    // Emit story stage completion if story mode (host won)
     if (lobby?.mode === "story" && lobby.stageId) {
-      await ctx.runMutation(internalAny.progression.storyStages.completeStageInternal, {
+      await emitEvent(ctx, {
+        type: "story:stage_completed",
         userId: gameState.hostId,
         stageId: lobby.stageId,
         won: true,
         finalLP: gameState.hostLifePoints,
+        timestamp: Date.now(),
       });
     }
 
@@ -1310,15 +1380,34 @@ async function checkBreakdownWinCondition(
       winnerId: gameState.opponentId,
     });
 
-    const gameMode = (lobby?.mode || "casual") as "ranked" | "casual" | "story";
-    await updatePlayerStatsAfterGame(ctx, gameState.opponentId as Id<"users">, gameState.hostId as Id<"users">, gameMode);
+    // Emit game ended event (replaces direct stats/progression calls)
+    await emitEvent(ctx, {
+      type: "game:ended",
+      gameId,
+      lobbyId,
+      winnerId: gameState.opponentId as Id<"users">,
+      loserId: gameState.hostId as Id<"users">,
+      endReason: "completed",
+      gameMode: (lobby?.mode || "casual") as "ranked" | "casual" | "story",
+      turnCount: turnNumber,
+      wagerAmount: lobby?.wagerAmount ?? 0,
+      wagerPaid: lobby?.wagerPaid ?? false,
+      stageId: lobby?.stageId,
+      hostFinalLP: gameState.hostLifePoints,
+      hostIsWinner: false,
+      hostId: gameState.hostId as Id<"users">,
+      timestamp: Date.now(),
+    });
 
+    // Emit story stage completion if story mode (opponent won)
     if (lobby?.mode === "story" && lobby.stageId) {
-      await ctx.runMutation(internalAny.progression.storyStages.completeStageInternal, {
+      await emitEvent(ctx, {
+        type: "story:stage_completed",
         userId: gameState.hostId,
         stageId: lobby.stageId,
         won: false,
         finalLP: gameState.hostLifePoints,
+        timestamp: Date.now(),
       });
     }
 

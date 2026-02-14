@@ -6,16 +6,12 @@
       "dom",
       "dom.iterable"
     ],
-    "jsx": "preserve",
+    "jsx": "react-jsx",
     "module": "esnext",
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "strict": true,
-    // Disabled: Causes issues with Convex API access patterns where api.x.y is always defined at runtime
-    // "noUncheckedIndexedAccess": true,
-    // Temporarily disabled: Convex generated types sometimes infer 'any' for complex return values
     "noImplicitAny": false,
-    // Temporarily disabled: Convex symlinked folder has strictNullChecks errors
     "strictNullChecks": false,
     "strictFunctionTypes": true,
     "strictBindCallApply": true,
@@ -24,7 +20,6 @@
     "alwaysStrict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    // Temporarily disabled: Some callback functions don't explicitly return
     "noImplicitReturns": false,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
@@ -35,18 +30,8 @@
     "incremental": true,
     "isolatedModules": true,
     "types": [
-      "node",
-      "react",
-      "react-dom"
-    ],
-    "typeRoots": [
-      "../../node_modules/@types",
-      "./node_modules/@types"
-    ],
-    "plugins": [
-      {
-        "name": "next"
-      }
+      "vinxi/types",
+      "@tanstack/start/types"
     ],
     "paths": {
       "@/*": [
@@ -63,11 +48,9 @@
     "noEmit": true
   },
   "include": [
-    "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",
-    ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts"
+    ".vinxi/types/**/*.ts"
   ],
   "exclude": [
     "node_modules",

@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import type { Id } from "@convex/_generated/dataModel";
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, Heart, Skull, Trash2, X } from "lucide-react";
-import Image from "next/image";
+import { Image } from "@/components/ui/image";
 import { useState } from "react";
 import type { CardInZone } from "../hooks/useGameBoard";
 

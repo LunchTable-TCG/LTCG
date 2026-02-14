@@ -27,9 +27,8 @@ import {
   Users,
   Wallet,
 } from "lucide-react";
-import Image from "next/image";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { Image } from "@/components/ui/image";
+import { Link, useLocation } from "@tanstack/react-router";
 import { useState } from "react";
 
 interface NavLink {
@@ -92,7 +91,7 @@ const navGroups: NavGroup[] = [
 ];
 
 export function LunchTableSidebar({ className }: { className?: string }) {
-  const pathname = usePathname();
+  const pathname = useLocation().pathname;
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const { isAuthenticated } = useAuth();
   const { logout } = useLogout();
@@ -205,7 +204,8 @@ export function LunchTableSidebar({ className }: { className?: string }) {
                   Enrollment required to access internal hierarchy.
                 </p>
                 <Button asChild className="w-full tcg-button-primary">
-                  <Link href="/login">LOGIN</Link>
+                  <Link to="/profile">
+LOGIN</Link>
                 </Button>
               </div>
             </div>

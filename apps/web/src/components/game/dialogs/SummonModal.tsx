@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import type { Id } from "@convex/_generated/dataModel";
 import { AnimatePresence, motion } from "framer-motion";
 import { AlertCircle, Clock, Coins, Shield, Sword, X, Zap } from "lucide-react";
-import Image from "next/image";
+import { Image } from "@/components/ui/image";
 import { useEffect, useState } from "react";
 import type { CardInZone } from "../hooks/useGameBoard";
 
@@ -190,8 +190,8 @@ export function SummonModal({
               </div>
 
               {/* Card Preview & Stats */}
-              <div className="flex gap-4 mb-4">
-                <div className="w-32 h-44 rounded-lg border-2 border-[#3d2b1f] overflow-hidden shrink-0">
+              <div className="flex flex-col sm:flex-row gap-4 mb-4">
+                <div className="w-32 h-44 rounded-lg border-2 border-[#3d2b1f] overflow-hidden shrink-0 mx-auto sm:mx-0">
                   {card.imageUrl ? (
                     <Image
                       src={card.imageUrl}

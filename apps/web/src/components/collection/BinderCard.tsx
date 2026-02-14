@@ -6,7 +6,7 @@ import type { CardData } from "@/types/binder";
 import { RARITY_STYLES } from "@ltcg/core/ui";
 import { motion } from "framer-motion";
 import { Star } from "lucide-react";
-import Image from "next/image";
+import { Image } from "@/components/ui/image";
 
 interface BinderCardProps {
   card: CardData;

@@ -18,7 +18,7 @@ import {
   X,
   Zap,
 } from "lucide-react";
-import Image from "next/image";
+import { Image } from "@/components/ui/image";
 import type { CardInZone } from "../hooks/useGameBoard";
 
 interface CardInspectorModalProps {

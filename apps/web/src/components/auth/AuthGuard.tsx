@@ -5,7 +5,7 @@ import { usePrivy } from "@privy-io/react-auth";
 import { useWallets } from "@privy-io/react-auth/solana";
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { Loader2 } from "lucide-react";
-import { usePathname, useRouter } from "next/navigation";
+import { useNavigate, useLocation } from "@tanstack/react-router";
 import { type ReactNode, useEffect, useRef } from "react";
 
 interface AuthGuardProps {
@@ -47,7 +47,7 @@ function isPrivyEmbeddedWallet(wallet: {
  * 1. loading - Waiting for Privy/Convex to initialize
  * 2. unauthenticated - User not logged in
  * 3. syncing - JWT verified, creating user in DB + auto-syncing wallet
- * 4. needs_onboarding - User exists but needs username or starter deck
+ * 4. needs_onboarding - User exists but missing username or starter deck
  * 5. authenticated - Fully ready, render children
  */
 export function AuthGuard({
@@ -55,8 +55,8 @@ export function AuthGuard({
   requireAuth = true,
   requireOnboarding = true,
 }: AuthGuardProps) {
-  const router = useRouter();
-  const pathname = usePathname();
+  const navigate = useNavigate();
+  const pathname = useLocation().pathname;
 
   // Auth providers state
   const { ready: privyReady, authenticated: privyAuthenticated, user: privyUser } = usePrivy();
@@ -146,13 +146,13 @@ export function AuthGuard({
   // Handle redirects based on state
   useEffect(() => {
     if (authState === "unauthenticated" && requireAuth) {
-      router.replace(`/login?returnTo=${encodeURIComponent(pathname)}`);
+      navigate({ to: `/login`, search: { returnTo: pathname } as any, replace: true });
     }
 
     if (authState === "needs_onboarding" && requireOnboarding) {
-      router.replace("/onboarding");
+      navigate({ to: "/onboarding", replace: true });
     }
-  }, [authState, requireAuth, requireOnboarding, router, pathname]);
+  }, [authState, requireAuth, requireOnboarding, navigate, pathname]);
 
   // Render based on state
   if (authState === "loading" || authState === "syncing") {

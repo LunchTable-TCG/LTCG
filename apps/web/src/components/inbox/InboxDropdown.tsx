@@ -20,7 +20,7 @@ import {
   Wrench,
   X,
 } from "lucide-react";
-import Link from "next/link";
+import { Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 
 // Icon mapping for message types

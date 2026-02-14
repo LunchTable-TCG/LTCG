@@ -37,18 +37,19 @@ export function PlayerHand({
   }
 
   return (
-    <div className="relative py-10 px-2 sm:py-16 sm:px-6 overflow-visible">
-      <div className="flex items-end justify-center pb-4 pt-4">
+    <div className="relative py-2 sm:py-10 px-0 sm:px-6 overflow-x-auto snap-x snap-mandatory no-scrollbar w-full">
+      <div className="flex items-end justify-start sm:justify-center px-4 sm:px-0 min-w-max pb-4 pt-4 sm:pb-0 mx-auto">
         {cards.map((card, index) => (
-          <HandCard
-            key={card.instanceId}
-            card={card}
-            index={index}
-            totalCards={cards.length}
-            isPlayable={playableCards?.has(card.instanceId) ?? false}
-            isSelected={selectedCard === card.instanceId}
-            onClick={() => onCardClick?.(card)}
-          />
+          <div key={card.instanceId} className="snap-center shrink-0">
+            <HandCard
+              card={card}
+              index={index}
+              totalCards={cards.length}
+              isPlayable={playableCards?.has(card.instanceId) ?? false}
+              isSelected={selectedCard === card.instanceId}
+              onClick={() => onCardClick?.(card)}
+            />
+          </div>
         ))}
       </div>
     </div>

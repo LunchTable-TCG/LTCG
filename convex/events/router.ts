@@ -15,11 +15,27 @@ import { handleEconomyEvent } from "./handlers/economyHandler";
 import { handleProgressionEvent } from "./handlers/progressionHandler";
 import { handleStatsEvent } from "./handlers/statsHandler";
 
+const KNOWN_EVENT_TYPES = new Set([
+  "game:ended",
+  "player:defeated_by_lp",
+  "player:defeated_by_deckout",
+  "player:defeated_by_breakdown",
+  "match:completed",
+  "story:stage_completed",
+  "wager:payout",
+  "crypto:escrow_settle",
+]);
+
 export const handleEvent = internalMutation({
   args: { event: v.any() },
   returns: v.null(),
   handler: async (ctx, args) => {
     const event = args.event as DomainEvent;
+
+    if (!event?.type || !KNOWN_EVENT_TYPES.has(event.type)) {
+      console.error("Unknown domain event type, dropping:", event?.type);
+      return null;
+    }
 
     // Fan out to all domain handlers.
     // Each handler checks event.type and ignores events it doesn't care about.

@@ -1,7 +1,7 @@
 "use client";
 
 import type { Id } from "@convex/_generated/dataModel";
-import { useRouter } from "next/navigation";
+import { useNavigate } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useDMConversations } from "./useDMConversations";
 import { useFriends } from "./useFriends";
@@ -33,7 +33,7 @@ export interface UseFriendsInteractionReturn extends UseFriendsReturn {
 export function useFriendsInteraction(): UseFriendsInteractionReturn {
   const friendsHook = useFriends();
   const { startConversation } = useDMConversations();
-  const router = useRouter();
+  const navigate = useNavigate();
 
   const [activeTab, setActiveTab] = useState<TabType>("friends");
   const [searchQuery, setSearchQuery] = useState("");
@@ -59,7 +59,7 @@ export function useFriendsInteraction(): UseFriendsInteractionReturn {
   const handleMessage = async (friendId: Id<"users">) => {
     try {
       await startConversation(friendId);
-      router.push("/lunchtable");
+      navigate({ to: "/lunchtable" });
     } catch {
       // Error handled by hook
     }

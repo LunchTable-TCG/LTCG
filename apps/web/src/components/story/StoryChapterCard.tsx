@@ -5,7 +5,7 @@ import { getAssetUrl } from "@/lib/blob";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { Lock, Star, Trophy } from "lucide-react";
-import Image from "next/image";
+import { Image } from "@/components/ui/image";
 
 interface StoryChapterCardProps {
   chapter: {
@@ -57,7 +57,6 @@ export function StoryChapterCard({ chapter, onClick }: StoryChapterCardProps) {
             alt={chapterName}
             fill
             className="object-cover transition-transform duration-700 group-hover:scale-110"
-            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
           />
           {/* Gradient Overlay */}
           <div className="absolute inset-0 bg-linear-to-t from-black via-black/40 to-transparent opacity-90" />
@@ -93,7 +92,6 @@ export function StoryChapterCard({ chapter, onClick }: StoryChapterCardProps) {
                   width={16}
                   height={16}
                   className="rounded-sm"
-                  unoptimized
                 />
                 <span>Chapter {chapter.order}</span>
               </span>

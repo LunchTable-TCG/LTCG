@@ -2,16 +2,15 @@
 "use client";
 
 import { useMatchStream } from "@/hooks/useMatchStream";
-import { Id } from "@/convex/_generated/dataModel";
-import Image from "next/image";
-import { cn } from "@/lib/utils";
+import { Id } from "@convex/_generated/dataModel";
+import { Image } from "@/components/ui/image";
 
 interface MatchBoardProps {
   matchId: Id<"gameLobbies">;
 }
 
 export function MatchBoard({ matchId }: MatchBoardProps) {
-  const { meta, gameState, isLoading, isSpectator, userSeat } = useMatchStream(matchId);
+  const { meta, gameState, isLoading } = useMatchStream(matchId);
 
   if (isLoading) {
     return (
@@ -61,7 +60,7 @@ export function MatchBoard({ matchId }: MatchBoardProps) {
 
             {/* Opponent Hand (Masked/Face Down) */}
             <div className="flex gap-[-2rem] justify-center">
-                {gameState.opponentHand.map((card: any, i: number) => (
+                {gameState.opponentHand.map((_card: any, i: number) => (
                     <div key={i} className="relative w-24 h-36 bg-slate-800 border-2 border-slate-600 rounded-lg shadow-xl translate-y-[-2rem] hover:translate-y-0 transition-transform">
                         {/* Card Back */}
                         <div className="w-full h-full bg-indigo-900 rounded flex items-center justify-center">
@@ -125,7 +124,7 @@ export function MatchBoard({ matchId }: MatchBoardProps) {
 
             {/* Player Hand */}
             <div className="flex gap-[-1rem] justify-center translate-y-4 hover:translate-y-0 transition-transform duration-300">
-                {gameState.hostHand.map((card: any, i: number) => (
+                {gameState.hostHand.map((card: any, _i: number) => (
                     <div key={card._id} className="relative w-32 h-48 bg-slate-100 border-2 border-slate-300 rounded-lg shadow-2xl hover:scale-110 hover:z-50 transition-all cursor-pointer -ml-8 first:ml-0">
                          <div className="p-2 text-xs font-bold text-black overflow-hidden h-full">
                             {card.name}

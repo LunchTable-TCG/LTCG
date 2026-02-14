@@ -37,7 +37,7 @@ export function PlayerBoard({
   onFieldClick,
 }: PlayerBoardProps) {
   return (
-    <div className="flex items-center gap-1 sm:gap-2 p-1 sm:p-2">
+    <div className="flex items-center gap-1 sm:gap-2 p-1 sm:p-2 overflow-x-auto no-scrollbar w-full">
       {/* Left side: Deck & Graveyard */}
       <PileZone
         deckCount={board.deckCount}

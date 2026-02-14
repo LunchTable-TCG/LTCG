@@ -3,7 +3,7 @@
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { FlaskConical, Shield, Sparkles, Sword, Zap } from "lucide-react";
-import Image from "next/image";
+import { Image } from "@/components/ui/image";
 import type { CardInZone } from "../../hooks/useGameBoard";
 
 interface HandCardProps {

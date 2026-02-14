@@ -5,8 +5,7 @@ import { typedApi, useConvexQuery } from "@/lib/convexHelpers";
 import { componentLogger, useDebugLifecycle } from "@/lib/debug";
 import type { Id } from "@convex/_generated/dataModel";
 import { Flag, Loader2, Users } from "lucide-react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import { AgentActivityIndicator } from "./AgentActivityIndicator";
 import { GameResultScreen } from "./GameResultScreen";
@@ -56,7 +55,7 @@ export function GameBoard({
   gameMode = "pvp",
 }: GameBoardProps) {
   const log = componentLogger("GameBoard");
-  const router = useRouter();
+  const navigate = useNavigate();
 
   // Debug lifecycle
   useDebugLifecycle("GameBoard", { lobbyId, gameMode });
@@ -193,7 +192,7 @@ export function GameBoard({
           )}
           <Loader2 className="h-6 w-6 animate-spin text-[#d4af37] mt-2" />
           <Button asChild variant="outline" className="mt-4">
-            <Link href="/lunchtable">Back to Lobby</Link>
+            <Link to="/lunchtable">Back to Lobby</Link>
           </Button>
         </div>
       </div>
@@ -247,7 +246,7 @@ export function GameBoard({
         gameMode={gameMode === "story" ? "story" : "casual"}
         isOpen={true}
         onReturnToMenu={() => {
-          router.push(returnLink);
+          navigate({ to: returnLink });
         }}
       />
     );
@@ -274,7 +273,7 @@ export function GameBoard({
 
   return (
     <div
-      className="fixed inset-0 z-50 overflow-hidden bg-arena flex flex-col"
+      className="fixed inset-0 z-50 overflow-hidden bg-arena flex flex-col h-dvh"
       data-testid="game-board"
       role="application"
       aria-label={`Game board - ${isPlayerTurn ? "Your turn" : "Opponent's turn"} - ${currentPhase} phase`}
@@ -290,7 +289,7 @@ export function GameBoard({
       </div>
 
       {/* Game Content Container - full height, no scroll */}
-      <div className="relative z-10 flex flex-col h-full">
+      <div className="relative z-10 flex flex-col h-full overflow-hidden">
         {/* Top Bar: Opponent Life Points + Timeout + Forfeit Button */}
         <div className="px-2 pt-2 flex items-center justify-between gap-2 shrink-0">
           <LifePointsBar

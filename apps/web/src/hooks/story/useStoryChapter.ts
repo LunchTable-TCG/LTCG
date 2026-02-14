@@ -2,13 +2,13 @@
 
 import { useAuth } from "@/hooks/auth/useConvexAuthHook";
 import { typedApi, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
-import { useRouter } from "next/navigation";
+import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 export function useStoryChapter(chapterId: string) {
   const [actNumber, chapterNumber] = chapterId.split("-").map(Number);
-  const router = useRouter();
+  const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
 
   const currentUser = useConvexQuery(
@@ -67,13 +67,13 @@ export function useStoryChapter(chapterId: string) {
         "You must select a deck before starting a battle.\n\nWould you like to go to your profile to select a deck?"
       );
       if (shouldNavigate) {
-        router.push("/profile");
+        navigate({ to: "/profile" });
       }
       return;
     }
 
     const battleUrl = `/play/story/${chapterId}/battle/${selectedStage.stageNumber}`;
-    router.push(battleUrl);
+    navigate({ to: battleUrl });
   };
 
   const isLoading = !currentUser || chapterDetails === undefined;

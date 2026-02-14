@@ -9,3 +9,4 @@ export { CurrencyCard } from "./CurrencyCard";
 export { MarketListingCard } from "./MarketListingCard";
 export { TokenListingCard } from "./TokenListingCard";
 export { ShopPurchaseModal, MarketListingModal } from "./MarketplaceModals";
+export { ShopHeader } from "./ShopHeader";

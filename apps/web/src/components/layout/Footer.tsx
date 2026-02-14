@@ -1,6 +1,6 @@
 import { ExternalLink } from "lucide-react";
-import Link from "next/link";
-import Image from "next/image";
+import { Link } from "@tanstack/react-router";
+import { Image } from "@/components/ui/image";
 
 const footerLinks = {
   game: {

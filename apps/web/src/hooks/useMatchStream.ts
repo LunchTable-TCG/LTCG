@@ -1,12 +1,12 @@
 
 import { useQuery, useMutation } from "convex/react";
-import { api } from "@/convex/_generated/api";
-import { Id } from "@/convex/_generated/dataModel";
+import { api } from "@convex/_generated/api";
+import { Id } from "@convex/_generated/dataModel";
 import { useMemo } from "react";
-import { useUser } from "@/hooks/useUser"; // Assuming we have a user hook from Privy/Convex
+import { usePrivy } from "@/hooks/auth/useConvexAuthHook";
 
 export function useMatchStream(lobbyId: Id<"gameLobbies">) {
-  const { user } = useUser();
+  const { user } = usePrivy();
   const userId = user?.id;
 
   // 1. Fetch Match Metadata (Lobby)

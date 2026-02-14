@@ -31,9 +31,9 @@ import {
   Wallet,
   X,
 } from "lucide-react";
-import Image from "next/image";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { Image } from "@/components/ui/image";
+import { Link } from "@tanstack/react-router";
+import { useLocation } from "@tanstack/react-router";
 import { createContext, useContext, useEffect, useState } from "react";
 
 interface SidebarContextType {
@@ -131,7 +131,7 @@ const navGroups: NavGroup[] = [
 ];
 
 export function Navbar() {
-  const pathname = usePathname();
+  const pathname = useLocation().pathname;
   const [isScrolled, setIsScrolled] = useState(false);
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
   const { isOpen, setIsOpen, toggle } = useSidebar();
@@ -181,7 +181,7 @@ export function Navbar() {
               </button>
 
               {/* Logo - Only visible on mobile */}
-              <Link href="/" className="flex md:hidden items-center gap-3 group">
+              <Link to="/" className="flex md:hidden items-center gap-3 group">
                 <div className="relative">
                   <div className="relative w-8 h-8 flex items-center justify-center border-2 border-primary overflow-hidden">
                     <Image
@@ -212,8 +212,7 @@ export function Navbar() {
 
                   <InboxDropdown className="hidden sm:block" />
 
-                  {/* Profile Link - distinct from Sidebar's footprint */}
-                  <Link href="/profile" className="group md:hidden">
+                  <Link to="/profile" className="group md:hidden">
                     <div className="relative">
                       <Avatar className="relative w-10 h-10 border-2 border-primary grayscale group-hover:grayscale-0 transition-all">
                         {currentUser?.image && (
@@ -238,10 +237,10 @@ export function Navbar() {
                     variant="ghost"
                     className="text-foreground font-bold hover:underline"
                   >
-                    <Link href="/login">LOGIN</Link>
+                    <Link to="/login">LOGIN</Link>
                   </Button>
                   <Button asChild className="tcg-button-primary px-6 py-4">
-                    <Link href="/signup">
+                    <Link to="/signup">
                       JOIN US
                     </Link>
                   </Button>
@@ -254,7 +253,7 @@ export function Navbar() {
 
       <div
         className={cn(
-          "fixed inset-0 z-50 bg-black/40 backdrop-blur-[1px] transition-opacity duration-300",
+          "fixed inset-0 z-[60] bg-black/40 backdrop-blur-[1px] transition-opacity duration-300",
           isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
         )}
         onClick={() => setIsOpen(false)}
@@ -262,13 +261,13 @@ export function Navbar() {
 
       <aside
         className={cn(
-          "fixed top-0 left-0 z-50 h-full w-72 transition-transform duration-500 ease-in-out",
+          "fixed top-0 left-0 z-[70] h-full w-72 transition-transform duration-500 ease-in-out",
           isOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
         <div className="h-full bg-background border-r-4 border-primary flex flex-col overflow-hidden relative scanner-noise">
           <div className="flex items-center justify-between px-6 py-6 border-b-2 border-primary">
-            <Link href="/" onClick={() => setIsOpen(false)} className="flex items-center gap-3">
+            <Link to="/" onClick={() => setIsOpen(false)} className="flex items-center gap-3">
               <div className="w-10 h-10 flex items-center justify-center border-4 border-primary overflow-hidden">
                 <Image
                   src={getAssetUrl("/assets/logo-icon.png")}
@@ -297,7 +296,7 @@ export function Navbar() {
             {isAuthenticated && (
               <div className="p-4 border-2 border-primary bg-secondary/30 relative">
                 <div className="flex items-center gap-4">
-                  <Link href="/profile" onClick={() => setIsOpen(false)} className="shrink-0">
+                  <Link to="/profile" onClick={() => setIsOpen(false)} className="shrink-0">
                     <Avatar className="w-12 h-12 border-2 border-primary grayscale">
                       {currentUser?.image && (
                         <AvatarImage src={currentUser.image} alt={currentUser.username || "User"} />
@@ -328,8 +327,8 @@ export function Navbar() {
             {isAuthenticated ? (
               <nav className="space-y-6">
                 {/* Primary CTA - The Table */}
-                <Link
-                  href="/lunchtable"
+                  <Link
+                  to="/lunchtable"
                   onClick={() => setIsOpen(false)}
                   className="flex items-center gap-4 px-4 py-4 border-4 border-primary bg-primary text-primary-foreground hover:scale-[1.02] transition-transform group"
                 >
@@ -379,7 +378,7 @@ export function Navbar() {
                           return (
                             <Link
                               key={link.href}
-                              href={link.href}
+                              to={link.href}
                               onClick={() => setIsOpen(false)}
                               className={cn(
                                 "flex items-center gap-4 px-4 py-2 border-2 transition-all font-black uppercase tracking-tighter",
@@ -417,7 +416,7 @@ export function Navbar() {
             ) : (
               <div className="space-y-3">
                 <Button asChild className="w-full tcg-button-primary py-6">
-                  <Link href="/signup" onClick={() => setIsOpen(false)}>
+                  <Link to="/signup" onClick={() => setIsOpen(false)}>
                     ENROLL NOW
                   </Link>
                 </Button>
@@ -426,7 +425,7 @@ export function Navbar() {
                   variant="ghost"
                   className="w-full text-foreground/70 font-bold uppercase tracking-tight text-xs hover:underline"
                 >
-                  <Link href="/login" onClick={() => setIsOpen(false)}>
+                  <Link to="/login" onClick={() => setIsOpen(false)}>
                     Already Registred? Enter
                   </Link>
                 </Button>

@@ -32,22 +32,22 @@ export function useCardBinder(): UseCardBinderReturn {
 
   // TanStack Queries (using useConvexQuery)
   const userCards = useQuery(
-    typedApi.core.cards.getUserCards,
+    typedApi.lunchtable_tcg_cards.cards.getUserCards,
     userId ? { userId } : "skip"
   );
 
   const favoriteCards = useQuery(
-    typedApi.core.cards.getUserFavoriteCards,
+    typedApi.lunchtable_tcg_cards.cards.getUserFavoriteCards,
     userId ? { userId } : "skip"
   );
 
   const collectionStats = useQuery(
-    typedApi.core.cards.getCollectionStats,
+    typedApi.lunchtable_tcg_cards.cards.getCollectionStats,
     userId ? { userId } : "skip"
   );
 
   // Mutation
-  const toggleFavoriteMutation = useMutation((api as any).core.cards.toggleFavorite);
+  const toggleFavoriteMutation = useMutation((api as any).lunchtable_tcg_cards.cards.toggleFavorite);
 
   const toggleFavorite = async (playerCardId: Id<"playerCards">) => {
     if (!isAuthenticated || !userId) throw new Error("Not authenticated");

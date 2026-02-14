@@ -42,6 +42,12 @@ registerRoutes(http, components.stripe, {
   events: {
     // ── Subscription Created ──────────────────────────────────────────
     "customer.subscription.created": async (ctx, event) => {
+      // Idempotency guard — Stripe may retry webhooks
+      const alreadyProcessed = await ctx.runQuery(
+        payments.stripe.isEventProcessed(event.id)
+      );
+      if (alreadyProcessed) return;
+
       const subscription = event.data.object as Stripe.Subscription;
       const userId = subscription.metadata?.userId;
       if (!userId) {
@@ -78,8 +84,8 @@ registerRoutes(http, components.stripe, {
         status: toSubscriptionStatus(subscription.status),
         planInterval: toPlanInterval(item?.price?.recurring?.interval),
         planAmount: item?.price?.unit_amount ?? 0,
-        currentPeriodStart: item?.current_period_start ?? 0,
-        currentPeriodEnd: item?.current_period_end ?? 0,
+        currentPeriodStart: subscription.current_period_start,
+        currentPeriodEnd: subscription.current_period_end,
         cancelAtPeriodEnd: subscription.cancel_at_period_end ?? false,
         canceledAt: subscription.canceled_at ?? undefined,
       });
@@ -88,6 +94,11 @@ registerRoutes(http, components.stripe, {
 
     // ── Subscription Updated ──────────────────────────────────────────
     "customer.subscription.updated": async (ctx, event) => {
+      const alreadyProcessed = await ctx.runQuery(
+        payments.stripe.isEventProcessed(event.id)
+      );
+      if (alreadyProcessed) return;
+
       const subscription = event.data.object as Stripe.Subscription;
       const userId = subscription.metadata?.userId;
       if (!userId) {
@@ -116,8 +127,8 @@ registerRoutes(http, components.stripe, {
         status: toSubscriptionStatus(subscription.status),
         planInterval: toPlanInterval(item?.price?.recurring?.interval),
         planAmount: item?.price?.unit_amount ?? 0,
-        currentPeriodStart: item?.current_period_start ?? 0,
-        currentPeriodEnd: item?.current_period_end ?? 0,
+        currentPeriodStart: subscription.current_period_start,
+        currentPeriodEnd: subscription.current_period_end,
         cancelAtPeriodEnd: subscription.cancel_at_period_end ?? false,
         canceledAt: subscription.canceled_at ?? undefined,
       });
@@ -126,6 +137,11 @@ registerRoutes(http, components.stripe, {
 
     // ── Subscription Deleted ──────────────────────────────────────────
     "customer.subscription.deleted": async (ctx, event) => {
+      const alreadyProcessed = await ctx.runQuery(
+        payments.stripe.isEventProcessed(event.id)
+      );
+      if (alreadyProcessed) return;
+
       const subscription = event.data.object as Stripe.Subscription;
       const userId = subscription.metadata?.userId;
       if (!userId) {
@@ -155,9 +171,8 @@ registerRoutes(http, components.stripe, {
           subscription.items.data[0]?.price?.recurring?.interval
         ),
         planAmount: subscription.items.data[0]?.price?.unit_amount ?? 0,
-        currentPeriodStart:
-          subscription.items.data[0]?.current_period_start ?? 0,
-        currentPeriodEnd: subscription.items.data[0]?.current_period_end ?? 0,
+        currentPeriodStart: subscription.current_period_start,
+        currentPeriodEnd: subscription.current_period_end,
         cancelAtPeriodEnd: true,
         canceledAt: subscription.canceled_at ?? Date.now() / 1000,
       });
@@ -166,6 +181,11 @@ registerRoutes(http, components.stripe, {
 
     // ── Checkout Session Completed ────────────────────────────────────
     "checkout.session.completed": async (ctx, event) => {
+      const alreadyProcessed = await ctx.runQuery(
+        payments.stripe.isEventProcessed(event.id)
+      );
+      if (alreadyProcessed) return;
+
       const session = event.data.object as Stripe.Checkout.Session;
 
       // Only sync subscription-mode sessions to LTCG payments

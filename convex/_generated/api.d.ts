@@ -13,6 +13,12 @@ import type * as auth_syncUser from "../auth/syncUser.js";
 import type * as chainResolver from "../chainResolver.js";
 import type * as crons from "../crons.js";
 import type * as economy_economy from "../economy/economy.js";
+import type * as events_emitter from "../events/emitter.js";
+import type * as events_handlers_economyHandler from "../events/handlers/economyHandler.js";
+import type * as events_handlers_progressionHandler from "../events/handlers/progressionHandler.js";
+import type * as events_handlers_statsHandler from "../events/handlers/statsHandler.js";
+import type * as events_router from "../events/router.js";
+import type * as events_types from "../events/types.js";
 import type * as functions from "../functions.js";
 import type * as gameplay_ai_aiDifficulty from "../gameplay/ai/aiDifficulty.js";
 import type * as gameplay_ai_aiEngine from "../gameplay/ai/aiEngine.js";
@@ -147,6 +153,12 @@ declare const fullApi: ApiFromModules<{
   chainResolver: typeof chainResolver;
   crons: typeof crons;
   "economy/economy": typeof economy_economy;
+  "events/emitter": typeof events_emitter;
+  "events/handlers/economyHandler": typeof events_handlers_economyHandler;
+  "events/handlers/progressionHandler": typeof events_handlers_progressionHandler;
+  "events/handlers/statsHandler": typeof events_handlers_statsHandler;
+  "events/router": typeof events_router;
+  "events/types": typeof events_types;
   functions: typeof functions;
   "gameplay/ai/aiDifficulty": typeof gameplay_ai_aiDifficulty;
   "gameplay/ai/aiEngine": typeof gameplay_ai_aiEngine;
@@ -7421,6 +7433,50 @@ export declare const components: {
         string
       >;
     };
+    rngConfig: {
+      getRngConfig: FunctionReference<
+        "query",
+        "internal",
+        {},
+        {
+          pityThresholds: { epic: number; fullArt: number; legendary: number };
+          rarityWeights: {
+            common: number;
+            epic: number;
+            legendary: number;
+            rare: number;
+            uncommon: number;
+          };
+          variantRates: {
+            altArt: number;
+            foil: number;
+            fullArt: number;
+            standard: number;
+          };
+        } | null
+      >;
+      setRngConfig: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          pityThresholds?: { epic: number; fullArt: number; legendary: number };
+          rarityWeights?: {
+            common: number;
+            epic: number;
+            legendary: number;
+            rare: number;
+            uncommon: number;
+          };
+          variantRates?: {
+            altArt: number;
+            foil: number;
+            fullArt: number;
+            standard: number;
+          };
+        },
+        null
+      >;
+    };
     sales: {
       createSale: FunctionReference<
         "mutation",
@@ -8617,6 +8673,51 @@ export declare const components: {
       >;
     };
     shop: {
+      createProduct: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          category: string;
+          currency: string;
+          description: string;
+          imageUrl?: string;
+          metadata?: any;
+          name: string;
+          price: number;
+          stock?: number;
+        },
+        string
+      >;
+      createSale: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          discountPercent: number;
+          endTime: number;
+          metadata?: any;
+          name: string;
+          productIds?: Array<string>;
+          startTime: number;
+        },
+        string
+      >;
+      getActiveSales: FunctionReference<
+        "query",
+        "internal",
+        {},
+        Array<{
+          _creationTime: number;
+          _id: string;
+          createdAt: number;
+          discountPercent: number;
+          endTime: number;
+          isActive: boolean;
+          metadata?: any;
+          name: string;
+          productIds?: Array<string>;
+          startTime: number;
+        }>
+      >;
       getPriceCaps: FunctionReference<
         "query",
         "internal",
@@ -8633,6 +8734,74 @@ export declare const components: {
           setByUsername: string;
           updatedAt: number;
         }>
+      >;
+      getProductById: FunctionReference<
+        "query",
+        "internal",
+        { id: string },
+        {
+          _creationTime: number;
+          _id: string;
+          category: string;
+          createdAt: number;
+          currency: string;
+          description: string;
+          imageUrl?: string;
+          isActive: boolean;
+          metadata?: any;
+          name: string;
+          price: number;
+          saleId?: string;
+          stock?: number;
+          updatedAt: number;
+        } | null
+      >;
+      getProducts: FunctionReference<
+        "query",
+        "internal",
+        { category?: string },
+        Array<{
+          _creationTime: number;
+          _id: string;
+          category: string;
+          createdAt: number;
+          currency: string;
+          description: string;
+          imageUrl?: string;
+          isActive: boolean;
+          metadata?: any;
+          name: string;
+          price: number;
+          saleId?: string;
+          stock?: number;
+          updatedAt: number;
+        }>
+      >;
+      purchaseProduct: FunctionReference<
+        "mutation",
+        "internal",
+        { buyerId: string; productId: string; quantity: number },
+        string
+      >;
+      updateProduct: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          fields: {
+            category?: string;
+            currency?: string;
+            description?: string;
+            imageUrl?: string;
+            isActive?: boolean;
+            metadata?: any;
+            name?: string;
+            price?: number;
+            saleId?: string;
+            stock?: number;
+          };
+          id: string;
+        },
+        null
       >;
     };
   };

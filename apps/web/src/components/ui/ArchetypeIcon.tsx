@@ -2,7 +2,7 @@
 
 import { formatArchetypeName, getArchetypeIcon } from "@/lib/archetypeIcons";
 import { cn } from "@/lib/utils";
-import Image from "next/image";
+import { Image } from "@/components/ui/image";
 
 interface ArchetypeIconProps {
   archetype: string;
@@ -52,14 +52,7 @@ export function ArchetypeIcon({
         )}
         style={{ width: pixelSize, height: pixelSize }}
       >
-        <Image
-          src={iconPath}
-          alt={`${displayName} archetype`}
-          width={pixelSize}
-          height={pixelSize}
-          className="object-cover"
-          unoptimized // Brand assets don't need Next.js optimization
-        />
+        <Image src={iconPath} alt={archetype} width={pixelSize} height={pixelSize} className={className} />
       </div>
       {showLabel && <span className="text-sm font-medium text-foreground/90">{displayName}</span>}
     </div>

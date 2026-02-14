@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import type { Id } from "@convex/_generated/dataModel";
 import { AnimatePresence, motion } from "framer-motion";
 import { CheckCircle2, Clock, Sparkles, X, XCircle, Zap } from "lucide-react";
-import Image from "next/image";
+import { Image } from "@/components/ui/image";
 import { useCallback, useState } from "react";
 
 // =============================================================================

@@ -4,8 +4,7 @@ import { useLogin, usePrivy } from "@privy-io/react-auth";
 import { useConvexAuth } from "convex/react";
 import { motion } from "framer-motion";
 import { ArrowRight, Loader2, Sparkles } from "lucide-react";
-import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { Link, useNavigate, useLocation } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 
 interface AuthFormProps {
@@ -19,20 +18,20 @@ interface AuthFormProps {
 export function AuthForm({ mode }: AuthFormProps) {
   const { ready, authenticated } = usePrivy();
   const { isAuthenticated: convexAuthenticated } = useConvexAuth();
-  const router = useRouter();
-  const searchParams = useSearchParams();
+  const navigate = useNavigate();
+  const search = useLocation().search as { returnTo?: string };
   const [error, setError] = useState<string | null>(null);
 
   const isSignUp = mode === "signUp";
-  const returnTo = searchParams.get("returnTo") || "/lunchtable";
+  const returnTo = search?.returnTo || "/lunchtable";
 
   // If both Privy and Convex are authenticated, redirect to destination
   // AuthGuard will handle user creation on the destination page
   useEffect(() => {
     if (authenticated && convexAuthenticated) {
-      router.replace(returnTo);
+      navigate({ to: returnTo, replace: true });
     }
-  }, [authenticated, convexAuthenticated, router, returnTo]);
+  }, [authenticated, convexAuthenticated, navigate, returnTo]);
 
   const { login } = useLogin({
     onComplete: () => {
@@ -140,11 +139,11 @@ export function AuthForm({ mode }: AuthFormProps) {
         className="text-[10px] text-[#a89f94]/60 text-center font-medium italic mt-4"
       >
         By continuing, you accept our{" "}
-        <Link href="/terms" className="text-[#d4af37] hover:underline">
+        <Link to="/terms" className="text-[#d4af37] hover:underline">
           Sacred Oaths
         </Link>{" "}
         and{" "}
-        <Link href="/privacy" className="text-[#d4af37] hover:underline">
+        <Link to="/privacy" className="text-[#d4af37] hover:underline">
           Covenant of Privacy
         </Link>
       </motion.p>
@@ -159,7 +158,7 @@ export function AuthForm({ mode }: AuthFormProps) {
         <p className="text-[#a89f94] text-xs font-medium">
           {isSignUp ? "Already a recognized archivist?" : "New to the halls of Lunchtable?"}{" "}
           <Link
-            href={isSignUp ? "/login" : "/signup"}
+            to={isSignUp ? "/login" : "/signup"}
             className="text-[#d4af37] font-black uppercase tracking-widest hover:underline ml-1"
           >
             {isSignUp ? "Sign In" : "Create Account"}
