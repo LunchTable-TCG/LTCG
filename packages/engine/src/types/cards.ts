@@ -18,6 +18,12 @@ export interface CardDefinition {
   spellType?: SpellType;
   trapType?: TrapType;
   effects?: EffectDefinition[];
+  // Game metadata — not used by rules engine, carried for display/storage
+  viceType?: string;
+  flavorText?: string;
+  imageUrl?: string;
+  cost?: number;
+  meta?: Record<string, unknown>;
 }
 
 export interface EffectDefinition {

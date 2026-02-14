@@ -41,6 +41,27 @@ describe("defineCards", () => {
     ];
     expect(() => defineCards(bad)).toThrow("attack");
   });
+
+  it("accepts cards with optional meta fields", () => {
+    const cards = defineCards([
+      {
+        id: "meta-test",
+        name: "Meta Card",
+        type: "stereotype",
+        description: "Card with metadata",
+        rarity: "common",
+        attack: 1000,
+        defense: 1000,
+        level: 4,
+        viceType: "gambling",
+        flavorText: "A test card",
+        cost: 1,
+        meta: { custom: true },
+      },
+    ]);
+    expect(cards["meta-test"]?.viceType).toBe("gambling");
+    expect(cards["meta-test"]?.meta?.custom).toBe(true);
+  });
 });
 
 describe("validateDeck", () => {
