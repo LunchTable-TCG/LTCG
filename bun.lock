@@ -298,6 +298,17 @@
         "react-dom": "^19.0.0",
       },
     },
+    "packages/lunchtable-tcg-admin": {
+      "name": "@lunchtable-tcg/admin",
+      "version": "0.1.0",
+      "devDependencies": {
+        "convex": "^1.31.6",
+        "typescript": "^5.7.3",
+      },
+      "peerDependencies": {
+        "convex": "^1.24.8",
+      },
+    },
     "packages/lunchtable-tcg-cards": {
       "name": "@lunchtable-tcg/cards",
       "version": "0.1.0",
@@ -1012,6 +1023,8 @@
     "@ltcg/docs-ui": ["@ltcg/docs-ui@workspace:packages/docs-ui"],
 
     "@ltcg/web": ["@ltcg/web@workspace:apps/web"],
+
+    "@lunchtable-tcg/admin": ["@lunchtable-tcg/admin@workspace:packages/lunchtable-tcg-admin"],
 
     "@lunchtable-tcg/cards": ["@lunchtable-tcg/cards@workspace:packages/lunchtable-tcg-cards"],
 
