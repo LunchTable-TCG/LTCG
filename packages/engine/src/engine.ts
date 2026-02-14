@@ -6,6 +6,7 @@ import type { EngineConfig } from "./types/config.js";
 import { DEFAULT_CONFIG } from "./types/config.js";
 import { nextPhase, opponentSeat } from "./rules/phases.js";
 import { decideSummon, decideSetMonster, decideFlipSummon, evolveSummon } from "./rules/summoning.js";
+import { decideSetSpellTrap, decideActivateSpell, decideActivateTrap, evolveSpellTrap } from "./rules/spellsTraps.js";
 
 export interface EngineOptions {
   config?: Partial<EngineConfig>;
@@ -245,7 +246,22 @@ function decide(state: GameState, command: Command, seat: Seat): EngineEvent[] {
       break;
     }
 
-    // TODO: Handle other commands (ACTIVATE_SPELL, etc.)
+    case "SET_SPELL_TRAP": {
+      events.push(...decideSetSpellTrap(state, seat, command));
+      break;
+    }
+
+    case "ACTIVATE_SPELL": {
+      events.push(...decideActivateSpell(state, seat, command));
+      break;
+    }
+
+    case "ACTIVATE_TRAP": {
+      events.push(...decideActivateTrap(state, seat, command));
+      break;
+    }
+
+    // TODO: Handle other commands
     default:
       break;
   }
@@ -285,8 +301,19 @@ function evolve(state: GameState, events: EngineEvent[]): GameState {
       case "MONSTER_SUMMONED":
       case "MONSTER_SET":
       case "FLIP_SUMMONED":
-      case "CARD_SENT_TO_GRAVEYARD":
         newState = evolveSummon(newState, event);
+        break;
+
+      case "SPELL_TRAP_SET":
+      case "SPELL_ACTIVATED":
+      case "TRAP_ACTIVATED":
+        newState = evolveSpellTrap(newState, event);
+        break;
+
+      case "CARD_SENT_TO_GRAVEYARD":
+        // Both summoning and spellsTraps can handle this event
+        newState = evolveSummon(newState, event);
+        newState = evolveSpellTrap(newState, event);
         break;
 
       // TODO: Handle other events (CARD_DRAWN, etc.)
