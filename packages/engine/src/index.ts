@@ -8,3 +8,5 @@ export type { Engine, EngineOptions } from "./engine.js";
 export { loadCardsFromArray, loadCardsFromJSON } from "./loader.js";
 export { defineCardSet, mergeCardSets } from "./cardSet.js";
 export type { CardSet, CardSetInput } from "./cardSet.js";
+export { toConvexCardRows } from "./seeder.js";
+export type { ConvexCardRow } from "./seeder.js";
