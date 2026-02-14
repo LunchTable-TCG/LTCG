@@ -17,7 +17,7 @@
 
 import * as generatedApi from "../../_generated/api";
 import type { MutationCtx } from "../../_generated/server";
-import { XP_SYSTEM } from "../../lib/constants";
+import { getGameConfig } from "../../lib/gameConfig";
 import { addXP } from "../../lib/xpHelpers";
 import type { DomainEvent } from "../types";
 
@@ -27,13 +27,16 @@ const internalAny = (generatedApi as any).internal;
 export async function handleProgressionEvent(ctx: MutationCtx, event: DomainEvent) {
   switch (event.type) {
     case "game:ended": {
+      const config = await getGameConfig(ctx);
+      const xpConfig = config.progression.xp;
+
       // --- XP Awards ---
       const xpReward =
         event.gameMode === "ranked"
-          ? XP_SYSTEM.RANKED_WIN_XP
+          ? xpConfig.rankedWin
           : event.gameMode === "casual"
-            ? XP_SYSTEM.CASUAL_WIN_XP
-            : XP_SYSTEM.STORY_WIN_XP;
+            ? xpConfig.casualWin
+            : xpConfig.storyWin;
 
       const xpSource =
         event.gameMode === "ranked"
@@ -43,6 +46,18 @@ export async function handleProgressionEvent(ctx: MutationCtx, event: DomainEven
             : "game_win_story";
 
       await addXP(ctx, event.winnerId, xpReward, { source: xpSource });
+
+      // --- Participation XP for Loser ---
+      const loserXp =
+        event.gameMode === "ranked"
+          ? xpConfig.rankedLoss
+          : event.gameMode === "casual"
+            ? xpConfig.casualLoss
+            : xpConfig.storyLoss;
+
+      if (loserXp > 0) {
+        await addXP(ctx, event.loserId, loserXp, { source: `game_loss_${event.gameMode}` });
+      }
 
       // --- Quest Progress ---
       const winGameEvent = {

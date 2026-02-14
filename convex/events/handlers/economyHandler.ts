@@ -14,20 +14,20 @@
 import * as generatedApi from "../../_generated/api";
 import type { MutationCtx } from "../../_generated/server";
 import { adjustPlayerCurrencyHelper } from "../../economy/economy";
+import { getGameConfig } from "../../lib/gameConfig";
 import type { DomainEvent } from "../types";
 
 // biome-ignore lint/suspicious/noExplicitAny: TS2589 workaround for deep type instantiation
 const internalAny = (generatedApi as any).internal;
-
-const WAGER_WINNER_PERCENTAGE = 0.9; // 90% to winner, 10% to treasury
 
 export async function handleEconomyEvent(ctx: MutationCtx, event: DomainEvent) {
   switch (event.type) {
     case "wager:payout": {
       if (event.wagerAmount <= 0) break;
 
+      const config = await getGameConfig(ctx);
       const totalPot = event.wagerAmount * 2; // Both players wagered the same amount
-      const winnerPayout = Math.floor(totalPot * WAGER_WINNER_PERCENTAGE);
+      const winnerPayout = Math.floor(totalPot * config.economy.wagerWinnerPct);
       const treasuryFee = totalPot - winnerPayout;
 
       await adjustPlayerCurrencyHelper(ctx, {
@@ -67,26 +67,8 @@ export async function handleEconomyEvent(ctx: MutationCtx, event: DomainEvent) {
     }
 
     case "game:ended": {
-      // Process wager payout if applicable
-      if (event.wagerAmount > 0 && !event.wagerPaid) {
-        const totalPot = event.wagerAmount * 2;
-        const winnerPayout = Math.floor(totalPot * WAGER_WINNER_PERCENTAGE);
-        const treasuryFee = totalPot - winnerPayout;
-
-        await adjustPlayerCurrencyHelper(ctx, {
-          userId: event.winnerId,
-          goldDelta: winnerPayout,
-          transactionType: "wager_payout",
-          description: `Won ${winnerPayout.toLocaleString()} gold from wager match`,
-          metadata: {
-            lobbyId: event.lobbyId,
-            totalPot,
-            treasuryFee,
-            opponentId: event.loserId,
-          },
-        });
-      }
-
+      // Wager payouts are handled exclusively by the "wager:payout" event
+      // to avoid double-payment. Emit "wager:payout" separately when needed.
       break;
     }
 

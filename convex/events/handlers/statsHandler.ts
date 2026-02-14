@@ -16,14 +16,18 @@
  */
 
 import type { MutationCtx } from "../../_generated/server";
-import { ELO_SYSTEM, XP_SYSTEM } from "../../lib/constants";
 import { ErrorCode, createError } from "../../lib/errorCodes";
+import { getGameConfig } from "../../lib/gameConfig";
 import { calculateEloChange } from "../../lib/helpers";
 import type { DomainEvent } from "../types";
 
 export async function handleStatsEvent(ctx: MutationCtx, event: DomainEvent) {
   switch (event.type) {
     case "game:ended": {
+      const config = await getGameConfig(ctx);
+      const eloConfig = config.competitive.elo;
+      const xpConfig = config.progression.xp;
+
       const { winnerId, loserId, gameMode } = event;
 
       const winner = await ctx.db.get(winnerId);
@@ -41,15 +45,15 @@ export async function handleStatsEvent(ctx: MutationCtx, event: DomainEvent) {
 
       // --- ELO Calculation ---
       const winnerRatingBefore = isRanked
-        ? winner.rankedElo || ELO_SYSTEM.DEFAULT_RATING
+        ? winner.rankedElo || eloConfig.defaultRating
         : isCasual
-          ? winner.casualRating || ELO_SYSTEM.DEFAULT_RATING
+          ? winner.casualRating || eloConfig.defaultRating
           : 0;
 
       const loserRatingBefore = isRanked
-        ? loser.rankedElo || ELO_SYSTEM.DEFAULT_RATING
+        ? loser.rankedElo || eloConfig.defaultRating
         : isCasual
-          ? loser.casualRating || ELO_SYSTEM.DEFAULT_RATING
+          ? loser.casualRating || eloConfig.defaultRating
           : 0;
 
       let winnerRatingAfter = winnerRatingBefore;
@@ -98,10 +102,10 @@ export async function handleStatsEvent(ctx: MutationCtx, event: DomainEvent) {
 
       // --- Record Match History ---
       const xpAwarded = isRanked
-        ? XP_SYSTEM.RANKED_WIN_XP
+        ? xpConfig.rankedWin
         : isCasual
-          ? XP_SYSTEM.CASUAL_WIN_XP
-          : XP_SYSTEM.STORY_WIN_XP;
+          ? xpConfig.casualWin
+          : xpConfig.storyWin;
 
       await ctx.db.insert("matchHistory", {
         winnerId,
@@ -129,21 +133,23 @@ export async function handleStatsEvent(ctx: MutationCtx, event: DomainEvent) {
         .first();
 
       if (winnerAgent) {
+        const ws = winnerAgent.stats ?? { gamesPlayed: 0, gamesWon: 0, totalScore: 0 };
         await ctx.db.patch(winnerAgent._id, {
           stats: {
-            gamesPlayed: winnerAgent.stats.gamesPlayed + 1,
-            gamesWon: winnerAgent.stats.gamesWon + 1,
-            totalScore: winnerAgent.stats.totalScore + 1,
+            gamesPlayed: (ws.gamesPlayed ?? 0) + 1,
+            gamesWon: (ws.gamesWon ?? 0) + 1,
+            totalScore: (ws.totalScore ?? 0) + 1,
           },
         });
       }
 
       if (loserAgent) {
+        const ls = loserAgent.stats ?? { gamesPlayed: 0, gamesWon: 0, totalScore: 0 };
         await ctx.db.patch(loserAgent._id, {
           stats: {
-            gamesPlayed: loserAgent.stats.gamesPlayed + 1,
-            gamesWon: loserAgent.stats.gamesWon,
-            totalScore: loserAgent.stats.totalScore,
+            gamesPlayed: (ls.gamesPlayed ?? 0) + 1,
+            gamesWon: ls.gamesWon ?? 0,
+            totalScore: ls.totalScore ?? 0,
           },
         });
       }
