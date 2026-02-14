@@ -1,137 +1,17 @@
 import { v } from "convex/values";
-import * as generatedApi from "../../_generated/api";
 import type { Id } from "../../_generated/dataModel";
 import type { MutationCtx } from "../../_generated/server";
-import { adjustPlayerCurrencyHelper } from "../../economy/economy";
 import { internalMutation, mutation } from "../../functions";
-import { completedGamesCounter } from "../../infrastructure/shardedCounters";
 import { type AuthenticatedUser, getAuthForUser, requireAuthMutation } from "../../lib/convexAuth";
 import { shuffleArray } from "../../lib/deterministicRandom";
 import { ErrorCode, createError } from "../../lib/errorCodes";
 import { resolveGameIdToLobbyId } from "../../lib/gameHelpers";
-import { recordEventHelper, recordGameEndHelper } from "../gameEvents";
-import { updateAgentStatsAfterGame, updatePlayerStatsAfterGame } from "./stats";
-
-// biome-ignore lint/suspicious/noExplicitAny: TS2589 workaround for deep type instantiation
-const internalAny = (generatedApi as any).internal;
+import { recordEventHelper } from "../gameEvents";
+import { handleGameEnd } from "./gameEndHandlers";
 
 // ============================================================================
-// WAGER SYSTEM CONSTANTS
+// HELPERS (used by initializeGameState and updateTurn)
 // ============================================================================
-
-const WAGER_WINNER_PERCENTAGE = 0.9; // 90% to winner, 10% to treasury
-
-/**
- * Process wager payout after a game ends
- * Winner receives 90% of the total pot, 10% goes to treasury
- *
- * @param ctx - Mutation context
- * @param lobbyId - The lobby ID
- * @param wagerAmount - Amount each player wagered
- * @param winnerId - The winner's user ID
- * @param loserId - The loser's user ID
- */
-async function processWagerPayout(
-  ctx: MutationCtx,
-  lobbyId: Id<"gameLobbies">,
-  wagerAmount: number,
-  winnerId: Id<"users">,
-  loserId: Id<"users">
-): Promise<void> {
-  if (wagerAmount <= 0) return;
-
-  const totalPot = wagerAmount * 2; // Both players wagered the same amount
-  const winnerPayout = Math.floor(totalPot * WAGER_WINNER_PERCENTAGE);
-  const treasuryFee = totalPot - winnerPayout; // Remainder goes to treasury (10%)
-
-  // Pay the winner their share (90%)
-  await adjustPlayerCurrencyHelper(ctx, {
-    userId: winnerId,
-    goldDelta: winnerPayout,
-    transactionType: "wager_payout",
-    description: `Won ${winnerPayout.toLocaleString()} gold from wager match`,
-    metadata: {
-      lobbyId,
-      totalPot,
-      treasuryFee,
-      opponentId: loserId,
-    },
-  });
-
-  // Treasury fee is simply not paid out - it stays in the system
-  // The loser's wager was already deducted when they accepted the challenge
-  // We could optionally track this in a separate transaction for auditing:
-  // await recordTransaction(ctx, "treasury", "wager_fee", "gold", treasuryFee, treasuryFee, "Wager platform fee");
-
-  // Mark wager as paid on the lobby
-  await ctx.db.patch(lobbyId, {
-    wagerPaid: true,
-  });
-}
-
-// ============================================================================
-// HELPER FUNCTIONS
-// ============================================================================
-
-/**
- * Update user presence status
- */
-async function updatePresenceInternal(
-  ctx: MutationCtx,
-  userId: Id<"users">,
-  username: string,
-  status: "online" | "in_game" | "idle"
-): Promise<void> {
-  const existing = await ctx.db
-    .query("userPresence")
-    .withIndex("by_user", (q) => q.eq("userId", userId))
-    .first();
-
-  if (existing) {
-    await ctx.db.patch(existing._id, {
-      status,
-      lastActiveAt: Date.now(),
-    });
-  } else {
-    await ctx.db.insert("userPresence", {
-      userId,
-      username,
-      status,
-      lastActiveAt: Date.now(),
-    });
-  }
-}
-
-/**
- * Stop agent streams for players in the game
- * Called when game ends to clean up streaming sessions
- */
-async function stopAgentStreamsForGame(
-  ctx: MutationCtx,
-  lobbyId: Id<"gameLobbies">,
-  hostId: Id<"users">,
-  opponentId: Id<"users"> | undefined
-): Promise<void> {
-  // Check both players for active agents
-  const playerIds = [hostId, opponentId].filter((id): id is Id<"users"> => id !== undefined);
-
-  for (const playerId of playerIds) {
-    // Find agent for this player
-    const agent = await ctx.db
-      .query("agents")
-      .withIndex("by_user", (q) => q.eq("userId", playerId))
-      .filter((q) => q.eq(q.field("isActive"), true))
-      .first();
-
-    if (agent?.streamingEnabled) {
-      // Schedule stop for agent stream (async, non-blocking)
-      await ctx.scheduler.runAfter(0, internalAny.agents.streaming.autoStopAgentStream, {
-        agentId: agent._id,
-        lobbyId,
-      });
-    }
-  }
-}
 
 /**
  * Helper function to initialize game state without mutation overhead
@@ -413,93 +293,13 @@ async function surrenderGameHandler(
     });
   }
 
-  // Update lobby
-  await ctx.db.patch(args.lobbyId, {
-    status: "forfeited",
+  // Delegate all side effects to the orchestrator
+  await handleGameEnd(ctx, {
+    lobbyId: args.lobbyId,
     winnerId,
+    loserId: userId,
+    endReason: "surrender",
   });
-
-  // Update both players' presence to online
-  await updatePresenceInternal(ctx, lobby.hostId, lobby.hostUsername, "online");
-
-  if (lobby.opponentId && lobby.opponentUsername && lobby.mode !== "story") {
-    await updatePresenceInternal(ctx, lobby.opponentId, lobby.opponentUsername, "online");
-  }
-
-  // Update player stats and ratings (surrender counts as a loss)
-  if (lobby.opponentId) {
-    const gameMode = lobby.mode as "ranked" | "casual" | "story";
-    await updatePlayerStatsAfterGame(ctx, winnerId, userId, gameMode);
-
-    // Process wager payout if applicable (surrendering player loses their wager)
-    if (lobby.wagerAmount && lobby.wagerAmount > 0 && !lobby.wagerPaid) {
-      await processWagerPayout(ctx, args.lobbyId, lobby.wagerAmount, winnerId, userId);
-    }
-
-    // Crypto wager settlement (schedule onchain settle instruction)
-    if (lobby.cryptoWagerCurrency && lobby.cryptoWagerTier && !lobby.cryptoSettled) {
-      // Store winner/loser on lobby so the retry cron can re-derive args
-      await ctx.db.patch(args.lobbyId, {
-        cryptoSettlementWinnerId: winnerId,
-        cryptoSettlementLoserId: userId,
-      });
-      await ctx.scheduler.runAfter(0, internalAny.wager.escrow.settleEscrow, {
-        lobbyId: args.lobbyId,
-        winnerId,
-        loserId: userId,
-      });
-    }
-
-    // Check if players are agents and update agent stats
-    const winnerAgent = await ctx.db
-      .query("agents")
-      .withIndex("by_user", (q) => q.eq("userId", winnerId))
-      .filter((q) => q.eq(q.field("isActive"), true))
-      .first();
-
-    const loserAgent = await ctx.db
-      .query("agents")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .filter((q) => q.eq(q.field("isActive"), true))
-      .first();
-
-    if (winnerAgent || loserAgent) {
-      await updateAgentStatsAfterGame(ctx, winnerAgent, loserAgent);
-    }
-  }
-
-  // Stop agent streams if active
-  await stopAgentStreamsForGame(ctx, args.lobbyId, lobby.hostId, lobby.opponentId);
-
-  // Handle story mode completion on surrender
-  if (lobby.mode === "story" && lobby.stageId) {
-    const gameState = await ctx.db
-      .query("gameStates")
-      .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))
-      .first();
-
-    await ctx.runMutation(internalAny.progression.storyStages.completeStageInternal, {
-      userId: lobby.hostId,
-      stageId: lobby.stageId,
-      won: winnerId === lobby.hostId,
-      finalLP: gameState ? (winnerId === lobby.hostId ? gameState.hostLifePoints : 0) : 0,
-    });
-
-    // Clean up game state
-    if (gameState) {
-      await ctx.db.delete(gameState._id);
-    }
-  } else {
-    // Clean up game state (no longer needed after game ends)
-    const gameState = await ctx.db
-      .query("gameStates")
-      .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))
-      .first();
-
-    if (gameState) {
-      await ctx.db.delete(gameState._id);
-    }
-  }
 
   return { success: true };
 }
@@ -624,98 +424,13 @@ export const forfeitGame = internalMutation({
       });
     }
 
-    // Update lobby
-    await ctx.db.patch(args.lobbyId, {
-      status: "forfeited",
+    // Delegate all side effects to the orchestrator
+    await handleGameEnd(ctx, {
+      lobbyId: args.lobbyId,
       winnerId,
+      loserId: args.forfeitingPlayerId,
+      endReason: "forfeit",
     });
-
-    // Update both players' presence to online
-    await updatePresenceInternal(ctx, lobby.hostId, lobby.hostUsername, "online");
-
-    if (lobby.opponentId && lobby.opponentUsername && lobby.mode !== "story") {
-      await updatePresenceInternal(ctx, lobby.opponentId, lobby.opponentUsername, "online");
-    }
-
-    // Update player stats and ratings (forfeit counts as a loss)
-    if (lobby.opponentId) {
-      const gameMode = lobby.mode as "ranked" | "casual" | "story";
-      await updatePlayerStatsAfterGame(ctx, winnerId, args.forfeitingPlayerId, gameMode);
-
-      // Process wager payout if applicable (forfeiting player loses their wager)
-      if (lobby.wagerAmount && lobby.wagerAmount > 0 && !lobby.wagerPaid) {
-        await processWagerPayout(
-          ctx,
-          args.lobbyId,
-          lobby.wagerAmount,
-          winnerId,
-          args.forfeitingPlayerId
-        );
-      }
-
-      // Crypto wager settlement (schedule onchain settle instruction)
-      if (lobby.cryptoWagerCurrency && lobby.cryptoWagerTier && !lobby.cryptoSettled) {
-        // Store winner/loser on lobby so the retry cron can re-derive args
-        await ctx.db.patch(args.lobbyId, {
-          cryptoSettlementWinnerId: winnerId,
-          cryptoSettlementLoserId: args.forfeitingPlayerId,
-        });
-        await ctx.scheduler.runAfter(0, internalAny.wager.escrow.settleEscrow, {
-          lobbyId: args.lobbyId,
-          winnerId,
-          loserId: args.forfeitingPlayerId,
-        });
-      }
-
-      // Check if players are agents and update agent stats
-      const winnerAgent = await ctx.db
-        .query("agents")
-        .withIndex("by_user", (q) => q.eq("userId", winnerId))
-        .filter((q) => q.eq(q.field("isActive"), true))
-        .first();
-
-      const loserAgent = await ctx.db
-        .query("agents")
-        .withIndex("by_user", (q) => q.eq("userId", args.forfeitingPlayerId))
-        .filter((q) => q.eq(q.field("isActive"), true))
-        .first();
-
-      if (winnerAgent || loserAgent) {
-        await updateAgentStatsAfterGame(ctx, winnerAgent, loserAgent);
-      }
-    }
-
-    // Stop agent streams if active
-    await stopAgentStreamsForGame(ctx, args.lobbyId, lobby.hostId, lobby.opponentId);
-
-    // Handle story mode completion on forfeit
-    if (lobby.mode === "story" && lobby.stageId) {
-      const gameState = await ctx.db
-        .query("gameStates")
-        .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))
-        .first();
-
-      await ctx.runMutation(internalAny.progression.storyStages.completeStageInternal, {
-        userId: lobby.hostId,
-        stageId: lobby.stageId,
-        won: winnerId === lobby.hostId,
-        finalLP: gameState ? (winnerId === lobby.hostId ? gameState.hostLifePoints : 0) : 0,
-      });
-
-      if (gameState) {
-        await ctx.db.delete(gameState._id);
-      }
-    } else {
-      // Clean up game state (no longer needed after game ends)
-      const gameState = await ctx.db
-        .query("gameStates")
-        .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))
-        .first();
-
-      if (gameState) {
-        await ctx.db.delete(gameState._id);
-      }
-    }
   },
 });
 
@@ -736,100 +451,20 @@ export const completeGame = internalMutation({
       });
     }
 
-    // Update lobby
-    await ctx.db.patch(args.lobbyId, {
-      status: "completed",
-      turnNumber: args.finalTurnNumber,
+    const loserId = args.winnerId === lobby.hostId ? lobby.opponentId : lobby.hostId;
+    if (!loserId) {
+      throw createError(ErrorCode.VALIDATION_INVALID_INPUT, {
+        reason: "Cannot determine loser",
+      });
+    }
+
+    // Delegate all side effects to the orchestrator
+    await handleGameEnd(ctx, {
+      lobbyId: args.lobbyId,
       winnerId: args.winnerId,
+      loserId,
+      endReason: "completed",
+      finalTurnNumber: args.finalTurnNumber,
     });
-
-    // Increment completed games counter
-    await completedGamesCounter.add(ctx, "global", 1);
-
-    // Update both players' presence to online
-    const hostUser = await ctx.db.get(lobby.hostId);
-    if (hostUser) {
-      await updatePresenceInternal(ctx, lobby.hostId, lobby.hostUsername, "online");
-    }
-
-    if (lobby.opponentId && lobby.mode !== "story") {
-      const opponentUser = await ctx.db.get(lobby.opponentId);
-      if (opponentUser && lobby.opponentUsername) {
-        await updatePresenceInternal(ctx, lobby.opponentId, lobby.opponentUsername, "online");
-      }
-    }
-
-    // Update player stats and ratings
-    if (lobby.opponentId) {
-      const loserId = args.winnerId === lobby.hostId ? lobby.opponentId : lobby.hostId;
-      const gameMode = lobby.mode as "ranked" | "casual" | "story";
-      await updatePlayerStatsAfterGame(ctx, args.winnerId, loserId, gameMode);
-
-      // Process wager payout if applicable
-      if (lobby.wagerAmount && lobby.wagerAmount > 0 && !lobby.wagerPaid) {
-        await processWagerPayout(ctx, args.lobbyId, lobby.wagerAmount, args.winnerId, loserId);
-      }
-
-      // Crypto wager settlement (schedule onchain settle instruction)
-      if (lobby.cryptoWagerCurrency && lobby.cryptoWagerTier && !lobby.cryptoSettled) {
-        // Store winner/loser on lobby so the retry cron can re-derive args
-        await ctx.db.patch(args.lobbyId, {
-          cryptoSettlementWinnerId: args.winnerId,
-          cryptoSettlementLoserId: loserId,
-        });
-        await ctx.scheduler.runAfter(0, internalAny.wager.escrow.settleEscrow, {
-          lobbyId: args.lobbyId,
-          winnerId: args.winnerId,
-          loserId,
-        });
-      }
-
-      // Check if players are agents and update agent stats
-      const winnerAgent = await ctx.db
-        .query("agents")
-        .withIndex("by_user", (q) => q.eq("userId", args.winnerId))
-        .filter((q) => q.eq(q.field("isActive"), true))
-        .first();
-
-      const loserAgent = await ctx.db
-        .query("agents")
-        .withIndex("by_user", (q) => q.eq("userId", loserId))
-        .filter((q) => q.eq(q.field("isActive"), true))
-        .first();
-
-      if (winnerAgent || loserAgent) {
-        await updateAgentStatsAfterGame(ctx, winnerAgent, loserAgent);
-      }
-
-      // Record game end event for spectators
-      if (lobby.gameId) {
-        const winner = await ctx.db.get(args.winnerId);
-        const loser = await ctx.db.get(loserId);
-        if (winner && loser) {
-          await recordGameEndHelper(ctx, {
-            lobbyId: args.lobbyId,
-            gameId: lobby.gameId,
-            turnNumber: args.finalTurnNumber,
-            winnerId: args.winnerId,
-            winnerUsername: winner.username || winner.name || "Unknown",
-            loserId,
-            loserUsername: loser.username || loser.name || "Unknown",
-          });
-        }
-      }
-    }
-
-    // Stop agent streams if active
-    await stopAgentStreamsForGame(ctx, args.lobbyId, lobby.hostId, lobby.opponentId);
-
-    // Clean up game state (no longer needed after game ends)
-    const gameState = await ctx.db
-      .query("gameStates")
-      .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))
-      .first();
-
-    if (gameState) {
-      await ctx.db.delete(gameState._id);
-    }
   },
 });

@@ -33,18 +33,7 @@ export async function executeNegate(
 
   // Validate target type matches effect
   if (effect.targetType && effect.targetType !== "any") {
-    const cardTypeMap: Record<string, string> = {
-      // Backward compatibility for old card types
-      creature: "stereotype",
-      monster: "stereotype",
-      equipment: "class",
-      // Current card types
-      stereotype: "stereotype",
-      spell: "spell",
-      trap: "trap",
-      class: "class",
-    };
-    const cardGameType = cardTypeMap[targetCard.cardType] || "unknown";
+    const cardGameType = targetCard.cardType;
 
     if (cardGameType !== effect.targetType) {
       return {

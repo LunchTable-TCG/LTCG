@@ -2,9 +2,9 @@
 /**
  * Phase Management Tests
  *
- * Tests for Yu-Gi-Oh turn structure and phase transitions:
- * - Phase sequence: Draw → Standby → Main1 → Battle → Main2 → End
- * - Skip Battle Phase
+ * Tests for LunchTable TCG turn structure and phase transitions:
+ * - Phase sequence: Draw → Main → Combat → Breakdown Check → End
+ * - Skip Combat Phase
  * - Skip to End Phase
  * - Turn validation
  */
@@ -20,12 +20,9 @@ import { describe, expect, it } from "vitest";
 // Helper types
 type GamePhase =
   | "draw"
-  | "standby"
-  | "main1"
-  | "battle_start"
-  | "battle"
-  | "battle_end"
-  | "main2"
+  | "main"
+  | "combat"
+  | "breakdown_check"
   | "end";
 
 // =============================================================================
@@ -92,8 +89,8 @@ async function createGameInPhase(
       turnNumber: 2,
       hostLifePoints: 8000,
       opponentLifePoints: 8000,
-      hostMana: 5,
-      opponentMana: 5,
+      hostClout: 5,
+      opponentClout: 5,
       hostDeck: [],
       opponentDeck: [],
       hostHand: [],
@@ -122,13 +119,13 @@ async function createGameInPhase(
 // =============================================================================
 
 describe("Phase Management - Advance Phase", () => {
-  it("should advance from main1 to battle_start/battle", async () => {
+  it("should advance from main to combat", async () => {
     const t = convexTest(schema, modules);
 
     const host = await createTestUser(t, "host@test.com", "host");
     const opponent = await createTestUser(t, "opponent@test.com", "opponent");
 
-    const { lobbyId, gameStateId } = await createGameInPhase(t, host, opponent, "main1", host.id);
+    const { lobbyId, gameStateId } = await createGameInPhase(t, host, opponent, "main", host.id);
 
     const asHost = t.withIdentity({ subject: host.privyId });
 
@@ -137,18 +134,18 @@ describe("Phase Management - Advance Phase", () => {
     // advancePhase returns { newPhase, phasesVisited, ... } not { success }
     expect(result.newPhase).toBeDefined();
 
-    // Verify phase advanced (should auto-advance through battle_start to battle)
+    // Verify phase advanced to combat
     const gameState = await t.run(async (ctx) => ctx.db.get(gameStateId));
-    expect(["battle_start", "battle"]).toContain(gameState?.currentPhase);
+    expect(gameState?.currentPhase).toBe("combat");
   });
 
-  it("should advance from battle to main2", async () => {
+  it("should advance from combat to breakdown_check", async () => {
     const t = convexTest(schema, modules);
 
     const host = await createTestUser(t, "host@test.com", "host");
     const opponent = await createTestUser(t, "opponent@test.com", "opponent");
 
-    const { lobbyId, gameStateId } = await createGameInPhase(t, host, opponent, "battle", host.id);
+    const { lobbyId, gameStateId } = await createGameInPhase(t, host, opponent, "combat", host.id);
 
     const asHost = t.withIdentity({ subject: host.privyId });
 
@@ -157,18 +154,18 @@ describe("Phase Management - Advance Phase", () => {
     // advancePhase returns { newPhase, phasesVisited, ... } not { success }
     expect(result.newPhase).toBeDefined();
 
-    // Verify phase advanced (should auto-advance through battle_end to main2)
+    // Verify phase advanced to breakdown_check
     const gameState = await t.run(async (ctx) => ctx.db.get(gameStateId));
-    expect(["battle_end", "main2"]).toContain(gameState?.currentPhase);
+    expect(gameState?.currentPhase).toBe("breakdown_check");
   });
 
-  it("should advance from main2 to end", async () => {
+  it("should advance from breakdown_check to end", async () => {
     const t = convexTest(schema, modules);
 
     const host = await createTestUser(t, "host@test.com", "host");
     const opponent = await createTestUser(t, "opponent@test.com", "opponent");
 
-    const { lobbyId, gameStateId } = await createGameInPhase(t, host, opponent, "main2", host.id);
+    const { lobbyId, gameStateId } = await createGameInPhase(t, host, opponent, "breakdown_check", host.id);
 
     const asHost = t.withIdentity({ subject: host.privyId });
 
@@ -189,7 +186,7 @@ describe("Phase Management - Advance Phase", () => {
     const opponent = await createTestUser(t, "opponent@test.com", "opponent");
 
     // Opponent's turn
-    const { lobbyId } = await createGameInPhase(t, host, opponent, "main1", opponent.id);
+    const { lobbyId } = await createGameInPhase(t, host, opponent, "main", opponent.id);
 
     const asHost = t.withIdentity({ subject: host.privyId });
 
@@ -215,17 +212,17 @@ describe("Phase Management - Advance Phase", () => {
 });
 
 // =============================================================================
-// SKIP BATTLE PHASE TESTS
+// SKIP COMBAT PHASE TESTS
 // =============================================================================
 
-describe("Phase Management - Skip Battle Phase", () => {
-  it("should skip from main1 directly to main2", async () => {
+describe("Phase Management - Skip Combat Phase", () => {
+  it("should skip from main directly to breakdown_check", async () => {
     const t = convexTest(schema, modules);
 
     const host = await createTestUser(t, "host@test.com", "host");
     const opponent = await createTestUser(t, "opponent@test.com", "opponent");
 
-    const { lobbyId, gameStateId } = await createGameInPhase(t, host, opponent, "main1", host.id);
+    const { lobbyId, gameStateId } = await createGameInPhase(t, host, opponent, "main", host.id);
 
     const asHost = t.withIdentity({ subject: host.privyId });
 
@@ -233,39 +230,39 @@ describe("Phase Management - Skip Battle Phase", () => {
 
     expect(result.success).toBe(true);
 
-    // Verify skipped to main2
+    // Verify skipped to breakdown_check
     const gameState = await t.run(async (ctx) => ctx.db.get(gameStateId));
-    expect(gameState?.currentPhase).toBe("main2");
+    expect(gameState?.currentPhase).toBe("breakdown_check");
   });
 
-  it("should allow skip battle phase from battle phase (goes to main2)", async () => {
+  it("should allow skip combat phase from combat phase (goes to breakdown_check)", async () => {
     const t = convexTest(schema, modules);
 
     const host = await createTestUser(t, "host@test.com", "host");
     const opponent = await createTestUser(t, "opponent@test.com", "opponent");
 
-    // In battle phase - skipBattlePhase CAN be called from battle phase
-    const { lobbyId, gameStateId } = await createGameInPhase(t, host, opponent, "battle", host.id);
+    // In combat phase - skipBattlePhase CAN be called from combat phase
+    const { lobbyId, gameStateId } = await createGameInPhase(t, host, opponent, "combat", host.id);
 
     const asHost = t.withIdentity({ subject: host.privyId });
 
     const result = await asHost.mutation(api.gameplay.phaseManager.skipBattlePhase, { lobbyId });
 
     expect(result.success).toBe(true);
-    expect(result.newPhase).toBe("main2");
+    expect(result.newPhase).toBe("breakdown_check");
 
     const gameState = await t.run(async (ctx) => ctx.db.get(gameStateId));
-    expect(gameState?.currentPhase).toBe("main2");
+    expect(gameState?.currentPhase).toBe("breakdown_check");
   });
 
-  it("should reject skip battle phase when in main2", async () => {
+  it("should reject skip combat phase when in breakdown_check", async () => {
     const t = convexTest(schema, modules);
 
     const host = await createTestUser(t, "host@test.com", "host");
     const opponent = await createTestUser(t, "opponent@test.com", "opponent");
 
-    // In main2 - cannot skip battle phase from here
-    const { lobbyId } = await createGameInPhase(t, host, opponent, "main2", host.id);
+    // In breakdown_check - cannot skip combat phase from here
+    const { lobbyId } = await createGameInPhase(t, host, opponent, "breakdown_check", host.id);
 
     const asHost = t.withIdentity({ subject: host.privyId });
 
@@ -275,7 +272,7 @@ describe("Phase Management - Skip Battle Phase", () => {
     ).rejects.toThrow(/Cannot advance|End Phase|Battle Phase|Main Phase/i);
   });
 
-  it("should reject skip battle phase when not your turn", async () => {
+  it("should reject skip combat phase when not your turn", async () => {
     const t = convexTest(schema, modules);
 
     const host = await createTestUser(t, "host@test.com", "host");
@@ -285,7 +282,7 @@ describe("Phase Management - Skip Battle Phase", () => {
       t,
       host,
       opponent,
-      "main1",
+      "main",
       opponent.id // Opponent's turn
     );
 
@@ -302,13 +299,13 @@ describe("Phase Management - Skip Battle Phase", () => {
 // =============================================================================
 
 describe("Phase Management - Skip To End Phase", () => {
-  it("should skip from main1 directly to end", async () => {
+  it("should skip from main directly to end", async () => {
     const t = convexTest(schema, modules);
 
     const host = await createTestUser(t, "host@test.com", "host");
     const opponent = await createTestUser(t, "opponent@test.com", "opponent");
 
-    const { lobbyId, gameStateId } = await createGameInPhase(t, host, opponent, "main1", host.id);
+    const { lobbyId, gameStateId } = await createGameInPhase(t, host, opponent, "main", host.id);
 
     const asHost = t.withIdentity({ subject: host.privyId });
 
@@ -321,13 +318,13 @@ describe("Phase Management - Skip To End Phase", () => {
     expect(gameState?.currentPhase).toBe("end");
   });
 
-  it("should skip from battle directly to end", async () => {
+  it("should skip from combat directly to end", async () => {
     const t = convexTest(schema, modules);
 
     const host = await createTestUser(t, "host@test.com", "host");
     const opponent = await createTestUser(t, "opponent@test.com", "opponent");
 
-    const { lobbyId, gameStateId } = await createGameInPhase(t, host, opponent, "battle", host.id);
+    const { lobbyId, gameStateId } = await createGameInPhase(t, host, opponent, "combat", host.id);
 
     const asHost = t.withIdentity({ subject: host.privyId });
 
@@ -341,17 +338,17 @@ describe("Phase Management - Skip To End Phase", () => {
 });
 
 // =============================================================================
-// SKIP MAIN PHASE 2 TESTS
+// SKIP BREAKDOWN CHECK TESTS
 // =============================================================================
 
-describe("Phase Management - Skip Main Phase 2", () => {
-  it("should skip from main2 directly to end", async () => {
+describe("Phase Management - Skip Breakdown Check", () => {
+  it("should skip from breakdown_check directly to end", async () => {
     const t = convexTest(schema, modules);
 
     const host = await createTestUser(t, "host@test.com", "host");
     const opponent = await createTestUser(t, "opponent@test.com", "opponent");
 
-    const { lobbyId, gameStateId } = await createGameInPhase(t, host, opponent, "main2", host.id);
+    const { lobbyId, gameStateId } = await createGameInPhase(t, host, opponent, "breakdown_check", host.id);
 
     const asHost = t.withIdentity({ subject: host.privyId });
 
@@ -363,14 +360,14 @@ describe("Phase Management - Skip Main Phase 2", () => {
     expect(gameState?.currentPhase).toBe("end");
   });
 
-  it("should reject skip main phase 2 when not in main2", async () => {
+  it("should reject skip breakdown check when not in breakdown_check", async () => {
     const t = convexTest(schema, modules);
 
     const host = await createTestUser(t, "host@test.com", "host");
     const opponent = await createTestUser(t, "opponent@test.com", "opponent");
 
-    // In main1, not main2
-    const { lobbyId } = await createGameInPhase(t, host, opponent, "main1", host.id);
+    // In main, not breakdown_check
+    const { lobbyId } = await createGameInPhase(t, host, opponent, "main", host.id);
 
     const asHost = t.withIdentity({ subject: host.privyId });
 
@@ -386,40 +383,27 @@ describe("Phase Management - Skip Main Phase 2", () => {
 // =============================================================================
 
 describe("Phase Management - Phase Sequence", () => {
-  it("should follow correct phase sequence: main1 -> battle -> main2 -> end", async () => {
+  it("should follow correct phase sequence: main -> combat -> breakdown_check -> end", async () => {
     const t = convexTest(schema, modules);
 
     const host = await createTestUser(t, "host@test.com", "host");
     const opponent = await createTestUser(t, "opponent@test.com", "opponent");
 
-    const { lobbyId, gameStateId } = await createGameInPhase(t, host, opponent, "main1", host.id);
+    const { lobbyId, gameStateId } = await createGameInPhase(t, host, opponent, "main", host.id);
 
     const asHost = t.withIdentity({ subject: host.privyId });
 
-    // Phase 1: main1 -> battle
+    // Phase 1: main -> combat
     await asHost.mutation(api.gameplay.phaseManager.advancePhase, { lobbyId });
     let gameState = await t.run(async (ctx) => ctx.db.get(gameStateId));
-    expect(["battle_start", "battle"]).toContain(gameState?.currentPhase);
+    expect(gameState?.currentPhase).toBe("combat");
 
-    // If we're at battle_start, advance to battle
-    if (gameState?.currentPhase === "battle_start") {
-      await asHost.mutation(api.gameplay.phaseManager.advancePhase, { lobbyId });
-      gameState = await t.run(async (ctx) => ctx.db.get(gameStateId));
-    }
-
-    // Phase 2: battle -> main2
+    // Phase 2: combat -> breakdown_check
     await asHost.mutation(api.gameplay.phaseManager.advancePhase, { lobbyId });
     gameState = await t.run(async (ctx) => ctx.db.get(gameStateId));
-    expect(["battle_end", "main2"]).toContain(gameState?.currentPhase);
+    expect(gameState?.currentPhase).toBe("breakdown_check");
 
-    // If we're at battle_end, advance to main2
-    if (gameState?.currentPhase === "battle_end") {
-      await asHost.mutation(api.gameplay.phaseManager.advancePhase, { lobbyId });
-      gameState = await t.run(async (ctx) => ctx.db.get(gameStateId));
-    }
-    expect(gameState?.currentPhase).toBe("main2");
-
-    // Phase 3: main2 -> end
+    // Phase 3: breakdown_check -> end
     await asHost.mutation(api.gameplay.phaseManager.advancePhase, { lobbyId });
     gameState = await t.run(async (ctx) => ctx.db.get(gameStateId));
     expect(gameState?.currentPhase).toBe("end");

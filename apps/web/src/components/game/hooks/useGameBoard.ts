@@ -100,7 +100,7 @@ interface GameState {
   myDeckCount: number;
   myGraveyard: GameStateCard[];
   myLifePoints: number;
-  myMana: number;
+  myClout: number;
   opponentHandCount: number;
   opponentBoard: GameStateBoardCard[];
   opponentSpellTrapZone: GameStateBackrowCard[];
@@ -108,7 +108,7 @@ interface GameState {
   opponentDeckCount: number;
   opponentGraveyard: GameStateCard[];
   opponentLifePoints: number;
-  opponentMana: number;
+  opponentClout: number;
   mode: string;
   lastMoveAt: number;
   responseWindow?: {
@@ -259,7 +259,7 @@ export interface AttackTarget {
 // =============================================================================
 
 /**
- * Comprehensive game board state management hook for Yu-Gi-Oh style card battles.
+ * Comprehensive game board state management hook for LunchTable card battles.
  *
  * This is the most complex hook in the application, managing all real-time game state,
  * player actions, and board interactions. It provides optimistic updates for smooth UX
@@ -322,8 +322,8 @@ export interface AttackTarget {
  * - `winner` - "player" | "opponent" | null
  * - `playableHandCards` - Set of playable card IDs from hand
  * - `activatableBackrowCards` - Set of activatable backrow card IDs
- * - `normalSummon()` - Normal summon a monster with optional tributes
- * - `setMonster()` - Set a monster face-down
+ * - `normalSummon()` - Normal summon a stereotype with optional tributes
+ * - `setMonster()` - Set a stereotype face-down
  * - `setSpellTrap()` - Set a spell/trap face-down
  * - `advancePhase()` - Move to next phase
  * - `endTurn()` - End current turn
@@ -440,7 +440,7 @@ export function useGameBoard(lobbyId: Id<"gameLobbies">, currentPlayerId: Id<"us
         });
         return { success: true };
       } catch (error) {
-        console.error("Set monster failed:", error);
+        console.error("Set stereotype failed:", error);
         return { success: false, error: String(error) };
       }
     },
@@ -593,7 +593,7 @@ export function useGameBoard(lobbyId: Id<"gameLobbies">, currentPlayerId: Id<"us
         });
         return { success: true };
       } catch (error) {
-        console.error("Activate monster effect failed:", error);
+        console.error("Activate stereotype effect failed:", error);
         return { success: false, error: String(error) };
       }
     },
@@ -708,14 +708,14 @@ export function useGameBoard(lobbyId: Id<"gameLobbies">, currentPlayerId: Id<"us
             ? {
                 attack: card.attack,
                 defense: card.defense,
-                level: card.cost || 0, // cost represents the monster level/tribute requirement
+                level: card.cost || 0, // cost represents the stereotype level/tribute requirement
               }
             : undefined,
         effects: getCardEffectsArray(card.ability),
         isFaceDown: false,
       })),
       handCount: gameState.myHand.length,
-      frontline: null, // Note: Current Yu-Gi-Oh implementation uses all monsters in support zones
+      frontline: null, // All stereotypes use support zones
       support: gameState.myBoard.map((card) => ({
         instanceId: card._id,
         cardId: card._id,
@@ -732,7 +732,7 @@ export function useGameBoard(lobbyId: Id<"gameLobbies">, currentPlayerId: Id<"us
         monsterStats: {
           attack: card.currentAttack,
           defense: card.currentDefense,
-          level: card.cost || 0, // cost represents the monster level/tribute requirement
+          level: card.cost || 0, // cost represents the stereotype level/tribute requirement
         },
         effects: getCardEffectsArray(card.ability),
       })),
@@ -814,7 +814,7 @@ export function useGameBoard(lobbyId: Id<"gameLobbies">, currentPlayerId: Id<"us
         monsterStats: {
           attack: card.currentAttack,
           defense: card.currentDefense,
-          level: card.cost || 0, // cost represents the monster level/tribute requirement
+          level: card.cost || 0, // cost represents the stereotype level/tribute requirement
         },
         effects: getCardEffectsArray(card.ability),
       })),
@@ -950,7 +950,7 @@ export function useGameBoard(lobbyId: Id<"gameLobbies">, currentPlayerId: Id<"us
     return activatable;
   }, [gameState, player, isPlayerTurn, isMainPhase]);
 
-  // Attack options - compute which monsters can attack
+  // Attack options - compute which stereotypes can attack
   const attackOptions = useMemo(() => {
     if (!player || !isBattlePhase || !isPlayerTurn) return [];
 
@@ -962,7 +962,7 @@ export function useGameBoard(lobbyId: Id<"gameLobbies">, currentPlayerId: Id<"us
       validTargets: Id<"cardDefinitions">[];
     }> = [];
 
-    // Get all valid attack targets (opponent's monsters)
+    // Get all valid attack targets (opponent's stereotypes)
     const validTargets: Id<"cardDefinitions">[] = [];
     if (opponent?.frontline) {
       validTargets.push(opponent.frontline.instanceId);
@@ -973,10 +973,10 @@ export function useGameBoard(lobbyId: Id<"gameLobbies">, currentPlayerId: Id<"us
       }
     }
 
-    // Check if opponent has any face-up monsters
-    const opponentHasMonsters = validTargets.length > 0;
+    // Check if opponent has any face-up stereotypes
+    const opponentHasStereotypes = validTargets.length > 0;
 
-    // Check frontline monster
+    // Check frontline stereotype
     if (player.frontline) {
       const monster = player.frontline;
       // Position can be 1 (attack), -1 (defense), or string "attack"/"defense"/"setDefense"
@@ -988,13 +988,13 @@ export function useGameBoard(lobbyId: Id<"gameLobbies">, currentPlayerId: Id<"us
           instanceId: monster.instanceId,
           name: monster.name || "Unknown",
           canAttack: true,
-          canDirectAttack: !opponentHasMonsters,
+          canDirectAttack: !opponentHasStereotypes,
           validTargets: validTargets,
         });
       }
     }
 
-    // Check support monsters
+    // Check support stereotypes
     if (player.support) {
       for (const monster of player.support) {
         // Position can be 1 (attack), -1 (defense), or string "attack"/"defense"/"setDefense"
@@ -1006,7 +1006,7 @@ export function useGameBoard(lobbyId: Id<"gameLobbies">, currentPlayerId: Id<"us
             instanceId: monster.instanceId,
             name: monster.name || "Unknown",
             canAttack: true,
-            canDirectAttack: !opponentHasMonsters,
+            canDirectAttack: !opponentHasStereotypes,
             validTargets: validTargets,
           });
         }

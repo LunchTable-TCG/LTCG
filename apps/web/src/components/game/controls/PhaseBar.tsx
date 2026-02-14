@@ -49,9 +49,8 @@ export function PhaseBar({
 
   // Determine button label based on current phase
   const getAdvanceButtonLabel = () => {
-    if (currentPhase === "main1") return "Battle";
-    if (currentPhase === "battle") return "Main 2";
-    if (currentPhase === "main2") return "End Turn";
+    if (currentPhase === "main") return "Combat";
+    if (currentPhase === "combat") return "End Turn";
     return "Next";
   };
 
@@ -75,16 +74,13 @@ export function PhaseBar({
 
     switch (currentPhase) {
       case "draw":
-      case "standby":
-      case "main1":
+      case "main":
         return {
           icon: Sparkles,
           text: "Summon monsters, activate spells, set cards",
           color: "text-purple-400",
         };
-      case "battle_start":
-      case "battle":
-      case "battle_end":
+      case "combat":
         return {
           icon: Swords,
           text:
@@ -95,11 +91,11 @@ export function PhaseBar({
                 : "Attack with your monsters",
           color: "text-red-400",
         };
-      case "main2":
+      case "breakdown_check":
         return {
-          icon: Scroll,
-          text: "Last chance to play cards before ending turn",
-          color: "text-blue-400",
+          icon: AlertTriangle,
+          text: "Checking for breakdown conditions",
+          color: "text-amber-400",
         };
       case "end":
         return {
@@ -154,7 +150,7 @@ export function PhaseBar({
           <Button
             size="sm"
             variant="default"
-            onClick={currentPhase === "main2" ? onEndTurn : onAdvancePhase}
+            onClick={currentPhase === "combat" ? onEndTurn : onAdvancePhase}
             className="ml-auto gap-1 h-7 text-[11px] px-3 font-semibold bg-linear-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700"
           >
             {getAdvanceButtonLabel()}

@@ -11,7 +11,7 @@ import type {
   BoardCard,
   CardInGraveyard,
   CardInHand,
-  MonsterCard,
+  StereotypeCard,
   SpellTrapCard,
 } from "../types/api";
 
@@ -78,9 +78,9 @@ export function isBoardSpellTrap(
 // ============================================================================
 
 /**
- * Check if a card is a MonsterCard (legacy format from normalization)
+ * Check if a card is a StereotypeCard (legacy format from normalization)
  */
-export function isMonsterCard(card: unknown): card is MonsterCard {
+export function isMonsterCard(card: unknown): card is StereotypeCard {
   if (typeof card !== "object" || card === null) return false;
   const c = card as Record<string, unknown>;
   return (
@@ -198,7 +198,7 @@ export function isDefensePosition(position: unknown): position is "defense" | 2 
 /**
  * Check if a card is face-down
  */
-export function isFaceDown(card: BoardCard | MonsterCard | null | undefined): boolean {
+export function isFaceDown(card: BoardCard | StereotypeCard | null | undefined): boolean {
   if (card == null) return false;
   if ("isFaceDown" in card) return card.isFaceDown;
   if ("position" in card && card.position === "facedown") return true;

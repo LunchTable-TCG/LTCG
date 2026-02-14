@@ -159,3 +159,35 @@ export function isSortOption(value: string): value is SortOption {
     "owned",
   ].includes(value);
 }
+
+// =============================================================================
+// API Response Types
+// =============================================================================
+
+/**
+ * Standard API success response wrapper.
+ * Used by HTTP endpoints and plugin clients.
+ */
+export interface ApiSuccessResponse<T = unknown> {
+  success: true;
+  data: T;
+  timestamp: number;
+}
+
+/**
+ * Standard API error response wrapper.
+ */
+export interface ApiErrorResponse {
+  success: false;
+  error: {
+    code: string;
+    message: string;
+    details?: Record<string, unknown>;
+  };
+  timestamp: number;
+}
+
+/**
+ * Union of success and error API responses.
+ */
+export type ApiResponse<T = unknown> = ApiSuccessResponse<T> | ApiErrorResponse;

@@ -12,8 +12,8 @@ import { clsx } from 'clsx';
 export interface DeckCard {
   id: string;
   name: string;
-  type: 'creature' | 'spell' | 'trap';
-  element: 'ember' | 'void' | 'arcane' | 'nature' | 'frost' | 'neutral';
+  type: 'stereotype' | 'spell' | 'trap' | 'class';
+  element: 'red' | 'blue' | 'yellow' | 'purple' | 'green' | 'white';
   rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
   cost: number;
   count: number;
@@ -29,17 +29,17 @@ export interface DeckData {
 interface DeckBuilderPreviewProps {
   deck: DeckData;
   showStats?: boolean;
-  showManaChart?: boolean;
+  showCloutChart?: boolean;
   className?: string;
 }
 
 const elementConfig = {
-  ember: { icon: '🔥', color: '#ff6b35' },
-  void: { icon: '🌑', color: '#9333ea' },
-  arcane: { icon: '✨', color: '#06b6d4' },
-  nature: { icon: '🌿', color: '#10b981' },
-  frost: { icon: '❄️', color: '#0ea5e9' },
-  neutral: { icon: '⚪', color: '#a89f94' }
+  red: { icon: '🔥', color: '#DC2626' },
+  blue: { icon: '🎉', color: '#2563EB' },
+  yellow: { icon: '🧠', color: '#CA8A04' },
+  purple: { icon: '🧪', color: '#9333EA' },
+  green: { icon: '📐', color: '#16A34A' },
+  white: { icon: '🙏', color: '#E5E7EB' }
 };
 
 const rarityConfig = {
@@ -53,14 +53,14 @@ const rarityConfig = {
 export function DeckBuilderPreview({
   deck,
   showStats = true,
-  showManaChart = true,
+  showCloutChart = true,
   className
 }: DeckBuilderPreviewProps) {
   const stats = useMemo(() => {
     const totalCards = deck.cards.reduce((sum, c) => sum + c.count, 0);
 
     const byType = {
-      creature: deck.cards.filter(c => c.type === 'creature').reduce((sum, c) => sum + c.count, 0),
+      stereotype: deck.cards.filter(c => c.type === 'stereotype').reduce((sum, c) => sum + c.count, 0),
       spell: deck.cards.filter(c => c.type === 'spell').reduce((sum, c) => sum + c.count, 0),
       trap: deck.cards.filter(c => c.type === 'trap').reduce((sum, c) => sum + c.count, 0)
     };
@@ -70,7 +70,7 @@ export function DeckBuilderPreview({
       return acc;
     }, {} as Record<string, number>);
 
-    const manaCurve = deck.cards.reduce((acc, card) => {
+    const cloutCurve = deck.cards.reduce((acc, card) => {
       const cost = Math.min(card.cost, 7); // Cap at 7+
       acc[cost] = (acc[cost] || 0) + card.count;
       return acc;
@@ -78,10 +78,10 @@ export function DeckBuilderPreview({
 
     const avgCost = deck.cards.reduce((sum, c) => sum + c.cost * c.count, 0) / totalCards;
 
-    return { totalCards, byType, byElement, manaCurve, avgCost };
+    return { totalCards, byType, byElement, cloutCurve, avgCost };
   }, [deck.cards]);
 
-  const maxManaCount = Math.max(...Object.values(stats.manaCurve), 1);
+  const maxCloutCount = Math.max(...Object.values(stats.cloutCurve), 1);
 
   return (
     <div
@@ -148,7 +148,7 @@ export function DeckBuilderPreview({
                 Card Types
               </h4>
               <div className="space-y-1">
-                <TypeBar label="Creatures" count={stats.byType.creature} total={stats.totalCards} color="#ff6b35" />
+                <TypeBar label="Stereotypes" count={stats.byType.stereotype} total={stats.totalCards} color="#ff6b35" />
                 <TypeBar label="Spells" count={stats.byType.spell} total={stats.totalCards} color="#06b6d4" />
                 <TypeBar label="Traps" count={stats.byType.trap} total={stats.totalCards} color="#a855f7" />
               </div>
@@ -157,7 +157,7 @@ export function DeckBuilderPreview({
             {/* Element breakdown */}
             <div>
               <h4 className="text-xs font-semibold text-[#6b5b4f] uppercase tracking-wider mb-2">
-                Elements
+                Attributes
               </h4>
               <div className="flex flex-wrap gap-2">
                 {Object.entries(stats.byElement)
@@ -185,12 +185,12 @@ export function DeckBuilderPreview({
         </div>
       )}
 
-      {/* Mana curve */}
-      {showManaChart && (
+      {/* Clout curve */}
+      {showCloutChart && (
         <div className="p-4 border-b border-[#3d2b25]">
           <div className="flex items-center justify-between mb-2">
             <h4 className="text-xs font-semibold text-[#6b5b4f] uppercase tracking-wider">
-              Mana Curve
+              Clout Curve
             </h4>
             <span className="text-xs text-[#a89f94]">
               Avg: <span className="font-bold text-[#d4af37]">{stats.avgCost.toFixed(1)}</span>
@@ -198,8 +198,8 @@ export function DeckBuilderPreview({
           </div>
           <div className="flex items-end gap-1 h-24">
             {[0, 1, 2, 3, 4, 5, 6, 7].map((cost) => {
-              const count = stats.manaCurve[cost] || 0;
-              const height = (count / maxManaCount) * 100;
+              const count = stats.cloutCurve[cost] || 0;
+              const height = (count / maxCloutCount) * 100;
               return (
                 <div key={cost} className="flex-1 flex flex-col items-center">
                   <div

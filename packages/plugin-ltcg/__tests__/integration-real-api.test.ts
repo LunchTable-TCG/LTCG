@@ -79,18 +79,18 @@ describe("Real API Integration Tests", () => {
     it("should filter cards by archetype", async () => {
       if (SKIP_INTEGRATION) return;
 
-      const infernoCards = await client.getCards({ archetype: "infernal_dragons" });
-      const abyssCards = await client.getCards({ archetype: "abyssal_horrors" });
+      const dropoutCards = await client.getCards({ archetype: "dropout" });
+      const freakCards = await client.getCards({ archetype: "freak" });
 
-      console.log("🔥 Infernal Dragons:", infernoCards.length);
-      console.log("🌊 Abyssal Horrors:", abyssCards.length);
+      console.log("Dropouts:", dropoutCards.length);
+      console.log("Freaks:", freakCards.length);
 
       // All returned cards should match filter
-      for (const card of infernoCards.slice(0, 5)) {
-        expect(card.archetype).toBe("infernal_dragons");
+      for (const card of dropoutCards.slice(0, 5)) {
+        expect(card.archetype).toBe("dropout");
       }
-      for (const card of abyssCards.slice(0, 5)) {
-        expect(card.archetype).toBe("abyssal_horrors");
+      for (const card of freakCards.slice(0, 5)) {
+        expect(card.archetype).toBe("freak");
       }
     });
   });

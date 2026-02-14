@@ -2,11 +2,11 @@
 /**
  * Summoning Rules Tests
  *
- * Tests for Yu-Gi-Oh summoning mechanics:
+ * Tests for LunchTable TCG summoning mechanics:
  * - Normal Summon validation (once per turn, tribute requirements)
  * - Set Monster validation
  * - Flip Summon validation
- * - Monster zone limits
+ * - Monster zone limits (3 max)
  */
 
 import { api } from "../../_generated/api";
@@ -60,7 +60,7 @@ async function createTestCard(
   cost: number, // Level/cost - determines tribute requirements
   attack: number,
   defense: number,
-  cardType: "creature" | "spell" | "trap" = "creature"
+  cardType: "stereotype" | "spell" | "trap" = "stereotype"
 ): Promise<Id<"cardDefinitions">> {
   return await t.run(async (ctx: MutationCtx) => {
     return await ctx.db.insert("cardDefinitions", {
@@ -113,12 +113,12 @@ async function createGameInMainPhase(
       hostId: host.id,
       opponentId: opponent.id,
       currentTurnPlayerId: host.id, // Host's turn
-      currentPhase: "main1", // Main Phase for summoning
+      currentPhase: "main", // Main Phase for summoning
       turnNumber: 2,
       hostLifePoints: 8000,
       opponentLifePoints: 8000,
-      hostMana: 5,
-      opponentMana: 5,
+      hostClout: 5,
+      opponentClout: 5,
       hostDeck: [],
       opponentDeck: [],
       hostHand,
@@ -214,41 +214,27 @@ describe("Summoning Rules - Normal Summon", () => {
     ).rejects.toThrow(/Normal Summon|once per turn/i);
   });
 
-  it("should require 1 tribute for level 5-6 monsters", async () => {
+  it("should allow level 5-6 monsters without tributes (new rules)", async () => {
     const t = convexTest(schema, modules);
 
     const host = await createTestUser(t, "host@test.com", "host");
     const opponent = await createTestUser(t, "opponent@test.com", "opponent");
     const level5Monster = await createTestCard(t, "Level 5 Monster", 5, 2000, 1500);
-    const tributeMonster = await createTestCard(t, "Tribute Fodder", 2, 500, 500);
-
-    // Put tribute monster on board, high level in hand
-    const hostBoard: BoardCard[] = [
-      {
-        cardId: tributeMonster,
-        position: 1,
-        attack: 500,
-        defense: 500,
-        hasAttacked: false,
-        isFaceDown: false,
-      },
-    ];
 
     const { lobbyId, gameStateId } = await createGameInMainPhase(
       t,
       host,
       opponent,
       [level5Monster],
-      hostBoard
+      []
     );
 
     const asHost = t.withIdentity({ subject: host.privyId });
 
-    // Summon with tribute
+    // Summon without tribute (L1-6 = 0 tributes needed)
     const result = await asHost.mutation(api.gameplay.gameEngine.summons.normalSummon, {
       lobbyId,
       cardId: level5Monster,
-      tributeCardIds: [tributeMonster],
       position: "attack",
     });
 
@@ -258,56 +244,23 @@ describe("Summoning Rules - Normal Summon", () => {
     const gameState = await t.run(async (ctx) => ctx.db.get(gameStateId));
     expect(gameState?.hostBoard).toHaveLength(1);
     expect(gameState?.hostBoard[0].cardId).toBe(level5Monster);
-
-    // Verify tribute monster went to graveyard
-    expect(gameState?.hostGraveyard).toContain(tributeMonster);
   });
 
-  it("should reject level 5-6 monster summon without tribute", async () => {
-    const t = convexTest(schema, modules);
-
-    const host = await createTestUser(t, "host@test.com", "host");
-    const opponent = await createTestUser(t, "opponent@test.com", "opponent");
-    const level5Monster = await createTestCard(t, "Level 5 Monster", 5, 2000, 1500);
-
-    const { lobbyId } = await createGameInMainPhase(t, host, opponent, [level5Monster], []);
-
-    const asHost = t.withIdentity({ subject: host.privyId });
-
-    // Try to summon without tribute
-    await expect(
-      asHost.mutation(api.gameplay.gameEngine.summons.normalSummon, {
-        lobbyId,
-        cardId: level5Monster,
-        position: "attack",
-      })
-    ).rejects.toThrow(/requires.*tribute/i);
-  });
-
-  it("should require 2 tributes for level 7+ monsters", async () => {
+  it("should require 1 tribute for level 7+ monsters", async () => {
     const t = convexTest(schema, modules);
 
     const host = await createTestUser(t, "host@test.com", "host");
     const opponent = await createTestUser(t, "opponent@test.com", "opponent");
     const level7Monster = await createTestCard(t, "Level 7 Monster", 7, 2500, 2000);
-    const tribute1 = await createTestCard(t, "Tribute 1", 2, 500, 500);
-    const tribute2 = await createTestCard(t, "Tribute 2", 2, 600, 600);
+    const tribute = await createTestCard(t, "Tribute", 2, 500, 500);
 
-    // Put 2 tribute monsters on board
+    // Put 1 tribute monster on board
     const hostBoard: BoardCard[] = [
       {
-        cardId: tribute1,
+        cardId: tribute,
         position: 1,
         attack: 500,
         defense: 500,
-        hasAttacked: false,
-        isFaceDown: false,
-      },
-      {
-        cardId: tribute2,
-        position: 1,
-        attack: 600,
-        defense: 600,
         hasAttacked: false,
         isFaceDown: false,
       },
@@ -323,11 +276,11 @@ describe("Summoning Rules - Normal Summon", () => {
 
     const asHost = t.withIdentity({ subject: host.privyId });
 
-    // Summon with 2 tributes
+    // Summon with 1 tribute (L7+ = 1 tribute needed)
     const result = await asHost.mutation(api.gameplay.gameEngine.summons.normalSummon, {
       lobbyId,
       cardId: level7Monster,
-      tributeCardIds: [tribute1, tribute2],
+      tributeCardIds: [tribute],
       position: "attack",
     });
 
@@ -338,32 +291,18 @@ describe("Summoning Rules - Normal Summon", () => {
     expect(gameState?.hostBoard).toHaveLength(1);
     expect(gameState?.hostBoard[0].cardId).toBe(level7Monster);
 
-    // Verify both tributes went to graveyard
-    expect(gameState?.hostGraveyard).toContain(tribute1);
-    expect(gameState?.hostGraveyard).toContain(tribute2);
+    // Verify tribute went to graveyard
+    expect(gameState?.hostGraveyard).toContain(tribute);
   });
 
-  it("should reject level 7+ monster summon with only 1 tribute", async () => {
+  it("should reject level 7+ monster summon without tribute", async () => {
     const t = convexTest(schema, modules);
 
     const host = await createTestUser(t, "host@test.com", "host");
     const opponent = await createTestUser(t, "opponent@test.com", "opponent");
     const level7Monster = await createTestCard(t, "Level 7 Monster", 7, 2500, 2000);
-    const tribute = await createTestCard(t, "Tribute", 2, 500, 500);
 
-    // Only 1 tribute on board
-    const hostBoard: BoardCard[] = [
-      {
-        cardId: tribute,
-        position: 1,
-        attack: 500,
-        defense: 500,
-        hasAttacked: false,
-        isFaceDown: false,
-      },
-    ];
-
-    const { lobbyId } = await createGameInMainPhase(t, host, opponent, [level7Monster], hostBoard);
+    const { lobbyId } = await createGameInMainPhase(t, host, opponent, [level7Monster], []);
 
     const asHost = t.withIdentity({ subject: host.privyId });
 
@@ -371,22 +310,21 @@ describe("Summoning Rules - Normal Summon", () => {
       asHost.mutation(api.gameplay.gameEngine.summons.normalSummon, {
         lobbyId,
         cardId: level7Monster,
-        tributeCardIds: [tribute],
         position: "attack",
       })
     ).rejects.toThrow(/requires.*tribute/i);
   });
 
-  it("should reject summon when monster zone is full (5 monsters)", async () => {
+  it("should reject summon when monster zone is full (3 monsters)", async () => {
     const t = convexTest(schema, modules);
 
     const host = await createTestUser(t, "host@test.com", "host");
     const opponent = await createTestUser(t, "opponent@test.com", "opponent");
     const newMonster = await createTestCard(t, "New Monster", 4, 1500, 1000);
 
-    // Create 5 monsters on board (full zone)
+    // Create 3 monsters on board (full zone)
     const fullBoard: BoardCard[] = [];
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 3; i++) {
       const cardId = await createTestCard(t, `Monster ${i}`, 2, 1000, 1000);
       fullBoard.push({
         cardId,
@@ -674,12 +612,12 @@ describe("Summoning Rules - Turn Validation", () => {
         hostId: host.id,
         opponentId: opponent.id,
         currentTurnPlayerId: opponent.id, // Opponent's turn
-        currentPhase: "main1",
+        currentPhase: "main",
         turnNumber: 2,
         hostLifePoints: 8000,
         opponentLifePoints: 8000,
-        hostMana: 5,
-        opponentMana: 5,
+        hostClout: 5,
+        opponentClout: 5,
         hostDeck: [],
         opponentDeck: [],
         hostHand: [monster],

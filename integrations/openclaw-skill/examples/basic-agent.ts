@@ -288,18 +288,18 @@ class BasicAgent {
       ]);
 
       this.log(`Turn ${state.turnNumber}, Phase: ${state.phase}, LP: ${state.myLifePoints} vs ${state.opponentLifePoints}`);
-      this.log(`Hand: ${state.hand.length} cards, Board: ${state.myBoard.length} monsters`);
+      this.log(`Hand: ${state.hand.length} cards, Board: ${state.myBoard.length} stereotypes`);
 
       // Basic strategy: Summon → Set Backrow → Attack → End Turn
 
-      // 1. Try to summon strongest monster if we haven't summoned yet
-      if (!state.normalSummonedThisTurn && state.phase === "main1") {
+      // 1. Try to summon strongest stereotype if we haven't summoned yet
+      if (!state.normalSummonedThisTurn && state.phase === "main") {
         const summonableMonsters = state.hand.filter(
-          (card) => card.cardType === "creature" && (card.cost || 0) <= 4
+          (card) => card.cardType === "stereotype" && (card.cost || 0) <= 4
         );
 
         if (summonableMonsters.length > 0) {
-          // Summon strongest monster in attack position
+          // Summon strongest stereotype in attack position
           const strongest = summonableMonsters.sort((a, b) => (b.attack || 0) - (a.attack || 0))[0];
           this.log(`Summoning ${strongest.name} (ATK: ${strongest.attack})`);
 
@@ -309,7 +309,7 @@ class BasicAgent {
       }
 
       // 2. Set spell/trap cards if we have room
-      if (state.phase === "main1" || state.phase === "main2") {
+      if (state.phase === "main") {
         const spellsTraps = state.hand.filter(
           (card) => card.cardType === "spell" || card.cardType === "trap"
         );
@@ -327,27 +327,27 @@ class BasicAgent {
         }
       }
 
-      // 3. Enter battle phase if we have monsters that can attack
-      if (state.phase === "main1") {
+      // 3. Enter combat phase if we have stereotypes that can attack
+      if (state.phase === "main") {
         const canAttack = state.myBoard.some(
           (m) => !m.isFaceDown && m.position === 1 && !m.hasAttacked
         );
 
         if (canAttack) {
-          this.log("Entering Battle Phase");
+          this.log("Entering Combat Phase");
           await this.client.enterBattlePhase(gameId);
           await this.sleep(500);
 
           // Refresh state after phase change
           const updatedState = await this.client.getGameState(gameId);
 
-          // 4. Attack with all available monsters
+          // 4. Attack with all available stereotypes
           for (const monster of updatedState.myBoard) {
             if (monster.isFaceDown || monster.position !== 1 || monster.hasAttacked) {
               continue;
             }
 
-            // Simple strategy: Attack strongest opponent monster, or direct if field is empty
+            // Simple strategy: Attack strongest opponent stereotype, or direct if field is empty
             if (updatedState.opponentBoard.length > 0) {
               const target = updatedState.opponentBoard
                 .filter((m) => !m.isFaceDown)

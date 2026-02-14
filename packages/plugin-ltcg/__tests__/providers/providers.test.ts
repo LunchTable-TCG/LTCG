@@ -225,7 +225,7 @@ describe("LTCG Providers", () => {
             cost: 10,
             attack: 4000,
             defense: 3500,
-            archetype: "infernal_dragons",
+            archetype: "dropout",
             description: "A legendary dragon wreathed in infernal flames.",
             abilities: [],
           },
@@ -237,7 +237,7 @@ describe("LTCG Providers", () => {
             cost: 4,
             attack: 2100,
             defense: 1500,
-            archetype: "abyssal_depths",
+            archetype: "freak",
             description: "A massive stereotype from the depths.",
             abilities: [
               {
@@ -252,7 +252,7 @@ describe("LTCG Providers", () => {
             name: "Reef Rush",
             cardType: "spell",
             cost: 1,
-            archetype: "abyssal_depths",
+            archetype: "freak",
             description: "Draw 2 cards, then discard 1 card.",
             abilities: [
               {
@@ -267,7 +267,7 @@ describe("LTCG Providers", () => {
             name: "Tidal Surge",
             cardType: "spell",
             cost: 2,
-            archetype: "abyssal_depths",
+            archetype: "freak",
             description: "Destroy all stereotypes your opponent controls.",
             abilities: [],
           },
@@ -277,7 +277,7 @@ describe("LTCG Providers", () => {
             name: "Ring of Fire",
             cardType: "trap",
             cost: 1,
-            archetype: "infernal_dragons",
+            archetype: "dropout",
             description: "When an opponent's stereotype attacks: Destroy the attacking stereotype.",
             abilities: [],
           },
@@ -295,7 +295,7 @@ describe("LTCG Providers", () => {
       expect(result.text).toContain("Cost 10");
       expect(result.text).toContain("ATK: 4000");
       expect(result.text).toContain("DEF: 3500");
-      expect(result.text).toContain("Requires 2 tributes");
+      expect(result.text).toContain("Requires 1 tribute");
       expect(result.text).toContain("Murky Whale");
       expect(result.text).toContain("Reef Rush");
       expect(result.text).toContain("Tidal Surge");

@@ -58,12 +58,12 @@ async function createGameSetup(t: ReturnType<typeof createTestInstance>) {
       hostId,
       opponentId,
       currentTurnPlayerId: hostId,
-      currentPhase: "main1",
+      currentPhase: "main",
       turnNumber: 1,
       hostLifePoints: 8000,
       opponentLifePoints: 8000,
-      hostMana: 0,
-      opponentMana: 0,
+      hostClout: 0,
+      opponentClout: 0,
       hostDeck: [],
       opponentDeck: [],
       hostHand: [],
@@ -90,7 +90,7 @@ async function createCard(t: ReturnType<typeof createTestInstance>, name: string
     return await ctx.db.insert("cardDefinitions", {
       name,
       rarity: "common",
-      cardType: "creature",
+      cardType: "stereotype",
       archetype: "neutral",
       cost: 4,
       attack: 1500,
@@ -111,15 +111,15 @@ describe("Turn Phase Validation", () => {
     const { gameStateId } = await createGameSetup(t);
 
     await t.run(async (ctx) => {
-      await ctx.db.patch(gameStateId, { currentPhase: "main2" });
+      await ctx.db.patch(gameStateId, { currentPhase: "breakdown_check" });
     });
 
     const gameState = await t.run(async (ctx) => {
       return await ctx.db.get(gameStateId);
     });
 
-    expect(gameState?.currentPhase).toBe("main2");
-    expect(["main2", "end"].includes(gameState?.currentPhase ?? "")).toBe(true);
+    expect(gameState?.currentPhase).toBe("breakdown_check");
+    expect(["breakdown_check", "end"].includes(gameState?.currentPhase ?? "")).toBe(true);
   });
 
   it("should allow ending turn from End Phase", async () => {
@@ -135,7 +135,7 @@ describe("Turn Phase Validation", () => {
     });
 
     expect(gameState?.currentPhase).toBe("end");
-    expect(["main2", "end"].includes(gameState?.currentPhase ?? "")).toBe(true);
+    expect(["breakdown_check", "end"].includes(gameState?.currentPhase ?? "")).toBe(true);
   });
 
   it("should NOT allow ending turn from Main Phase 1", async () => {
@@ -146,8 +146,8 @@ describe("Turn Phase Validation", () => {
       return await ctx.db.get(gameStateId);
     });
 
-    expect(gameState?.currentPhase).toBe("main1");
-    expect(["main2", "end"].includes(gameState?.currentPhase ?? "")).toBe(false);
+    expect(gameState?.currentPhase).toBe("main");
+    expect(["breakdown_check", "end"].includes(gameState?.currentPhase ?? "")).toBe(false);
   });
 });
 
@@ -386,8 +386,8 @@ describe("Draw Phase Execution", () => {
         turnNumber: 2,
         hostLifePoints: 8000,
         opponentLifePoints: 8000,
-        hostMana: 0,
-        opponentMana: 0,
+        hostClout: 0,
+        opponentClout: 0,
         hostDeck: [],
         opponentDeck: [card1, card2],
         hostHand: [],
@@ -505,25 +505,25 @@ describe("Phase Transition", () => {
     let gameState = await t.run(async (ctx) => {
       return await ctx.db.get(gameStateId);
     });
-    expect(gameState?.currentPhase).toBe("main1");
+    expect(gameState?.currentPhase).toBe("main");
 
     // Transition to battle
     await t.run(async (ctx) => {
-      await ctx.db.patch(gameStateId, { currentPhase: "battle" });
+      await ctx.db.patch(gameStateId, { currentPhase: "combat" });
     });
     gameState = await t.run(async (ctx) => {
       return await ctx.db.get(gameStateId);
     });
-    expect(gameState?.currentPhase).toBe("battle");
+    expect(gameState?.currentPhase).toBe("combat");
 
     // Transition to main2
     await t.run(async (ctx) => {
-      await ctx.db.patch(gameStateId, { currentPhase: "main2" });
+      await ctx.db.patch(gameStateId, { currentPhase: "breakdown_check" });
     });
     gameState = await t.run(async (ctx) => {
       return await ctx.db.get(gameStateId);
     });
-    expect(gameState?.currentPhase).toBe("main2");
+    expect(gameState?.currentPhase).toBe("breakdown_check");
 
     // Transition to end
     await t.run(async (ctx) => {

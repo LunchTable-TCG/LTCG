@@ -60,7 +60,7 @@ describe("Phase 2: Story Chapter Completion Race", () => {
           name: `Reward Card ${i}`,
           rarity: "rare",
           archetype: "neutral",
-          cardType: "creature",
+          cardType: "stereotype",
           cost: 3,
           attack: 100,
           defense: 100,

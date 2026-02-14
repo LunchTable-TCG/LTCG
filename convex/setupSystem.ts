@@ -1,12 +1,12 @@
 import { v } from "convex/values";
 import { internalMutation } from "./functions";
+import { admin } from "./lib/componentClients";
 
 /**
  * Bootstrap Superadmin
  *
  * Creates the initial superadmin role for a user by their Privy ID.
- * NOTE: adminRoles table has moved to the admin component.
- * This is a stub — re-wire to use the admin component client.
+ * Delegates to the admin component's roles.grantRole API.
  */
 export const bootstrapSuperadmin = internalMutation({
   args: {
@@ -36,11 +36,16 @@ export const bootstrapSuperadmin = internalMutation({
       };
     }
 
-    // TODO: Use admin component client to create superadmin role
-    // await adminClient.roles.create({ userId: user._id, role: "superadmin" });
+    // Grant superadmin role via admin component
+    await admin.roles.grantRole(ctx, {
+      userId: user._id as string,
+      role: "superadmin",
+      grantedBy: "system:bootstrap",
+    });
+
     return {
       success: true,
-      message: `User ${user.username || user.email || args.privyId} found. Wire admin component to grant role.`,
+      message: `Superadmin role granted to ${user.username || user.email || args.privyId}`,
       userId: user._id,
     };
   },

@@ -1,25 +1,34 @@
 /**
- * Economy helpers (stub)
+ * Economy helpers — wired to @lunchtable-tcg/economy component.
  *
- * Full implementation moved to @lunchtable-tcg/economy component.
- * This stub provides exports for gameplay/ files still referencing it.
+ * Provides a convenience wrapper so callers don't need to import
+ * the component client directly.
  */
 
 import type { Id } from "../_generated/dataModel";
 import type { MutationCtx } from "../_generated/server";
+import { economy } from "../lib/componentClients";
 
 /**
  * Adjust player currency balance.
- * Stub — will be re-wired to economy component client.
+ * Delegates to economy component's currency.adjustPlayerCurrency.
  */
 export async function adjustPlayerCurrencyHelper(
-  _ctx: MutationCtx,
-  _userId: Id<"users">,
-  _currencyType: string,
-  _amount: number,
-  _reason: string,
-  _metadata?: Record<string, unknown>
+  ctx: MutationCtx,
+  args: {
+    userId: Id<"users">;
+    goldDelta: number;
+    transactionType: string;
+    description: string;
+    metadata?: Record<string, unknown>;
+  }
 ) {
-  // TODO: Re-wire to economy component client
-  console.warn("adjustPlayerCurrencyHelper: stub — wire to economy component");
+  await economy.currency.adjustPlayerCurrency(ctx, {
+    userId: args.userId as string,
+    currencyType: "gold",
+    amount: args.goldDelta,
+    transactionType: args.transactionType,
+    description: args.description,
+    metadata: args.metadata,
+  });
 }

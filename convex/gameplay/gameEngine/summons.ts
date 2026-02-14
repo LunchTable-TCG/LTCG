@@ -30,7 +30,7 @@ import { validateFlipSummon, validateNormalSummon, validateSetMonster } from "..
  *
  * Summons a monster from hand to the field in face-up Attack or Defense Position.
  * Monsters level 4 or lower can be summoned without tributes.
- * Level 5-6 monsters require 1 tribute, level 7+ require 2 tributes.
+ * Level 1-6 require 0 tributes, level 7+ require 1 tribute.
  * This action counts as your 1 Normal Summon per turn.
  *
  * Game rules:
@@ -402,7 +402,7 @@ export const normalSummon = mutation({
  * Set a monster face-down in Defense Position
  *
  * Places a monster from hand face-down in Defense Position.
- * Same tribute requirements as Normal Summon apply.
+ * Same tribute requirements as Normal Summon apply (Level 1-6: 0 tributes, Level 7+: 1 tribute).
  * This action counts as your 1 Normal Summon per turn.
  *
  * Game rules:

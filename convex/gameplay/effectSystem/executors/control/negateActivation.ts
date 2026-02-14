@@ -86,18 +86,7 @@ export async function executeNegateActivation(
   // Validate target type if specified in effect
   const negateTargetType = effect.negateTargetType;
   if (negateTargetType && negateTargetType !== "any") {
-    const cardTypeMap: Record<string, string> = {
-      // Backward compatibility for old card types
-      creature: "stereotype",
-      monster: "stereotype",
-      equipment: "class",
-      // Current card types
-      stereotype: "stereotype",
-      spell: "spell",
-      trap: "trap",
-      class: "class",
-    };
-    const targetGameType = cardTypeMap[targetCard.cardType] || targetCard.cardType;
+    const targetGameType = targetCard.cardType;
 
     if (targetGameType !== negateTargetType) {
       return {

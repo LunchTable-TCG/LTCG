@@ -1,7 +1,7 @@
 /**
  * Combat System Tests
  *
- * Tests for Yu-Gi-Oh battle mechanics:
+ * Tests for LunchTable TCG combat mechanics:
  * - Attack declarations and validation
  * - Battle damage calculation (ATK vs ATK, ATK vs DEF)
  * - Direct attacks
@@ -22,12 +22,9 @@ import { describe, expect, it } from "vitest";
 // Helper types
 type GamePhase =
   | "draw"
-  | "standby"
-  | "main1"
-  | "battle_start"
-  | "battle"
-  | "battle_end"
-  | "main2"
+  | "main"
+  | "combat"
+  | "breakdown_check"
   | "end";
 
 interface BoardCard {
@@ -73,7 +70,7 @@ async function createTestCard(
   name: string,
   attack: number,
   defense: number,
-  cardType: "creature" | "spell" | "trap" = "creature"
+  cardType: "stereotype" | "spell" | "trap" = "stereotype"
 ): Promise<Id<"cardDefinitions">> {
   return await t.run(async (ctx: MutationCtx) => {
     return await ctx.db.insert("cardDefinitions", {
@@ -97,7 +94,7 @@ async function createGameWithBattlePhase(
   hostBoard: BoardCard[],
   opponentBoard: BoardCard[],
   currentTurnPlayerId: Id<"users">,
-  phase: GamePhase = "battle"
+  phase: GamePhase = "combat"
 ) {
   const lobbyId = await t.run(async (ctx: MutationCtx) => {
     return await ctx.db.insert("gameLobbies", {
@@ -130,8 +127,8 @@ async function createGameWithBattlePhase(
       turnNumber: 2,
       hostLifePoints: 8000,
       opponentLifePoints: 8000,
-      hostMana: 5,
-      opponentMana: 5,
+      hostClout: 5,
+      opponentClout: 5,
       hostDeck: [],
       opponentDeck: [],
       hostHand: [],
@@ -185,7 +182,7 @@ describe("Combat System - Attack Validation", () => {
       hostBoard,
       [],
       host.id,
-      "main1" // Main Phase, not Battle
+      "main" // Main Phase, not Battle
     );
 
     const asHost = t.withIdentity({ subject: host.privyId });
@@ -225,7 +222,7 @@ describe("Combat System - Attack Validation", () => {
       hostBoard,
       [],
       opponent.id,
-      "battle"
+      "combat"
     );
 
     const asHost = t.withIdentity({ subject: host.privyId });
@@ -263,7 +260,7 @@ describe("Combat System - Attack Validation", () => {
       hostBoard,
       [],
       host.id,
-      "battle"
+      "combat"
     );
 
     const asHost = t.withIdentity({ subject: host.privyId });
@@ -301,7 +298,7 @@ describe("Combat System - Attack Validation", () => {
       hostBoard,
       [],
       host.id,
-      "battle"
+      "combat"
     );
 
     const asHost = t.withIdentity({ subject: host.privyId });
@@ -351,7 +348,7 @@ describe("Combat System - Attack Validation", () => {
       hostBoard,
       opponentBoard,
       host.id,
-      "battle"
+      "combat"
     );
 
     const asHost = t.withIdentity({ subject: host.privyId });
@@ -397,7 +394,7 @@ describe("Combat System - Direct Attacks", () => {
       hostBoard,
       [],
       host.id,
-      "battle"
+      "combat"
     );
 
     const asHost = t.withIdentity({ subject: host.privyId });
@@ -442,7 +439,7 @@ describe("Combat System - Direct Attacks", () => {
       hostBoard,
       [],
       host.id,
-      "battle"
+      "combat"
     );
 
     const asHost = t.withIdentity({ subject: host.privyId });
@@ -499,7 +496,7 @@ describe("Combat System - ATK vs ATK Battles", () => {
       hostBoard,
       opponentBoard,
       host.id,
-      "battle"
+      "combat"
     );
 
     const asHost = t.withIdentity({ subject: host.privyId });
@@ -559,7 +556,7 @@ describe("Combat System - ATK vs ATK Battles", () => {
       hostBoard,
       opponentBoard,
       host.id,
-      "battle"
+      "combat"
     );
 
     const asHost = t.withIdentity({ subject: host.privyId });
@@ -619,7 +616,7 @@ describe("Combat System - ATK vs ATK Battles", () => {
       hostBoard,
       opponentBoard,
       host.id,
-      "battle"
+      "combat"
     );
 
     const asHost = t.withIdentity({ subject: host.privyId });
@@ -688,7 +685,7 @@ describe("Combat System - ATK vs DEF Battles", () => {
       hostBoard,
       opponentBoard,
       host.id,
-      "battle"
+      "combat"
     );
 
     const asHost = t.withIdentity({ subject: host.privyId });
@@ -746,7 +743,7 @@ describe("Combat System - ATK vs DEF Battles", () => {
       hostBoard,
       opponentBoard,
       host.id,
-      "battle"
+      "combat"
     );
 
     const asHost = t.withIdentity({ subject: host.privyId });
@@ -807,7 +804,7 @@ describe("Combat System - ATK vs DEF Battles", () => {
       hostBoard,
       opponentBoard,
       host.id,
-      "battle"
+      "combat"
     );
 
     const asHost = t.withIdentity({ subject: host.privyId });
@@ -872,7 +869,7 @@ describe("Combat System - Protection Mechanics", () => {
       hostBoard,
       opponentBoard,
       host.id,
-      "battle"
+      "combat"
     );
 
     const asHost = t.withIdentity({ subject: host.privyId });
@@ -924,7 +921,7 @@ describe("Combat System - Game End Conditions", () => {
       hostBoard,
       [],
       host.id,
-      "battle"
+      "combat"
     );
 
     const asHost = t.withIdentity({ subject: host.privyId });
@@ -973,7 +970,7 @@ describe("Combat System - Attack State Tracking", () => {
       hostBoard,
       [],
       host.id,
-      "battle"
+      "combat"
     );
 
     const asHost = t.withIdentity({ subject: host.privyId });

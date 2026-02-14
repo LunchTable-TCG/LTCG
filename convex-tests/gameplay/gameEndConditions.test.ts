@@ -2,7 +2,7 @@
 /**
  * Game End Condition Tests
  *
- * Tests for Yu-Gi-Oh win/loss conditions:
+ * Tests for LunchTable TCG win/loss conditions:
  * - LP reaching 0 (win/loss)
  * - Deck out (can't draw when required)
  * - Monster destruction by state-based actions
@@ -49,7 +49,7 @@ async function createTestCard(
     name: string;
     attack?: number;
     defense?: number;
-    cardType?: "creature" | "spell" | "trap" | "equipment";
+    cardType?: "stereotype" | "spell" | "trap" | "class";
     cost?: number;
     ability?: Record<string, unknown>;
   }
@@ -57,7 +57,7 @@ async function createTestCard(
   return await t.run(async (ctx: MutationCtx) => {
     return await ctx.db.insert("cardDefinitions", {
       name: cardData.name,
-      cardType: cardData.cardType || "creature",
+      cardType: cardData.cardType || "stereotype",
       archetype: "neutral",
       rarity: "common",
       attack: cardData.attack ?? 1000,
@@ -130,12 +130,12 @@ async function createGameWithState(
       hostId: host.id,
       opponentId: opponent.id,
       currentTurnPlayerId: options.currentTurnPlayerId ?? host.id,
-      currentPhase: options.currentPhase ?? "main1",
+      currentPhase: options.currentPhase ?? "main",
       turnNumber: 2,
       hostLifePoints: options.hostLifePoints ?? 8000,
       opponentLifePoints: options.opponentLifePoints ?? 8000,
-      hostMana: 5,
-      opponentMana: 5,
+      hostClout: 5,
+      opponentClout: 5,
       hostDeck: options.hostDeck ?? [],
       opponentDeck: options.opponentDeck ?? [],
       hostHand: options.hostHand ?? [],
@@ -195,7 +195,7 @@ describe("Game End Conditions - LP Zero", () => {
 
     const { lobbyId, gameStateId } = await createGameWithState(t, host, opponent, {
       opponentLifePoints: 1000, // Will reach exactly 0 after 1000 ATK direct attack
-      currentPhase: "battle",
+      currentPhase: "combat",
       hostBoard: [
         {
           cardId: attackerCard,
@@ -238,7 +238,7 @@ describe("Game End Conditions - LP Zero", () => {
 
     const { lobbyId, gameStateId } = await createGameWithState(t, host, opponent, {
       opponentLifePoints: 500, // 3000 ATK will deal 2500 excess damage
-      currentPhase: "battle",
+      currentPhase: "combat",
       hostBoard: [
         {
           cardId: attackerCard,
@@ -286,7 +286,7 @@ describe("Game End Conditions - LP Zero", () => {
 
     const { lobbyId, gameStateId } = await createGameWithState(t, host, opponent, {
       hostLifePoints: 1000, // Host has low LP
-      currentPhase: "battle",
+      currentPhase: "combat",
       currentTurnPlayerId: opponent.id, // Opponent's turn
       hostBoard: [
         {
@@ -338,7 +338,7 @@ describe("Game End Conditions - LP Zero", () => {
 
     const { lobbyId } = await createGameWithState(t, host, opponent, {
       opponentLifePoints: 1000,
-      currentPhase: "battle",
+      currentPhase: "combat",
       hostBoard: [
         {
           cardId: attackerCard,
@@ -432,7 +432,7 @@ describe("Game End Conditions - Monster Stats SBA", () => {
     });
 
     const { lobbyId: _lobbyId, gameStateId } = await createGameWithState(t, host, opponent, {
-      currentPhase: "main1",
+      currentPhase: "main",
       hostBoard: [
         {
           cardId: monsterCard,
@@ -460,7 +460,7 @@ describe("Game End Conditions - Monster Stats SBA", () => {
     const monster3 = await createTestCard(t, { name: "Monster 3", attack: 800 });
 
     const { lobbyId: _lobbyId, gameStateId } = await createGameWithState(t, host, opponent, {
-      currentPhase: "main1",
+      currentPhase: "main",
       hostBoard: [
         { cardId: monster1, position: 1, attack: 1000, defense: 800 },
         { cardId: monster2, position: 1, attack: 1200, defense: 1000 },
@@ -512,7 +512,7 @@ describe("Game End Conditions - Hand Limit", () => {
 
     const { lobbyId: _lobbyId, gameStateId } = await createGameWithState(t, host, opponent, {
       hostHand: cards,
-      currentPhase: "main1", // Not end phase yet
+      currentPhase: "main", // Not end phase yet
     });
 
     // Hand should still be 9 during main phase
@@ -547,7 +547,7 @@ describe("Game End Conditions - Damage Calculation", () => {
     const { lobbyId, gameStateId } = await createGameWithState(t, host, opponent, {
       hostLifePoints: 8000,
       opponentLifePoints: 8000,
-      currentPhase: "battle",
+      currentPhase: "combat",
       hostBoard: [
         {
           cardId: strongMonster,
@@ -602,7 +602,7 @@ describe("Game End Conditions - Damage Calculation", () => {
     const { lobbyId, gameStateId } = await createGameWithState(t, host, opponent, {
       hostLifePoints: 8000,
       opponentLifePoints: 8000,
-      currentPhase: "battle",
+      currentPhase: "combat",
       hostBoard: [
         {
           cardId: attacker,
@@ -665,7 +665,7 @@ describe("Game End Conditions - State Consistency", () => {
 
     const { lobbyId, gameStateId: _gameStateId } = await createGameWithState(t, host, opponent, {
       opponentLifePoints: 1000,
-      currentPhase: "battle",
+      currentPhase: "combat",
       hostBoard: [
         {
           cardId: attackerCard,
@@ -715,7 +715,7 @@ describe("Game End Conditions - State Consistency", () => {
 
     const { lobbyId } = await createGameWithState(t, host, opponent, {
       opponentLifePoints: 100,
-      currentPhase: "battle",
+      currentPhase: "combat",
       hostBoard: [
         {
           cardId: attackerCard,

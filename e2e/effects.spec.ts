@@ -28,7 +28,7 @@ test.describe("Effect System Flow", () => {
     test("should draw cards from effect", async ({ page, gameHelper }) => {
       enableConsoleLogs(page);
 
-      await gameHelper.waitForPhase("main1");
+      await gameHelper.waitForPhase("main");
 
       // Activate draw effect card (if available)
       // This depends on having specific cards in deck
@@ -40,7 +40,7 @@ test.describe("Effect System Flow", () => {
     test("should deal direct damage to opponent", async ({ page, gameHelper }) => {
       enableConsoleLogs(page);
 
-      await gameHelper.waitForPhase("main1");
+      await gameHelper.waitForPhase("main");
 
       // Activate damage effect
       // Check LP decreased
@@ -49,7 +49,7 @@ test.describe("Effect System Flow", () => {
     test("should deal damage to player", async ({ page, gameHelper }) => {
       enableConsoleLogs(page);
 
-      await gameHelper.waitForPhase("main1");
+      await gameHelper.waitForPhase("main");
 
       // Some effects damage the player
       // Verify LP change
@@ -60,7 +60,7 @@ test.describe("Effect System Flow", () => {
     test("should destroy opponent monster", async ({ page, gameHelper }) => {
       enableConsoleLogs(page);
 
-      await gameHelper.waitForPhase("main1");
+      await gameHelper.waitForPhase("main");
 
       // Wait for opponent to have monsters
       // Activate destroy effect
@@ -70,7 +70,7 @@ test.describe("Effect System Flow", () => {
     test("should destroy spell/trap card", async ({ page, gameHelper }) => {
       enableConsoleLogs(page);
 
-      await gameHelper.waitForPhase("main1");
+      await gameHelper.waitForPhase("main");
 
       // Activate spell/trap destruction
     });
@@ -80,7 +80,7 @@ test.describe("Effect System Flow", () => {
     test("should search deck for card", async ({ page, gameHelper }) => {
       enableConsoleLogs(page);
 
-      await gameHelper.waitForPhase("main1");
+      await gameHelper.waitForPhase("main");
 
       // Activate search effect
       // Should show deck search UI
@@ -90,7 +90,7 @@ test.describe("Effect System Flow", () => {
     test("should add searched card to hand", async ({ page, gameHelper }) => {
       enableConsoleLogs(page);
 
-      await gameHelper.waitForPhase("main1");
+      await gameHelper.waitForPhase("main");
 
       // Activate search and select card
       // Hand size should increase
@@ -101,7 +101,7 @@ test.describe("Effect System Flow", () => {
     test("should create chain with multiple effects", async ({ page, gameHelper }) => {
       enableConsoleLogs(page);
 
-      await gameHelper.waitForPhase("main1");
+      await gameHelper.waitForPhase("main");
 
       // Activate effect
       // Opponent responds (or player chains own effect)
@@ -117,7 +117,7 @@ test.describe("Effect System Flow", () => {
     test("should allow response to activation", async ({ page, gameHelper }) => {
       enableConsoleLogs(page);
 
-      await gameHelper.waitForPhase("main1");
+      await gameHelper.waitForPhase("main");
 
       // Activate effect
       // Should prompt for response
@@ -132,7 +132,7 @@ test.describe("Effect System Flow", () => {
     test("should apply continuous stat modifier", async ({ page, gameHelper }) => {
       enableConsoleLogs(page);
 
-      await gameHelper.waitForPhase("main1");
+      await gameHelper.waitForPhase("main");
 
       // Activate continuous effect (field spell, etc.)
       // Verify monster stats changed
@@ -141,7 +141,7 @@ test.describe("Effect System Flow", () => {
     test("should remove continuous effect when card leaves field", async ({ page, gameHelper }) => {
       enableConsoleLogs(page);
 
-      await gameHelper.waitForPhase("main1");
+      await gameHelper.waitForPhase("main");
 
       // Activate continuous effect
       // Destroy the card
@@ -153,7 +153,7 @@ test.describe("Effect System Flow", () => {
     test("should trigger on summon", async ({ page, gameHelper }) => {
       enableConsoleLogs(page);
 
-      await gameHelper.waitForPhase("main1");
+      await gameHelper.waitForPhase("main");
 
       // Summon monster with trigger effect
       // Effect should activate automatically
@@ -174,7 +174,7 @@ test.describe("Effect System Flow", () => {
     test("should require valid target for effect", async ({ page, gameHelper }) => {
       enableConsoleLogs(page);
 
-      await gameHelper.waitForPhase("main1");
+      await gameHelper.waitForPhase("main");
 
       // Try to activate targeting effect with no valid targets
       // Should show error or prevent activation
@@ -183,7 +183,7 @@ test.describe("Effect System Flow", () => {
     test("should pay cost for effect activation", async ({ page, gameHelper }) => {
       enableConsoleLogs(page);
 
-      await gameHelper.waitForPhase("main1");
+      await gameHelper.waitForPhase("main");
 
       // Some effects require discard or LP cost
       // Verify cost is paid

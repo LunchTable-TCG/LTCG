@@ -139,7 +139,7 @@ describe("saveDeck", () => {
         const cardDefId = await ctx.db.insert("cardDefinitions", {
           name: `Card ${i}`,
           rarity: "common",
-          cardType: "creature",
+          cardType: "stereotype",
           archetype: "neutral",
           cost: 3,
           attack: 1500,
@@ -207,7 +207,7 @@ describe("saveDeck", () => {
       const cardDefId = await ctx.db.insert("cardDefinitions", {
         name: "Single Card",
         rarity: "common",
-        cardType: "creature",
+        cardType: "stereotype",
         archetype: "neutral",
         cost: 3,
         attack: 1500,
@@ -265,7 +265,7 @@ describe("saveDeck", () => {
         const cardDefId = await ctx.db.insert("cardDefinitions", {
           name: `Big Card ${i}`,
           rarity: "common",
-          cardType: "creature",
+          cardType: "stereotype",
           archetype: "neutral",
           cost: 3,
           attack: 1500,
@@ -322,7 +322,7 @@ describe("saveDeck", () => {
       const limitedCardId = await ctx.db.insert("cardDefinitions", {
         name: "Limited Card",
         rarity: "rare",
-        cardType: "creature",
+        cardType: "stereotype",
         archetype: "neutral",
         cost: 5,
         attack: 2000,
@@ -346,7 +346,7 @@ describe("saveDeck", () => {
         const cardDefId = await ctx.db.insert("cardDefinitions", {
           name: `Filler Card ${i}`,
           rarity: "common",
-          cardType: "creature",
+          cardType: "stereotype",
           archetype: "neutral",
           cost: 3,
           attack: 1500,
@@ -404,7 +404,7 @@ describe("saveDeck", () => {
       const legendaryCardId = await ctx.db.insert("cardDefinitions", {
         name: "Legendary Dragon",
         rarity: "legendary",
-        cardType: "creature",
+        cardType: "stereotype",
         archetype: "neutral",
         cost: 8,
         attack: 3000,
@@ -428,7 +428,7 @@ describe("saveDeck", () => {
         const cardDefId = await ctx.db.insert("cardDefinitions", {
           name: `Filler Card ${i}`,
           rarity: "common",
-          cardType: "creature",
+          cardType: "stereotype",
           archetype: "neutral",
           cost: 3,
           attack: 1500,
@@ -487,7 +487,7 @@ describe("saveDeck", () => {
       const notOwnedCardId = await ctx.db.insert("cardDefinitions", {
         name: "Not Owned Card",
         rarity: "common",
-        cardType: "creature",
+        cardType: "stereotype",
         archetype: "neutral",
         cost: 3,
         attack: 1500,
@@ -503,7 +503,7 @@ describe("saveDeck", () => {
         const cardDefId = await ctx.db.insert("cardDefinitions", {
           name: `Owned Card ${i}`,
           rarity: "common",
-          cardType: "creature",
+          cardType: "stereotype",
           archetype: "neutral",
           cost: 3,
           attack: 1500,
@@ -562,7 +562,7 @@ describe("saveDeck", () => {
         const cardDefId = await ctx.db.insert("cardDefinitions", {
           name: `Card ${i}`,
           rarity: "common",
-          cardType: "creature",
+          cardType: "stereotype",
           archetype: "neutral",
           cost: 3,
           attack: 1500,
@@ -625,7 +625,7 @@ describe("validateDeck", () => {
         const cardDefId = await ctx.db.insert("cardDefinitions", {
           name: `Valid Card ${i}`,
           rarity: "common",
-          cardType: "creature",
+          cardType: "stereotype",
           archetype: "neutral",
           cost: 3,
           attack: 1500,
@@ -676,7 +676,7 @@ describe("validateDeck", () => {
       return await ctx.db.insert("cardDefinitions", {
         name: "Card",
         rarity: "common",
-        cardType: "creature",
+        cardType: "stereotype",
         archetype: "neutral",
         cost: 3,
         attack: 1500,
@@ -724,7 +724,7 @@ describe("validateDeck", () => {
         const cardDefId = await ctx.db.insert("cardDefinitions", {
           name: `Max Card ${i}`,
           rarity: "common",
-          cardType: "creature",
+          cardType: "stereotype",
           archetype: "neutral",
           cost: 3,
           attack: 1500,
@@ -776,7 +776,7 @@ describe("validateDeck", () => {
       return await ctx.db.insert("cardDefinitions", {
         name: "Over Limit Card",
         rarity: "rare",
-        cardType: "creature",
+        cardType: "stereotype",
         archetype: "neutral",
         cost: 5,
         attack: 2000,
@@ -856,7 +856,7 @@ describe("duplicateDeck", () => {
         const cardDefId = await ctx.db.insert("cardDefinitions", {
           name: `Dup Card ${i}`,
           rarity: "common",
-          cardType: "creature",
+          cardType: "stereotype",
           archetype: "neutral",
           cost: 3,
           attack: 1500,
@@ -932,7 +932,7 @@ describe("setActiveDeck", () => {
         const cardDefId = await ctx.db.insert("cardDefinitions", {
           name: `Active Card ${i}`,
           rarity: "common",
-          cardType: "creature",
+          cardType: "stereotype",
           archetype: "neutral",
           cost: 3,
           attack: 1500,
@@ -987,7 +987,7 @@ describe("setActiveDeck", () => {
       return await ctx.db.insert("cardDefinitions", {
         name: "Card",
         rarity: "common",
-        cardType: "creature",
+        cardType: "stereotype",
         archetype: "neutral",
         cost: 3,
         attack: 1500,
@@ -1034,7 +1034,7 @@ describe("setActiveDeck", () => {
         const cardDefId = await ctx.db.insert("cardDefinitions", {
           name: `Big Active Card ${i}`,
           rarity: "common",
-          cardType: "creature",
+          cardType: "stereotype",
           archetype: "neutral",
           cost: 3,
           attack: 1500,

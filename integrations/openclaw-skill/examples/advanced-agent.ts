@@ -268,18 +268,18 @@ class AdvancedAgent {
   }
 
   /**
-   * Decide which monster to summon based on game state
+   * Decide which stereotype to summon based on game state
    */
-  private chooseBestMonsterToSummon(state: GameState): HandCard | null {
+  private chooseBestStereotypeToSummon(state: GameState): HandCard | null {
     const summonable = state.hand.filter(
-      (card) => card.cardType === "creature" && (card.cost || 0) <= 4
+      (card) => card.cardType === "stereotype" && (card.cost || 0) <= 4
     );
 
     if (summonable.length === 0) return null;
 
     const { totalAdvantage } = this.evaluateBoard(state);
 
-    // If behind, summon defensive monster (high DEF)
+    // If behind, summon defensive stereotype (high DEF)
     if (totalAdvantage < -500) {
       return summonable.sort((a, b) => (b.defense || 0) - (a.defense || 0))[0];
     }
@@ -289,7 +289,7 @@ class AdvancedAgent {
   }
 
   /**
-   * Decide whether to attack with a monster
+   * Decide whether to attack with a stereotype
    */
   private shouldAttack(
     attacker: BoardMonster,
@@ -334,11 +334,11 @@ class AdvancedAgent {
         "debug"
       );
 
-      // === MAIN PHASE 1 ===
-      if (state.phase === "main1") {
+      // === MAIN PHASE ===
+      if (state.phase === "main") {
         // 1. Summon if we haven't yet
         if (!state.normalSummonedThisTurn) {
-          const monster = this.chooseBestMonsterToSummon(state);
+          const monster = this.chooseBestStereotypeToSummon(state);
           if (monster) {
             const position = advantage.totalAdvantage < 0 ? "defense" : "attack";
             const reasoning = `Summoning ${monster.name} in ${position} position. Board advantage: ${advantage.totalAdvantage.toFixed(0)}`;
@@ -375,7 +375,7 @@ class AdvancedAgent {
           }
         }
 
-        // 3. Enter battle phase if advantageous
+        // 3. Enter combat phase if advantageous
         const canAttack = state.myBoard.some((m) => !m.isFaceDown && m.position === 1 && !m.hasAttacked);
 
         if (canAttack) {
@@ -385,7 +385,7 @@ class AdvancedAgent {
             state.opponentLifePoints < 2000;
 
           if (shouldEnterBattle) {
-            const reasoning = `Entering battle - total advantage: ${advantage.totalAdvantage.toFixed(0)}`;
+            const reasoning = `Entering combat - total advantage: ${advantage.totalAdvantage.toFixed(0)}`;
             this.log(reasoning);
             decisions.push({ action: "ENTER_BATTLE", reasoning });
 
@@ -401,8 +401,8 @@ class AdvancedAgent {
         }
       }
 
-      // === BATTLE PHASE ===
-      if (state.phase === "battle") {
+      // === COMBAT PHASE ===
+      if (state.phase === "combat") {
         const updatedState = await this.client.getGameState(gameId);
 
         for (const attacker of updatedState.myBoard) {

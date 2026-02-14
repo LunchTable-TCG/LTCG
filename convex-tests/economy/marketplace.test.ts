@@ -61,7 +61,7 @@ async function createTestCard(
     return await ctx.db.insert("cardDefinitions", {
       name: opts.name,
       rarity: (opts.rarity ?? "common") as "common" | "uncommon" | "rare" | "epic" | "legendary",
-      cardType: "creature",
+      cardType: "stereotype",
       archetype: "neutral",
       cost: 4,
       attack: 1500,

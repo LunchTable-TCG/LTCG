@@ -190,10 +190,10 @@ export class GamePage extends BasePage {
    * Advance to the next phase
    */
   async advancePhase() {
-    // Look for phase advance buttons (Battle, Main 2, etc.)
+    // Look for phase advance buttons (Combat, End Turn, etc.)
     const advanceButton = this.page
       .getByRole("button")
-      .filter({ hasText: /Battle|Main 2|End Turn/ });
+      .filter({ hasText: /Combat|End Turn/ });
     await advanceButton.first().click();
     await this.waitForAnimation();
   }
@@ -236,7 +236,7 @@ export class GamePage extends BasePage {
   /**
    * Wait for a specific phase
    */
-  async waitForPhase(_phase: "main1" | "battle" | "main2") {
+  async waitForPhase(_phase: "main" | "combat" | "end") {
     await this.page.waitForTimeout(1000);
     // Phase changes are visual - wait for network idle
     await this.page.waitForLoadState("networkidle");
@@ -325,11 +325,11 @@ export class GamePage extends BasePage {
   /**
    * Assert a specific phase is active
    */
-  async expectPhase(phase: "main1" | "battle" | "main2") {
+  async expectPhase(phase: "main" | "combat" | "end") {
     // Phase indicators in PhaseBar component show active state via styling
     // This is a visual check - we rely on phase text or button availability
     const phaseText = new RegExp(
-      phase === "main1" ? "Main Phase" : phase === "battle" ? "Battle" : "Main 2",
+      phase === "main" ? "Main Phase" : phase === "combat" ? "Combat" : "End",
       "i"
     );
     await expect(this.page.getByText(phaseText)).toBeVisible();

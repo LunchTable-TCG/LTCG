@@ -51,8 +51,8 @@ function createMockGameState(overrides: Partial<Doc<"gameStates">> = {}): Doc<"g
     opponentBanished: [],
     hostLifePoints: 8000,
     opponentLifePoints: 8000,
-    hostMana: 0,
-    opponentMana: 0,
+    hostClout: 0,
+    opponentClout: 0,
     currentTurnPlayerId: "host123" as Id<"users">,
     turnNumber: 1,
     lastMoveAt: Date.now(),
@@ -70,8 +70,8 @@ function createMockCardDef(
     _creationTime: Date.now(),
     name: "Test Monster",
     rarity: "common",
-    archetype: "infernal_dragons",
-    cardType: "creature",
+    archetype: "dropout",
+    cardType: "stereotype",
     attack: 1500,
     defense: 1200,
     cost: 4,
@@ -120,10 +120,10 @@ describe("evaluateJsonCondition", () => {
 
     it("should match archetype condition", () => {
       const context = createMockContext({
-        targetCardDef: createMockCardDef({ archetype: "infernal_dragons" }),
+        targetCardDef: createMockCardDef({ archetype: "dropout" }),
       });
 
-      expect(evaluateJsonCondition({ archetype: "infernal_dragons" }, context)).toBe(true);
+      expect(evaluateJsonCondition({ archetype: "dropout" }, context)).toBe(true);
       expect(evaluateJsonCondition({ archetype: "abyssal" }, context)).toBe(false);
     });
 
@@ -140,16 +140,16 @@ describe("evaluateJsonCondition", () => {
 
     it("should match card type condition", () => {
       const context = createMockContext({
-        targetCardDef: createMockCardDef({ cardType: "creature" }),
+        targetCardDef: createMockCardDef({ cardType: "stereotype" }),
       });
 
-      expect(evaluateJsonCondition({ cardType: "creature" }, context)).toBe(true);
+      expect(evaluateJsonCondition({ cardType: "stereotype" }, context)).toBe(true);
       expect(evaluateJsonCondition({ cardType: "spell" }, context)).toBe(false);
     });
 
     it("should match level condition (exact)", () => {
       const context = createMockContext({
-        targetCardDef: createMockCardDef({ cost: 4, cardType: "creature" }),
+        targetCardDef: createMockCardDef({ cost: 4, cardType: "stereotype" }),
       });
 
       expect(evaluateJsonCondition({ level: 4 }, context)).toBe(true);
@@ -158,7 +158,7 @@ describe("evaluateJsonCondition", () => {
 
     it("should match level condition (range)", () => {
       const context = createMockContext({
-        targetCardDef: createMockCardDef({ cost: 4, cardType: "creature" }),
+        targetCardDef: createMockCardDef({ cost: 4, cardType: "stereotype" }),
       });
 
       expect(evaluateJsonCondition({ level: { max: 4 } }, context)).toBe(true);
@@ -172,7 +172,7 @@ describe("evaluateJsonCondition", () => {
       const context = createMockContext({
         targetCardDef: createMockCardDef({
           attack: 1500,
-          cardType: "creature",
+          cardType: "stereotype",
         }),
       });
 
@@ -184,7 +184,7 @@ describe("evaluateJsonCondition", () => {
       const context = createMockContext({
         targetCardDef: createMockCardDef({
           attack: 1500,
-          cardType: "creature",
+          cardType: "stereotype",
         }),
       });
 
@@ -197,7 +197,7 @@ describe("evaluateJsonCondition", () => {
       const context = createMockContext({
         targetCardDef: createMockCardDef({
           defense: 2000,
-          cardType: "creature",
+          cardType: "stereotype",
         }),
       });
 
@@ -320,11 +320,11 @@ describe("evaluateJsonCondition", () => {
 
     it("should match phase condition", () => {
       const context = createMockContext({
-        gameState: createMockGameState({ currentPhase: "main1" }),
+        gameState: createMockGameState({ currentPhase: "main" }),
       });
 
-      expect(evaluateJsonCondition({ phase: "main1" }, context)).toBe(true);
-      expect(evaluateJsonCondition({ phase: "battle" }, context)).toBe(false);
+      expect(evaluateJsonCondition({ phase: "main" }, context)).toBe(true);
+      expect(evaluateJsonCondition({ phase: "combat" }, context)).toBe(false);
     });
   });
 
@@ -332,22 +332,22 @@ describe("evaluateJsonCondition", () => {
     it("should evaluate AND conditions", () => {
       const context = createMockContext({
         targetCardDef: createMockCardDef({
-          archetype: "infernal_dragons",
+          archetype: "dropout",
           cost: 4,
-          cardType: "creature",
+          cardType: "stereotype",
         }),
       });
 
       const andCondition: JsonCondition = {
         type: "and",
-        conditions: [{ archetype: "infernal_dragons" }, { level: { max: 4 } }],
+        conditions: [{ archetype: "dropout" }, { level: { max: 4 } }],
       };
 
       expect(evaluateJsonCondition(andCondition, context)).toBe(true);
 
       const failingAndCondition: JsonCondition = {
         type: "and",
-        conditions: [{ archetype: "infernal_dragons" }, { level: { min: 5 } }],
+        conditions: [{ archetype: "dropout" }, { level: { min: 5 } }],
       };
 
       expect(evaluateJsonCondition(failingAndCondition, context)).toBe(false);
@@ -356,9 +356,9 @@ describe("evaluateJsonCondition", () => {
     it("should evaluate OR conditions", () => {
       const context = createMockContext({
         targetCardDef: createMockCardDef({
-          archetype: "infernal_dragons",
+          archetype: "dropout",
           cost: 4,
-          cardType: "creature",
+          cardType: "stereotype",
         }),
       });
 
@@ -380,8 +380,8 @@ describe("evaluateJsonCondition", () => {
     it("should evaluate NOT conditions", () => {
       const context = createMockContext({
         targetCardDef: createMockCardDef({
-          archetype: "infernal_dragons",
-          cardType: "creature",
+          archetype: "dropout",
+          cardType: "stereotype",
         }),
       });
 
@@ -394,7 +394,7 @@ describe("evaluateJsonCondition", () => {
 
       const failingNotCondition: JsonCondition = {
         type: "not",
-        conditions: [{ archetype: "infernal_dragons" }],
+        conditions: [{ archetype: "dropout" }],
       };
 
       expect(evaluateJsonCondition(failingNotCondition, context)).toBe(false);
@@ -403,17 +403,17 @@ describe("evaluateJsonCondition", () => {
     it("should handle nested compound conditions", () => {
       const context = createMockContext({
         targetCardDef: createMockCardDef({
-          archetype: "infernal_dragons",
+          archetype: "dropout",
           cost: 4,
           attack: 1500,
-          cardType: "creature",
+          cardType: "stereotype",
         }),
       });
 
       const nestedCondition: JsonCondition = {
         type: "and",
         conditions: [
-          { archetype: "infernal_dragons" },
+          { archetype: "dropout" },
           {
             type: "or",
             conditions: [{ level: 4 }, { attack: { min: 2000 } }],
@@ -630,7 +630,7 @@ describe("evaluateGraveyardContains", () => {
   it("should filter by card type with cache", () => {
     const monsterCard = createMockCardDef({
       _id: "monster1" as Id<"cardDefinitions">,
-      cardType: "creature",
+      cardType: "stereotype",
     });
     const spellCard = createMockCardDef({
       _id: "spell1" as Id<"cardDefinitions">,
@@ -653,7 +653,7 @@ describe("evaluateGraveyardContains", () => {
 
     const monsterCondition: GraveyardCondition = {
       owner: "self",
-      contains: { cardType: "creature" },
+      contains: { cardType: "stereotype" },
     };
 
     expect(evaluateGraveyardContains(monsterCondition, context)).toBe(true);
@@ -666,43 +666,43 @@ describe("evaluateGraveyardContains", () => {
 
 describe("evaluateAttribute", () => {
   it("should map archetypes to attributes correctly", () => {
-    expect(evaluateAttribute("infernal_dragons", "fire")).toBe(true);
-    expect(evaluateAttribute("abyssal_horrors", "water")).toBe(true);
-    expect(evaluateAttribute("nature_spirits", "earth")).toBe(true);
-    expect(evaluateAttribute("storm_elementals", "wind")).toBe(true);
-    expect(evaluateAttribute("shadow_assassins", "dark")).toBe(true);
-    expect(evaluateAttribute("celestial_guardians", "light")).toBe(true);
+    expect(evaluateAttribute("dropout", "red")).toBe(true);
+    expect(evaluateAttribute("freak", "purple")).toBe(true);
+    expect(evaluateAttribute("nerd", "green")).toBe(true);
+    expect(evaluateAttribute("geek", "yellow")).toBe(true);
+    expect(evaluateAttribute("prep", "blue")).toBe(true);
+    expect(evaluateAttribute("goodie_two_shoes", "white")).toBe(true);
   });
 
   it("should be case insensitive", () => {
-    expect(evaluateAttribute("INFERNAL_DRAGONS", "FIRE")).toBe(true);
-    expect(evaluateAttribute("Infernal_Dragons", "Fire")).toBe(true);
+    expect(evaluateAttribute("DROPOUT", "RED")).toBe(true);
+    expect(evaluateAttribute("Dropout", "Red")).toBe(true);
   });
 
   it("should return false for mismatched attributes", () => {
-    expect(evaluateAttribute("infernal_dragons", "water")).toBe(false);
-    expect(evaluateAttribute("nature_spirits", "fire")).toBe(false);
+    expect(evaluateAttribute("dropout", "blue")).toBe(false);
+    expect(evaluateAttribute("nerd", "red")).toBe(false);
   });
 
   it("should return false for undefined archetype", () => {
-    expect(evaluateAttribute(undefined, "fire")).toBe(false);
+    expect(evaluateAttribute(undefined, "red")).toBe(false);
   });
 });
 
 describe("evaluateCardType", () => {
   it("should match card types correctly", () => {
-    expect(evaluateCardType("creature", "creature")).toBe(true);
+    expect(evaluateCardType("stereotype", "stereotype")).toBe(true);
     expect(evaluateCardType("spell", "spell")).toBe(true);
     expect(evaluateCardType("trap", "trap")).toBe(true);
   });
 
   it("should return false for mismatched types", () => {
-    expect(evaluateCardType("creature", "spell")).toBe(false);
+    expect(evaluateCardType("stereotype", "spell")).toBe(false);
     expect(evaluateCardType("spell", "trap")).toBe(false);
   });
 
   it("should return false for undefined card type", () => {
-    expect(evaluateCardType(undefined, "creature")).toBe(false);
+    expect(evaluateCardType(undefined, "stereotype")).toBe(false);
   });
 });
 
@@ -713,12 +713,12 @@ describe("evaluateCardType", () => {
 describe("convertLegacyCondition", () => {
   it("should convert all_monsters", () => {
     const result = convertLegacyCondition("all_monsters");
-    expect(result).toEqual({ cardType: "creature" });
+    expect(result).toEqual({ cardType: "stereotype" });
   });
 
   it("should convert opponent_monsters", () => {
     const result = convertLegacyCondition("opponent_monsters");
-    expect(result).toEqual({ cardType: "creature", owner: "opponent" });
+    expect(result).toEqual({ cardType: "stereotype", owner: "opponent" });
   });
 
   it("should convert level conditions", () => {
@@ -765,14 +765,14 @@ describe("convertLegacyCondition", () => {
 
 describe("matchesLegacyCondition", () => {
   it("should match all_monsters", () => {
-    const card = createMockCardDef({ cardType: "creature" });
+    const card = createMockCardDef({ cardType: "stereotype" });
     expect(_matchesLegacyCondition(card, "all_monsters")).toBe(true);
   });
 
   it("should match level conditions", () => {
     const level4Card = createMockCardDef({
       cost: 4,
-      cardType: "creature",
+      cardType: "stereotype",
     });
 
     expect(_matchesLegacyCondition(level4Card, "level_4_or_lower")).toBe(true);
@@ -784,7 +784,7 @@ describe("matchesLegacyCondition", () => {
   it("should match ATK conditions", () => {
     const card = createMockCardDef({
       attack: 1500,
-      cardType: "creature",
+      cardType: "stereotype",
     });
 
     expect(_matchesLegacyCondition(card, "atk_1500_or_less")).toBe(true);
@@ -796,7 +796,7 @@ describe("matchesLegacyCondition", () => {
   it("should match DEF conditions", () => {
     const card = createMockCardDef({
       defense: 2000,
-      cardType: "creature",
+      cardType: "stereotype",
     });
 
     expect(_matchesLegacyCondition(card, "def_2000_or_less")).toBe(true);
@@ -807,8 +807,8 @@ describe("matchesLegacyCondition", () => {
 
   it("should match archetype conditions", () => {
     const dragonCard = createMockCardDef({
-      archetype: "infernal_dragons",
-      cardType: "creature",
+      archetype: "dropout",
+      cardType: "stereotype",
     });
 
     expect(_matchesLegacyCondition(dragonCard, "dragon_monsters")).toBe(true);
@@ -820,7 +820,7 @@ describe("matchesLegacyCondition", () => {
     const card = createMockCardDef({
       name: "Dragon Knight",
       archetype: "neutral",
-      cardType: "creature",
+      cardType: "stereotype",
     });
 
     expect(_matchesLegacyCondition(card, "dragon_monsters")).toBe(true);
@@ -829,7 +829,7 @@ describe("matchesLegacyCondition", () => {
 
 describe("matchesCondition (unified)", () => {
   it("should return true for no condition", () => {
-    const card = createMockCardDef({ cardType: "creature" });
+    const card = createMockCardDef({ cardType: "stereotype" });
     expect(_matchesCondition(card, undefined)).toBe(true);
   });
 
@@ -840,17 +840,17 @@ describe("matchesCondition (unified)", () => {
 
   it("should handle string conditions (legacy)", () => {
     const card = createMockCardDef({
-      archetype: "infernal_dragons",
-      cardType: "creature",
+      archetype: "dropout",
+      cardType: "stereotype",
     });
     expect(_matchesCondition(card, "dragon_monsters")).toBe(true);
   });
 
   it("should handle JSON conditions", () => {
     const card = createMockCardDef({
-      archetype: "infernal_dragons",
+      archetype: "dropout",
       cost: 4,
-      cardType: "creature",
+      cardType: "stereotype",
     });
 
     const jsonCondition: JsonCondition = {
@@ -875,15 +875,15 @@ describe("Integration: Complex conditions", () => {
     };
 
     const matchingCard = createMockCardDef({
-      archetype: "infernal_dragons",
+      archetype: "dropout",
       attack: 1500,
-      cardType: "creature",
+      cardType: "stereotype",
     });
 
     const nonMatchingCard = createMockCardDef({
-      archetype: "infernal_dragons",
+      archetype: "dropout",
       attack: 2500,
-      cardType: "creature",
+      cardType: "stereotype",
     });
 
     const gameState = createMockGameState({
@@ -916,18 +916,18 @@ describe("Integration: Complex conditions", () => {
     // Scenario: "Can only activate if you have 3 or more Dragon monsters in your GY"
     const dragonCard1 = createMockCardDef({
       _id: "dragon1" as Id<"cardDefinitions">,
-      archetype: "infernal_dragons",
-      cardType: "creature",
+      archetype: "dropout",
+      cardType: "stereotype",
     });
     const dragonCard2 = createMockCardDef({
       _id: "dragon2" as Id<"cardDefinitions">,
-      archetype: "infernal_dragons",
-      cardType: "creature",
+      archetype: "dropout",
+      cardType: "stereotype",
     });
     const dragonCard3 = createMockCardDef({
       _id: "dragon3" as Id<"cardDefinitions">,
-      archetype: "infernal_dragons",
-      cardType: "creature",
+      archetype: "dropout",
+      cardType: "stereotype",
     });
 
     const cardDefsCache = new Map<string, Doc<"cardDefinitions">>();

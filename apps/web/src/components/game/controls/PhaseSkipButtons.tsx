@@ -9,16 +9,13 @@ import { useState } from "react";
 /**
  * Game Phase Types
  *
- * Yu-Gi-Oh has 6 main phases, with Battle Phase subdivided into 3 steps
+ * LunchTable TCG has 5 phases: draw → main → combat → breakdown_check → end
  */
 export type GamePhase =
   | "draw"
-  | "standby"
-  | "main1"
-  | "battle_start"
-  | "battle"
-  | "battle_end"
-  | "main2"
+  | "main"
+  | "combat"
+  | "breakdown_check"
   | "end";
 
 interface PhaseSkipButtonsProps {
@@ -32,10 +29,8 @@ interface PhaseSkipButtonsProps {
  * PhaseSkipButtons - Inline controls for skipping game phases
  *
  * Shows contextual buttons based on the current phase:
- * - During main1: "Skip Battle" button
- * - During battle phases: "Skip to Main 2" button
- * - During main1, battle, main2: "Skip to End" button
- * - During main2: "End Turn" button
+ * - During main: "Skip Combat" button (skips to end)
+ * - During main or combat: "End Turn" button
  */
 export function PhaseSkipButtons({
   lobbyId,
@@ -53,12 +48,9 @@ export function PhaseSkipButtons({
   const isDisabled = !isCurrentPlayerTurn || loadingAction !== null;
 
   // Determine which phases allow which skip actions
-  const battlePhases: GamePhase[] = ["battle_start", "battle", "battle_end"];
-  const canSkipBattle = currentPhase === "main1" || battlePhases.includes(currentPhase);
-  const canSkipToEnd = ["main1", "battle_start", "battle", "battle_end", "main2"].includes(
-    currentPhase
-  );
-  const canEndTurn = currentPhase === "main2";
+  const canSkipBattle = currentPhase === "main";
+  const canSkipToEnd = currentPhase === "main" || currentPhase === "combat";
+  const canEndTurn = currentPhase === "combat" || currentPhase === "main";
 
   const handleSkipBattle = async () => {
     if (isDisabled) return;
@@ -112,8 +104,8 @@ export function PhaseSkipButtons({
 
   return (
     <div className="flex items-center gap-1">
-      {/* Skip Battle button - shown during main1 */}
-      {currentPhase === "main1" && (
+      {/* Skip Combat button - shown during main */}
+      {currentPhase === "main" && (
         <Button
           size="sm"
           variant="outline"
@@ -128,34 +120,13 @@ export function PhaseSkipButtons({
           <SkipForward
             className={cn("h-3 w-3", loadingAction === "skipBattle" && "animate-pulse")}
           />
-          <span className="hidden sm:inline">Skip Battle</span>
+          <span className="hidden sm:inline">Skip Combat</span>
           <span className="sm:hidden">Skip</span>
         </Button>
       )}
 
-      {/* Skip to Main 2 button - shown during battle phases */}
-      {battlePhases.includes(currentPhase) && (
-        <Button
-          size="sm"
-          variant="outline"
-          disabled={isDisabled}
-          onClick={handleSkipBattle}
-          className={cn(
-            "gap-1 h-6 text-[10px] px-2 border-slate-600 bg-slate-800/50 hover:bg-slate-700/50",
-            loadingAction === "skipBattle" && "opacity-70"
-          )}
-          data-testid="skip-to-main2-btn"
-        >
-          <SkipForward
-            className={cn("h-3 w-3", loadingAction === "skipBattle" && "animate-pulse")}
-          />
-          <span className="hidden sm:inline">To Main 2</span>
-          <span className="sm:hidden">M2</span>
-        </Button>
-      )}
-
-      {/* Skip to End button - shown during main1, battle phases, and main2 */}
-      {canSkipToEnd && currentPhase !== "main2" && (
+      {/* Skip to End button - shown during main and combat */}
+      {canSkipToEnd && (
         <Button
           size="sm"
           variant="outline"
@@ -175,7 +146,7 @@ export function PhaseSkipButtons({
         </Button>
       )}
 
-      {/* End Turn button - shown during main2 */}
+      {/* End Turn button - shown during main or combat */}
       {canEndTurn && (
         <Button
           size="sm"

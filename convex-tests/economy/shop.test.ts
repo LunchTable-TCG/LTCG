@@ -64,7 +64,7 @@ describe("purchasePack", () => {
       await ctx.db.insert("cardDefinitions", {
         name: "Common Card",
         rarity: "common",
-        cardType: "creature",
+        cardType: "stereotype",
         archetype: "neutral",
         cost: 2,
         attack: 1000,
@@ -75,7 +75,7 @@ describe("purchasePack", () => {
       await ctx.db.insert("cardDefinitions", {
         name: "Uncommon Card",
         rarity: "uncommon",
-        cardType: "creature",
+        cardType: "stereotype",
         archetype: "neutral",
         cost: 3,
         attack: 1500,
@@ -86,7 +86,7 @@ describe("purchasePack", () => {
       await ctx.db.insert("cardDefinitions", {
         name: "Rare Card",
         rarity: "rare",
-        cardType: "creature",
+        cardType: "stereotype",
         archetype: "neutral",
         cost: 4,
         attack: 2000,
@@ -97,7 +97,7 @@ describe("purchasePack", () => {
       await ctx.db.insert("cardDefinitions", {
         name: "Epic Card",
         rarity: "epic",
-        cardType: "creature",
+        cardType: "stereotype",
         archetype: "neutral",
         cost: 5,
         attack: 2500,
@@ -108,7 +108,7 @@ describe("purchasePack", () => {
       await ctx.db.insert("cardDefinitions", {
         name: "Legendary Card",
         rarity: "legendary",
-        cardType: "creature",
+        cardType: "stereotype",
         archetype: "neutral",
         cost: 7,
         attack: 3000,
@@ -183,7 +183,7 @@ describe("purchasePack", () => {
       await ctx.db.insert("cardDefinitions", {
         name: "Common Card",
         rarity: "common",
-        cardType: "creature",
+        cardType: "stereotype",
         archetype: "neutral",
         cost: 2,
         attack: 1000,
@@ -194,7 +194,7 @@ describe("purchasePack", () => {
       await ctx.db.insert("cardDefinitions", {
         name: "Uncommon Card",
         rarity: "uncommon",
-        cardType: "creature",
+        cardType: "stereotype",
         archetype: "neutral",
         cost: 3,
         attack: 1500,
@@ -205,7 +205,7 @@ describe("purchasePack", () => {
       await ctx.db.insert("cardDefinitions", {
         name: "Rare Card",
         rarity: "rare",
-        cardType: "creature",
+        cardType: "stereotype",
         archetype: "neutral",
         cost: 4,
         attack: 2000,
@@ -216,7 +216,7 @@ describe("purchasePack", () => {
       await ctx.db.insert("cardDefinitions", {
         name: "Epic Card",
         rarity: "epic",
-        cardType: "creature",
+        cardType: "stereotype",
         archetype: "neutral",
         cost: 5,
         attack: 2500,
@@ -227,7 +227,7 @@ describe("purchasePack", () => {
       await ctx.db.insert("cardDefinitions", {
         name: "Legendary Card",
         rarity: "legendary",
-        cardType: "creature",
+        cardType: "stereotype",
         archetype: "neutral",
         cost: 7,
         attack: 3000,
@@ -510,7 +510,7 @@ describe("purchasePack", () => {
       await ctx.db.insert("cardDefinitions", {
         name: "Common Card",
         rarity: "common",
-        cardType: "creature",
+        cardType: "stereotype",
         archetype: "neutral",
         cost: 2,
         attack: 1000,
@@ -521,7 +521,7 @@ describe("purchasePack", () => {
       await ctx.db.insert("cardDefinitions", {
         name: "Uncommon Card",
         rarity: "uncommon",
-        cardType: "creature",
+        cardType: "stereotype",
         archetype: "neutral",
         cost: 3,
         attack: 1500,
@@ -532,7 +532,7 @@ describe("purchasePack", () => {
       await ctx.db.insert("cardDefinitions", {
         name: "Rare Card",
         rarity: "rare",
-        cardType: "creature",
+        cardType: "stereotype",
         archetype: "neutral",
         cost: 4,
         attack: 2000,
@@ -543,7 +543,7 @@ describe("purchasePack", () => {
       await ctx.db.insert("cardDefinitions", {
         name: "Epic Card",
         rarity: "epic",
-        cardType: "creature",
+        cardType: "stereotype",
         archetype: "neutral",
         cost: 5,
         attack: 2500,
@@ -554,7 +554,7 @@ describe("purchasePack", () => {
       await ctx.db.insert("cardDefinitions", {
         name: "Legendary Card",
         rarity: "legendary",
-        cardType: "creature",
+        cardType: "stereotype",
         archetype: "neutral",
         cost: 7,
         attack: 3000,
@@ -627,7 +627,7 @@ describe("purchaseBox", () => {
       await ctx.db.insert("cardDefinitions", {
         name: "Common Card",
         rarity: "common",
-        cardType: "creature",
+        cardType: "stereotype",
         archetype: "neutral",
         cost: 2,
         attack: 1000,
@@ -638,7 +638,7 @@ describe("purchaseBox", () => {
       await ctx.db.insert("cardDefinitions", {
         name: "Uncommon Card",
         rarity: "uncommon",
-        cardType: "creature",
+        cardType: "stereotype",
         archetype: "neutral",
         cost: 3,
         attack: 1500,
@@ -649,7 +649,7 @@ describe("purchaseBox", () => {
       await ctx.db.insert("cardDefinitions", {
         name: "Rare Card",
         rarity: "rare",
-        cardType: "creature",
+        cardType: "stereotype",
         archetype: "neutral",
         cost: 4,
         attack: 2000,
@@ -660,7 +660,7 @@ describe("purchaseBox", () => {
       await ctx.db.insert("cardDefinitions", {
         name: "Epic Card",
         rarity: "epic",
-        cardType: "creature",
+        cardType: "stereotype",
         archetype: "neutral",
         cost: 5,
         attack: 2500,
@@ -671,7 +671,7 @@ describe("purchaseBox", () => {
       await ctx.db.insert("cardDefinitions", {
         name: "Legendary Card",
         rarity: "legendary",
-        cardType: "creature",
+        cardType: "stereotype",
         archetype: "neutral",
         cost: 7,
         attack: 3000,

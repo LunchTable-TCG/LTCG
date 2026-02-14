@@ -69,7 +69,7 @@ const TRIGGER_LABELS: Record<string, string> = {
   on_battle_damage: "When Dealing Battle Damage",
   on_battle_destroy: "When Destroying by Battle",
   on_battle_attacked: "When Attacked",
-  on_battle_start: "At Battle Start",
+  on_combat_start: "At Combat Start",
   on_draw: "During Draw Phase",
   on_end: "During End Phase",
   manual: "Activate",
@@ -83,7 +83,7 @@ const TRIGGER_LABELS: Record<string, string> = {
   on_opponent_attacks: "When Opponent Attacks",
   on_turn_start: "At Turn Start",
   on_turn_end: "At Turn End",
-  on_standby: "During Standby Phase",
+  on_breakdown_check: "During Breakdown Check",
 };
 
 const TRIGGER_COLORS: Record<string, string> = {

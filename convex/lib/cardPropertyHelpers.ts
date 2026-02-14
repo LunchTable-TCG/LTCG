@@ -44,26 +44,19 @@ export function getCardAttribute(card: Doc<"cardDefinitions">): Attribute {
   return deriveAttributeFromArchetype(card.archetype);
 }
 
+import { GAME_CONFIG } from "@ltcg/core";
+
 /**
  * Derive attribute from archetype name
  *
  * Maps archetype identifiers to their corresponding attributes.
- * Used as fallback when explicit attribute is not set.
+ * Uses GAME_CONFIG.ARCHETYPE_TO_ATTRIBUTE as the single source of truth.
  *
  * @param archetype - Archetype identifier
  * @returns Derived attribute
  */
 export function deriveAttributeFromArchetype(archetype: string): Attribute {
-  const mapping: Record<string, Attribute> = {
-    dropout: "red",
-    prep: "blue",
-    geek: "yellow",
-    freak: "purple",
-    nerd: "green",
-    goodie_two_shoes: "white",
-  };
-
-  return mapping[archetype.toLowerCase()] || "white";
+  return (GAME_CONFIG.ARCHETYPE_TO_ATTRIBUTE[archetype.toLowerCase()] as Attribute) || "white";
 }
 
 /**

@@ -7,8 +7,15 @@
  * Supports both legacy string conditions and new JSON conditions.
  */
 
-import type { Doc, Id } from "../../_generated/dataModel";
 import type { MutationCtx } from "../../_generated/server";
+import { GAME_CONFIG } from "@ltcg/core";
+
+// Generated Doc/Id types should now include component tables after schema consolidation.
+import type { Doc, Id } from "../../_generated/dataModel";
+
+type GameState = Doc<"gameStates">;
+type CardDef = Doc<"cardDefinitions">;
+type CardDefId = Id<"cardDefinitions">;
 import { getCardAbility } from "../../lib/abilityHelpers";
 import {
   type CardOnBoard,
@@ -34,21 +41,21 @@ import {
  */
 export async function calculateContinuousModifiers(
   ctx: MutationCtx,
-  gameState: Doc<"gameStates">,
-  cardId: Id<"cardDefinitions">,
+  gameState: GameState,
+  cardId: CardDefId,
   isHost: boolean
 ): Promise<{ atkBonus: number; defBonus: number }> {
   let atkBonus = 0;
   let defBonus = 0;
 
   // Get the card being modified
-  const card = await ctx.db.get(cardId);
+  const card = await ctx.db.get(cardId) as unknown as CardDef;
   if (!card) return { atkBonus: 0, defBonus: 0 };
 
   // Check field spell (affects both players)
   const fieldSpell = isHost ? gameState.hostFieldSpell : gameState.opponentFieldSpell;
-  if (fieldSpell?.isActive) {
-    const fieldCard = await ctx.db.get(fieldSpell.cardId);
+  if (fieldSpell?.isActive && fieldSpell.cardId) {
+    const fieldCard = await ctx.db.get(fieldSpell.cardId as CardDefId) as unknown as CardDef;
     const parsedAbility = getCardAbility(fieldCard);
     if (parsedAbility) {
       for (const effect of parsedAbility.effects) {
@@ -67,8 +74,8 @@ export async function calculateContinuousModifiers(
 
   // Check opponent's field spell (some field spells affect opponent's monsters)
   const opponentFieldSpell = isHost ? gameState.opponentFieldSpell : gameState.hostFieldSpell;
-  if (opponentFieldSpell?.isActive) {
-    const fieldCard = await ctx.db.get(opponentFieldSpell.cardId);
+  if (opponentFieldSpell?.isActive && opponentFieldSpell.cardId) {
+    const fieldCard = await ctx.db.get(opponentFieldSpell.cardId as CardDefId) as unknown as CardDef;
     const parsedAbility = getCardAbility(fieldCard);
     if (parsedAbility) {
       for (const effect of parsedAbility.effects) {
@@ -91,13 +98,15 @@ export async function calculateContinuousModifiers(
 
   // Batch fetch all face-up backrow cards
   const faceUpBackrowCards = backrow.filter((bc) => bc && !bc.isFaceDown);
-  const backrowCardDefs = await Promise.all(faceUpBackrowCards.map((bc) => ctx.db.get(bc.cardId)));
+  const backrowCardDefs = await Promise.all(
+    faceUpBackrowCards.map((bc) => ctx.db.get(bc.cardId as CardDefId) as unknown as Promise<CardDef | null>)
+  );
   const backrowCardMap = new Map(
     backrowCardDefs.filter((c): c is NonNullable<typeof c> => c !== null).map((c) => [c._id, c])
   );
 
   for (const backrowCard of faceUpBackrowCards) {
-    const backrowCardDef = backrowCardMap.get(backrowCard.cardId);
+    const backrowCardDef = backrowCardMap.get(backrowCard.cardId as CardDefId);
     // Check both continuous spells and continuous traps
     if (
       backrowCardDef &&
@@ -131,7 +140,7 @@ export async function calculateContinuousModifiers(
  */
 export async function getActiveContinuousEffects(
   ctx: MutationCtx,
-  gameState: Doc<"gameStates">,
+  gameState: GameState,
   isHost: boolean
 ): Promise<
   Array<{
@@ -148,8 +157,8 @@ export async function getActiveContinuousEffects(
 
   // Check field spell
   const fieldSpell = isHost ? gameState.hostFieldSpell : gameState.opponentFieldSpell;
-  if (fieldSpell?.isActive) {
-    const fieldCard = await ctx.db.get(fieldSpell.cardId);
+  if (fieldSpell?.isActive && fieldSpell.cardId) {
+    const fieldCard = await ctx.db.get(fieldSpell.cardId as CardDefId) as unknown as CardDef;
     const parsedAbility = getCardAbility(fieldCard);
     if (parsedAbility && fieldCard) {
       const hasContinuousEffect = parsedAbility.effects.some((effect) => effect.continuous);
@@ -168,13 +177,15 @@ export async function getActiveContinuousEffects(
 
   // Batch fetch all face-up backrow cards
   const faceUpBackrowCards = backrow.filter((bc) => bc && !bc.isFaceDown);
-  const backrowCardDefs = await Promise.all(faceUpBackrowCards.map((bc) => ctx.db.get(bc.cardId)));
+  const backrowCardDefs = await Promise.all(
+    faceUpBackrowCards.map((bc) => ctx.db.get(bc.cardId as CardDefId) as unknown as Promise<CardDef | null>)
+  );
   const backrowCardMap = new Map(
     backrowCardDefs.filter((c): c is NonNullable<typeof c> => c !== null).map((c) => [c._id, c])
   );
 
   for (const backrowCard of faceUpBackrowCards) {
-    const backrowCardDef = backrowCardMap.get(backrowCard.cardId);
+    const backrowCardDef = backrowCardMap.get(backrowCard.cardId as CardDefId);
     if (
       backrowCardDef &&
       ((backrowCardDef.cardType === "spell" && backrowCardDef.spellType === "continuous") ||
@@ -585,7 +596,7 @@ export function evaluateGraveyardContains(
   const isHost = playerIs === "host";
 
   // Determine which graveyards to check
-  const graveyardsToCheck: Id<"cardDefinitions">[][] = [];
+  const graveyardsToCheck: CardDefId[][] = [];
 
   if (condition.owner === "self" || condition.owner === "both") {
     graveyardsToCheck.push(isHost ? gameState.hostGraveyard : gameState.opponentGraveyard);
@@ -649,18 +660,8 @@ export function evaluateAttribute(
 ): boolean {
   if (!cardArchetype) return false;
 
-  // Map archetypes to attributes (elements)
-  // In this game, archetype often correlates with element
-  const archetypeToAttribute: Record<string, string> = {
-    dropout: "red",
-    prep: "blue",
-    geek: "yellow",
-    freak: "purple",
-    nerd: "green",
-    goodie_two_shoes: "white",
-  };
-
-  const attribute = archetypeToAttribute[cardArchetype.toLowerCase()];
+  // Use centralized archetype→attribute mapping from GAME_CONFIG
+  const attribute = GAME_CONFIG.ARCHETYPE_TO_ATTRIBUTE[cardArchetype.toLowerCase()];
   return attribute === requiredAttribute.toLowerCase();
 }
 
@@ -678,7 +679,7 @@ export function evaluateCardType(
 /**
  * Check if a card is owned by the host player
  */
-function isCardOwnedByHost(card: CardOnBoard | undefined, gameState: Doc<"gameStates">): boolean {
+function isCardOwnedByHost(card: CardOnBoard | undefined, gameState: GameState): boolean {
   if (!card) return false;
 
   // Check if card is on host's board
@@ -713,7 +714,7 @@ function isCardOwnedByHost(card: CardOnBoard | undefined, gameState: Doc<"gameSt
  * - ATK/DEF thresholds (e.g., "atk_1500_or_less", "def_2000_or_more")
  */
 function matchesCondition(
-  card: Doc<"cardDefinitions">,
+  card: CardDef,
   condition?: string | JsonCondition
 ): boolean {
   if (!condition) return true; // No condition = affects all
@@ -725,7 +726,7 @@ function matchesCondition(
   if (isJsonCondition(condition)) {
     // Create a minimal context for evaluation
     const context: ConditionContext = {
-      gameState: {} as Doc<"gameStates">, // Not needed for simple card checks
+      gameState: {} as GameState, // Not needed for simple card checks
       sourceCard: {} as CardOnBoard, // Not needed
       targetCardDef: card,
       playerIs: "host", // Default
@@ -743,7 +744,7 @@ function matchesCondition(
  *
  * Kept for backwards compatibility with existing card definitions.
  */
-function matchesLegacyCondition(card: Doc<"cardDefinitions">, condition: string): boolean {
+function matchesLegacyCondition(card: CardDef, condition: string): boolean {
   // "all_monsters" or no specific condition
   if (condition === "all_monsters" || condition === "") return true;
 
@@ -787,7 +788,7 @@ function matchesLegacyCondition(card: Doc<"cardDefinitions">, condition: string)
     if (comparison === "less") {
       return cardDef <= threshold;
     }
-    if (comparison === "more") {
+    if (comparison === "higher") {
       return cardDef >= threshold;
     }
   }
@@ -822,10 +823,10 @@ function matchesLegacyCondition(card: Doc<"cardDefinitions">, condition: string)
  * Requires all card definitions to be pre-loaded into the cache.
  */
 export function calculateContinuousModifiersSync(
-  gameState: Doc<"gameStates">,
+  gameState: GameState,
   cardOnBoard: CardOnBoard,
-  cardDef: Doc<"cardDefinitions">,
-  cardDefsCache: Map<string, Doc<"cardDefinitions">>,
+  cardDef: CardDef,
+  cardDefsCache: Map<string, CardDef>,
   options?: { includeFieldSpells?: boolean }
 ): { atkBonus: number; defBonus: number } {
   let atkBonus = 0;
@@ -881,6 +882,7 @@ export function calculateContinuousModifiersSync(
   for (const backrowCard of backrow) {
     if (backrowCard && !backrowCard.isFaceDown) {
       const backrowCardDef = cardDefsCache.get(backrowCard.cardId.toString());
+      // Main schema cardDefinitions uses 'cardType' ("monster", "spell", "trap") not 'type'
       if (backrowCardDef?.cardType === "trap") {
         const parsedAbility = getCardAbility(backrowCardDef);
         if (parsedAbility) {

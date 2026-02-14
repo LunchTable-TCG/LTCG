@@ -44,6 +44,10 @@ const ASSET_PATH_MAP: Record<string, string> = {
   "/assets/textures/photocopy-noise.png": "brand/textures/photocopy-noise.png",
   "/assets/textures/arcane-stone.png": "brand/textures/arcane-stone-seamless-1024.png",
   "/assets/textures/gold-metal.png": "brand/textures/gold-metal-seamless-1024.png",
+  "/assets/overlays/halftone-dots.png": "brand/textures/halftone-dots.png",
+  "/assets/overlays/comic-noise.png": "brand/textures/comic-noise.png",
+  "/assets/overlays/paper-texture.png": "brand/textures/paper-texture.png",
+  "/assets/overlays/vignette.png": "brand/textures/vignette.png",
   "/assets/zine-border-frame.png": "zine-border-frame.png",
 
   // UI Elements - using high-quality alpha PNG versions from brand directory

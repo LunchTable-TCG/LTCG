@@ -48,6 +48,7 @@ export const getGameState = query({
   },
 });
 
+
 /**
  * Get a game state by lobby ID.
  */
@@ -59,5 +60,30 @@ export const getGameStateByLobby = query({
       .query("gameStates")
       .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))
       .first();
+  },
+});
+
+/**
+ * Get the masked player view of the game state.
+ * SECURITY: This query MUST return a masked state to prevent cheating.
+ */
+import { maskGameState } from "../utils/masking";
+
+export const getPlayerView = query({
+  args: {
+    lobbyId: v.id("gameLobbies"),
+    observerId: v.string(), // User ID of the player requesting the view
+  },
+  returns: v.any(),
+  handler: async (ctx, args) => {
+    const gameState = await ctx.db
+      .query("gameStates")
+      .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))
+      .first();
+
+    if (!gameState) return null;
+
+    // Apply strict masking based on observer
+    return maskGameState(gameState, args.observerId);
   },
 });

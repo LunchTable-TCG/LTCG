@@ -400,11 +400,11 @@ export function useGameInteraction(
         return;
       }
 
-      // Check if this is your own monster with activatable effects
+      // Check if this is your own stereotype with activatable effects
       const isPlayerCard =
         player?.frontline?.instanceId === card.instanceId ||
         player?.support?.some((c) => c.instanceId === card.instanceId);
-      const isMonster = card.cardType === "monster" || card.cardType === "stereotype";
+      const isMonster = card.cardType === "stereotype";
       const hasManualEffects = card.effects?.some(
         (e) => e.activationType === "ignition" || e.activationType === "quick"
       );
@@ -446,12 +446,12 @@ export function useGameInteraction(
       if (!selectedHandCard) return;
 
       const level = selectedHandCard.monsterStats?.level ?? 0;
-      const tributesRequired = level >= 7 ? 2 : level >= 5 ? 1 : 0;
+      const tributesRequired = level >= 7 ? 1 : 0;
       const tributesProvided = tributeIds?.length ?? 0;
 
       if (tributesRequired > 0 && tributesProvided < tributesRequired) {
         toast.error("Tribute Required", {
-          description: `This Level ${level} monster requires ${tributesRequired} tribute${tributesRequired > 1 ? "s" : ""}. Please select ${tributesRequired} monster${tributesRequired > 1 ? "s" : ""} from your field to tribute.`,
+          description: `This Level ${level} stereotype requires ${tributesRequired} tribute. Please select ${tributesRequired} stereotype from your field to tribute.`,
         });
         return;
       }
@@ -483,7 +483,7 @@ export function useGameInteraction(
       setSelectedHandCard(null);
       setShowSummonModal(false);
     } else if (result.error) {
-      toast.error("Set Monster Failed", {
+      toast.error("Set Stereotype Failed", {
         description: result.error,
       });
     }
@@ -616,7 +616,7 @@ export function useGameInteraction(
       const isField = selectedCard.cardType === "field";
       const isSpell = selectedCard.cardType === "spell" || selectedCard.cardType === "class";
       const isTrap = selectedCard.cardType === "trap";
-      const isMonster = selectedCard.cardType === "monster" || selectedCard.cardType === "stereotype";
+      const isMonster = selectedCard.cardType === "stereotype";
 
       try {
         const costCheck = await getPendingCostMutation({

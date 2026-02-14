@@ -6,7 +6,7 @@
 export interface TestDeckConfig {
   name: string;
   cardIds: string[]; // Card definition IDs
-  archetype?: "fire" | "water" | "earth" | "wind" | "neutral";
+  archetype?: "dropout" | "prep" | "geek" | "freak" | "nerd" | "goodie_two_shoes";
 }
 
 /**
@@ -24,7 +24,7 @@ export function createValidTestDeck(overrides?: Partial<TestDeckConfig>): TestDe
       // 5 traps
       ...Array(5).fill("starter_trap_1"),
     ],
-    archetype: "fire",
+    archetype: "dropout",
     ...overrides,
   };
 }
@@ -36,7 +36,7 @@ export function createInvalidTestDeck(): TestDeckConfig {
   return {
     name: `Invalid Deck ${Date.now()}`,
     cardIds: Array(20).fill("starter_monster_1"), // Only 20 cards (need 30)
-    archetype: "fire",
+    archetype: "dropout",
   };
 }
 
@@ -44,7 +44,7 @@ export function createInvalidTestDeck(): TestDeckConfig {
  * Create a deck with specific archetype
  */
 export function createTestDeckWithArchetype(
-  archetype: "fire" | "water" | "earth" | "wind"
+  archetype: "dropout" | "prep" | "geek" | "freak" | "nerd" | "goodie_two_shoes"
 ): TestDeckConfig {
   return createValidTestDeck({ archetype });
 }

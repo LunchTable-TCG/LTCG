@@ -1439,7 +1439,7 @@ Please start the analysis now.`,
         archetype: z
           .string()
           .describe(
-            "Deck archetype (fire, water, earth, wind, light, dark, neutral)"
+            "Deck archetype (dropout, prep, geek, freak, nerd, goodie_two_shoes)"
           ),
       },
     },

@@ -21,8 +21,8 @@ export interface CardAbility {
 export interface CardData {
   id: string;
   name: string;
-  type: 'creature' | 'spell' | 'trap';
-  element: 'ember' | 'void' | 'arcane' | 'nature' | 'frost' | 'neutral';
+  type: 'stereotype' | 'spell' | 'trap' | 'class';
+  element: 'red' | 'blue' | 'yellow' | 'purple' | 'green' | 'white';
   rarity: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
   cost: number;
   attack?: number;
@@ -43,12 +43,12 @@ interface CardPreviewProps {
 }
 
 const elementConfig = {
-  ember: { icon: '🔥', color: '#ff6b35', glow: 'rgba(255, 107, 53, 0.4)' },
-  void: { icon: '🌑', color: '#9333ea', glow: 'rgba(147, 51, 234, 0.4)' },
-  arcane: { icon: '✨', color: '#06b6d4', glow: 'rgba(6, 182, 212, 0.4)' },
-  nature: { icon: '🌿', color: '#10b981', glow: 'rgba(16, 185, 129, 0.4)' },
-  frost: { icon: '❄️', color: '#0ea5e9', glow: 'rgba(14, 165, 233, 0.4)' },
-  neutral: { icon: '⚪', color: '#a89f94', glow: 'rgba(168, 159, 148, 0.4)' }
+  red: { icon: '🔥', color: '#DC2626', glow: 'rgba(220, 38, 38, 0.4)' },
+  blue: { icon: '🎉', color: '#2563EB', glow: 'rgba(37, 99, 235, 0.4)' },
+  yellow: { icon: '🧠', color: '#CA8A04', glow: 'rgba(202, 138, 4, 0.4)' },
+  purple: { icon: '🧪', color: '#9333EA', glow: 'rgba(147, 51, 234, 0.4)' },
+  green: { icon: '📐', color: '#16A34A', glow: 'rgba(22, 163, 74, 0.4)' },
+  white: { icon: '🙏', color: '#E5E7EB', glow: 'rgba(229, 231, 235, 0.4)' }
 };
 
 const rarityConfig = {
@@ -115,7 +115,7 @@ export function CardPreview({
             className="flex items-center justify-between p-3"
             style={{ background: `linear-gradient(180deg, ${element.glow} 0%, transparent 100%)` }}
           >
-            {/* Mana cost */}
+            {/* Clout cost */}
             <div
               className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-lg border-2"
               style={{
@@ -128,7 +128,7 @@ export function CardPreview({
               {card.cost}
             </div>
 
-            {/* Element badge */}
+            {/* Attribute badge */}
             <span
               className="px-3 py-1 rounded-full text-sm font-semibold flex items-center gap-1"
               style={{
@@ -188,7 +188,7 @@ export function CardPreview({
           </div>
 
           {/* Stats */}
-          {showStats && card.type === 'creature' && (
+          {showStats && card.type === 'stereotype' && (
             <div className="flex gap-4 px-3 py-2 bg-[#1a1311]">
               {card.attack !== undefined && (
                 <div className="flex items-center gap-1">

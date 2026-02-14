@@ -77,10 +77,9 @@ export const gameStateProvider: Provider = {
       // Format phase name for display
       const phaseNames: Record<string, string> = {
         draw: "Draw Phase",
-        standby: "Standby Phase",
-        main1: "Main Phase 1",
-        battle: "Battle Phase",
-        main2: "Main Phase 2",
+        main: "Main Phase",
+        combat: "Combat Phase",
+        breakdown_check: "Breakdown Check Phase",
         end: "End Phase",
       };
 

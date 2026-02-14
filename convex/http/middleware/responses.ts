@@ -4,21 +4,8 @@
  * Ensures consistent response format across all API endpoints.
  */
 
-export interface ApiSuccessResponse<T = unknown> {
-  success: true;
-  data: T;
-  timestamp: number;
-}
-
-export interface ApiErrorResponse {
-  success: false;
-  error: {
-    code: string;
-    message: string;
-    details?: Record<string, unknown>;
-  };
-  timestamp: number;
-}
+import type { ApiSuccessResponse, ApiErrorResponse } from "@ltcg/core";
+export type { ApiSuccessResponse, ApiErrorResponse } from "@ltcg/core";
 
 /**
  * CORS Configuration

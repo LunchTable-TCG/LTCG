@@ -22,12 +22,11 @@ export interface ValidationResult {
  *
  * Requirements:
  * - Player has not already normal summoned this turn
- * - Monster zone has space (max 5 monsters)
+ * - Monster zone has space (max 3 stereotypes)
  * - Card is in player's hand
  * - Tribute requirements met:
- *   - Level 1-4: No tributes
- *   - Level 5-6: 1 tribute
- *   - Level 7+: 2 tributes
+ *   - Level 1-6: 0 tributes
+ *   - Level 7+: 1 tribute
  */
 export async function validateNormalSummon(
   ctx: QueryCtx,
@@ -214,9 +213,9 @@ export async function validateFlipSummon(
  *
  * Requirements:
  * - Player has not already normal summoned/set this turn (shares limit)
- * - Monster zone has space (max 5 monsters)
+ * - Monster zone has space (max 3 stereotypes)
  * - Card is in player's hand
- * - Tribute requirements met (same as Normal Summon for Level 5+)
+ * - Tribute requirements met (same as Normal Summon: Level 1-6: 0 tributes, Level 7+: 1 tribute)
  *
  * @param ctx - Query context
  * @param gameState - Current game state

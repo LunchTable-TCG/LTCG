@@ -114,13 +114,13 @@ export interface GameStateResponse {
   hostId?: string;
   hostLifePoints?: number;
   hostDeckCount?: number;
-  hostMonsters?: MonsterCard[];
+  hostMonsters?: StereotypeCard[];
   hostSpellTraps?: SpellTrapCard[];
   hostGraveyard?: CardInGraveyard[];
   hostBanished?: CardInGraveyard[];
   hostExtraDeckCount?: number;
   opponentId?: string;
-  opponentMonsters?: MonsterCard[];
+  opponentMonsters?: StereotypeCard[];
   opponentSpellTraps?: SpellTrapCard[];
   opponentGraveyard?: CardInGraveyard[];
   opponentBanished?: CardInGraveyard[];
@@ -141,7 +141,7 @@ export interface PlayerState {
   deckCount: number;
 
   // Board zones
-  monsterZone: MonsterCard[];
+  monsterZone: StereotypeCard[];
   spellTrapZone: SpellTrapCard[];
 
   // Other zones
@@ -260,7 +260,7 @@ export interface BoardCard {
   cost?: number;
 }
 
-export interface MonsterCard {
+export interface StereotypeCard {
   boardIndex: number;
   cardId: string;
   name: string;
@@ -536,6 +536,7 @@ export interface ApiErrorDetails {
 
 /**
  * Generic API success response wrapper.
+ * NOTE: Keep in sync with @ltcg/core ApiSuccessResponse
  */
 export interface ApiSuccessResponse<T = unknown> {
   success: true;

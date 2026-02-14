@@ -42,64 +42,8 @@ export interface LingeringEffect {
   conditions?: JsonCondition; // Optional conditions for effect application
 }
 
-export type EffectType =
-  | "draw" // Draw X cards
-  | "destroy" // Destroy target card(s)
-  | "damage" // Deal X damage to player
-  | "gainLP" // Gain X LP
-  | "modifyATK" // Modify ATK
-  | "modifyDEF" // Modify DEF
-  | "summon" // Special summon
-  | "toHand" // Add card to hand
-  | "toGraveyard" // Send card to GY
-  | "banish" // Banish card
-  | "search" // Search deck
-  | "negate" // Negate activation/effect (effect negation)
-  | "negateActivation" // Negate activation and optionally destroy
-  | "directAttack" // Allows direct attack under condition (passive, checked in combatSystem)
-  | "mill" // Send cards from top of deck to GY
-  | "discard" // Discard cards from hand to GY
-  | "multipleAttack" // Allow multiple attacks per turn (passive)
-  | "generateToken" // Generate monster token(s) on field
-  | "piercing"; // Piercing damage
-
-export type TriggerCondition =
-  | "on_summon" // When this card is summoned
-  | "on_opponent_summon" // When opponent summons a monster
-  | "on_destroy" // When this card is destroyed
-  | "on_destroy_by_battle" // When destroyed by battle specifically
-  | "on_destroy_by_effect" // When destroyed by card effect specifically
-  | "on_flip" // When this card is flipped
-  | "on_battle_damage" // When this card inflicts battle damage
-  | "on_battle_destroy" // When this card destroys a monster by battle
-  | "on_battle_attacked" // When this card is attacked
-  | "on_combat_start" // At the start of the Combat Phase
-  | "on_attack" // When this card declares an attack
-  | "on_enter_combat_phase" // When Combat Phase begins
-  | "on_draw" // During draw phase
-  | "on_end" // During end phase
-  | "on_opponent_attacks" // When opponent declares an attack
-  | "on_opponent_activates" // When opponent activates a card
-  | "on_main_start" // At start of Main Phase
-  | "on_combat_start" // At start of Combat Phase
-  | "on_combat_end" // At end of Combat Phase
-  | "on_breakdown_check" // During Breakdown Check Phase
-  | "on_turn_start" // At start of turn
-  | "on_turn_end" // At end of turn
-  | "on_opponent_turn_start" // At start of opponent's turn
-  | "on_opponent_turn_end" // At end of opponent's turn
-  | "on_chain_start" // When a chain starts
-  | "on_chain_link" // When added to chain
-  | "on_chain_resolve" // When chain resolves
-  | "on_spell_activated" // When a spell is activated
-  | "on_trap_activated" // When a trap is activated
-  | "on_effect_activated" // When an effect is activated
-  | "on_damage_calculation" // During damage calculation
-  | "quick" // Quick effect (can be activated during opponent's turn)
-  | "continuous" // Continuous effect (always active)
-  | "while_in_gy" // While in graveyard
-  | "while_banished" // While banished
-  | "manual"; // Manual activation (spells/traps)
+export type { EffectType, TriggerCondition } from "@ltcg/core";
+import type { EffectType, TriggerCondition } from "@ltcg/core";
 
 /**
  * Activation type determines how/when an effect can be activated

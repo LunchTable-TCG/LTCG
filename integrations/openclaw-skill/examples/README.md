@@ -41,7 +41,7 @@ node basic-agent.js
 2. Enters casual matchmaking
 3. Waits for opponent
 4. Plays the game using polling (checks for turn every 2 seconds)
-5. Uses simple strategy: summon strongest monster, set backrow, attack when advantageous
+5. Uses simple strategy: summon strongest stereotype, set backrow, attack when advantageous
 6. Re-enters matchmaking after game ends
 
 **Expected output:**
@@ -61,11 +61,11 @@ Registering new agent: BasicAgent-1707234567
 [2026-02-05T10:30:50.345Z] ℹ️ Polling for game to start...
 [2026-02-05T10:31:15.678Z] ℹ️ Game started! Opponent: HumanPlayer123
 [2026-02-05T10:31:20.901Z] ℹ️ Playing turn for game gs_ghi789
-[2026-02-05T10:31:21.234Z] ℹ️ Turn 1, Phase: main1, LP: 8000 vs 8000
-[2026-02-05T10:31:21.567Z] ℹ️ Hand: 5 cards, Board: 0 monsters
+[2026-02-05T10:31:21.234Z] ℹ️ Turn 1, Phase: main, LP: 8000 vs 8000
+[2026-02-05T10:31:21.567Z] ℹ️ Hand: 5 cards, Board: 0 stereotypes
 [2026-02-05T10:31:21.890Z] ℹ️ Summoning Blue-Eyes White Dragon (ATK: 3000)
 [2026-02-05T10:31:22.423Z] ℹ️ Setting trap: Mirror Force
-[2026-02-05T10:31:23.056Z] ℹ️ Entering Battle Phase
+[2026-02-05T10:31:23.056Z] ℹ️ Entering Combat Phase
 [2026-02-05T10:31:23.589Z] ℹ️ Blue-Eyes White Dragon attacking directly!
 [2026-02-05T10:31:24.122Z] ℹ️ Ending turn
 ```
@@ -129,13 +129,13 @@ npx tsx advanced-agent.ts
 [2026-02-05T10:35:45.890Z] 🔍 Webhook event: game_start for game gs_xyz123
 [2026-02-05T10:35:45.891Z] ℹ️ Game started: gs_xyz123
 [2026-02-05T10:35:50.123Z] 🔍 Webhook event: turn_start for game gs_xyz123
-[2026-02-05T10:35:50.124Z] ℹ️ Turn 1 started (phase: main1)
+[2026-02-05T10:35:50.124Z] ℹ️ Turn 1 started (phase: main)
 [2026-02-05T10:35:50.456Z] ℹ️ Playing turn for game gs_xyz123
-[2026-02-05T10:35:50.789Z] 🔍 Turn 1 | Phase: main1 | LP: 8000 vs 8000
+[2026-02-05T10:35:50.789Z] 🔍 Turn 1 | Phase: main | LP: 8000 vs 8000
 [2026-02-05T10:35:50.790Z] 🔍 Advantage - Board: 0, Cards: 0, Life: 0, Total: 0
 [2026-02-05T10:35:51.123Z] ℹ️ Summoning Dark Magician in attack position. Board advantage: 0
 [2026-02-05T10:35:51.756Z] ℹ️ Setting backrow protection: Mirror Force
-[2026-02-05T10:35:52.389Z] ℹ️ Entering battle - total advantage: 2500
+[2026-02-05T10:35:52.389Z] ℹ️ Entering combat - total advantage: 2500
 [2026-02-05T10:35:53.022Z] ℹ️ Dark Magician (2500 ATK) attacking directly
 [2026-02-05T10:35:53.655Z] ℹ️ Ending turn 1. Final advantage: 2500
 ```
@@ -241,9 +241,9 @@ All agents use a similar structure. To customize strategy:
 
 ```typescript
 // In basic-agent.ts or advanced-agent.ts
-private chooseBestMonsterToSummon(state: GameState): HandCard | null {
+private chooseBestStereotypeToSummon(state: GameState): HandCard | null {
   const summonable = state.hand.filter(
-    (card) => card.cardType === "creature" && (card.cost || 0) <= 4
+    (card) => card.cardType === "stereotype" && (card.cost || 0) <= 4
   );
 
   // CUSTOMIZE: Change sorting logic
@@ -287,7 +287,7 @@ private shouldAttack(
 // Currently agents just set backrow without activating
 // Add activation logic in playTurn():
 
-if (state.phase === "battle") {
+if (state.phase === "combat") {
   // Example: Activate Mirror Force when opponent attacks
   const mirrorForce = state.mySpellTrapZone.find(
     (card) => card.name === "Mirror Force" && card.isFaceDown

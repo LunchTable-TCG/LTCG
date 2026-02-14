@@ -118,6 +118,11 @@ export const getLegalMoves = query({
         cardName: string;
         isQuickPlay: boolean;
       }>,
+      canActivateTrap: [] as Array<{
+        cardId: Id<"cardDefinitions">;
+        cardName: string;
+        trapType: string;
+      }>,
       canChangePosition: [] as Array<{
         cardId: Id<"cardDefinitions">;
         cardName: string;
@@ -136,9 +141,26 @@ export const getLegalMoves = query({
       },
     };
 
-    // If not my turn, only return opponent-turn actions (trap activation, quick effects)
+    // If not my turn, check for opponent-turn actions (trap activation)
     if (!isMyTurn) {
-      // TODO: Add trap activation logic for opponent's turn
+      // Check for activatable traps during opponent's turn
+      const trapPreventionCheck = isActionPrevented(gameState, "activate_trap", userId);
+      if (!trapPreventionCheck.prevented) {
+        const currentTurn = gameState.turnNumber || 1;
+        for (const setCard of mySpellTrapZone) {
+          // Must be face-down and set for at least 1 full turn
+          if (!setCard.isFaceDown || (setCard.turnSet || currentTurn) >= currentTurn) continue;
+
+          const card = await ctx.db.get(setCard.cardId);
+          if (!card || card.cardType !== "trap") continue;
+
+          legalMoves.canActivateTrap.push({
+            cardId: setCard.cardId,
+            cardName: card.name,
+            trapType: card.trapType || "normal",
+          });
+        }
+      }
       return legalMoves;
     }
 
@@ -298,6 +320,31 @@ export const getLegalMoves = query({
             cardId,
             cardName: card.name,
             isQuickPlay,
+          });
+        }
+      }
+    }
+
+    // ============================================================================
+    // ACTIVATE TRAP ACTIONS
+    // ============================================================================
+
+    // Traps can be activated during Main Phase or Combat Phase on your own turn
+    if (currentPhase === "main" || currentPhase === "combat") {
+      const trapPreventionCheck = isActionPrevented(gameState, "activate_trap", userId);
+      if (!trapPreventionCheck.prevented) {
+        const currentTurn = gameState.turnNumber || 1;
+        for (const setCard of mySpellTrapZone) {
+          // Must be face-down and set for at least 1 full turn
+          if (!setCard.isFaceDown || (setCard.turnSet || currentTurn) >= currentTurn) continue;
+
+          const card = await ctx.db.get(setCard.cardId);
+          if (!card || card.cardType !== "trap") continue;
+
+          legalMoves.canActivateTrap.push({
+            cardId: setCard.cardId,
+            cardName: card.name,
+            trapType: card.trapType || "normal",
           });
         }
       }

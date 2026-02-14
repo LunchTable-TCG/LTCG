@@ -61,8 +61,10 @@ import type * as gameplay_gameEngine_spellsTraps from "../gameplay/gameEngine/sp
 import type * as gameplay_gameEngine_stateBasedActions from "../gameplay/gameEngine/stateBasedActions.js";
 import type * as gameplay_gameEngine_summons from "../gameplay/gameEngine/summons.js";
 import type * as gameplay_gameEngine_turns from "../gameplay/gameEngine/turns.js";
+import type * as gameplay_gameEngine_viceSystem from "../gameplay/gameEngine/viceSystem.js";
 import type * as gameplay_gameEvents from "../gameplay/gameEvents.js";
 import type * as gameplay_games_cleanup from "../gameplay/games/cleanup.js";
+import type * as gameplay_games_gameEndHandlers from "../gameplay/games/gameEndHandlers.js";
 import type * as gameplay_games_heartbeat from "../gameplay/games/heartbeat.js";
 import type * as gameplay_games_index from "../gameplay/games/index.js";
 import type * as gameplay_games_lifecycle from "../gameplay/games/lifecycle.js";
@@ -104,6 +106,7 @@ import type * as infrastructure_shardedCounters from "../infrastructure/shardedC
 import type * as infrastructure_triggers from "../infrastructure/triggers.js";
 import type * as lib_abilityHelpers from "../lib/abilityHelpers.js";
 import type * as lib_cardPropertyHelpers from "../lib/cardPropertyHelpers.js";
+import type * as lib_componentClients from "../lib/componentClients.js";
 import type * as lib_constants from "../lib/constants.js";
 import type * as lib_convexAuth from "../lib/convexAuth.js";
 import type * as lib_debug from "../lib/debug.js";
@@ -114,7 +117,6 @@ import type * as lib_gameValidation from "../lib/gameValidation.js";
 import type * as lib_helpers from "../lib/helpers.js";
 import type * as lib_rateLimit from "../lib/rateLimit.js";
 import type * as lib_spellSpeedHelper from "../lib/spellSpeedHelper.js";
-import type * as lib_streamingPlatforms from "../lib/streamingPlatforms.js";
 import type * as lib_validation from "../lib/validation.js";
 import type * as lib_wagerTiers from "../lib/wagerTiers.js";
 import type * as lib_x402_config from "../lib/x402/config.js";
@@ -193,8 +195,10 @@ declare const fullApi: ApiFromModules<{
   "gameplay/gameEngine/stateBasedActions": typeof gameplay_gameEngine_stateBasedActions;
   "gameplay/gameEngine/summons": typeof gameplay_gameEngine_summons;
   "gameplay/gameEngine/turns": typeof gameplay_gameEngine_turns;
+  "gameplay/gameEngine/viceSystem": typeof gameplay_gameEngine_viceSystem;
   "gameplay/gameEvents": typeof gameplay_gameEvents;
   "gameplay/games/cleanup": typeof gameplay_games_cleanup;
+  "gameplay/games/gameEndHandlers": typeof gameplay_games_gameEndHandlers;
   "gameplay/games/heartbeat": typeof gameplay_games_heartbeat;
   "gameplay/games/index": typeof gameplay_games_index;
   "gameplay/games/lifecycle": typeof gameplay_games_lifecycle;
@@ -236,6 +240,7 @@ declare const fullApi: ApiFromModules<{
   "infrastructure/triggers": typeof infrastructure_triggers;
   "lib/abilityHelpers": typeof lib_abilityHelpers;
   "lib/cardPropertyHelpers": typeof lib_cardPropertyHelpers;
+  "lib/componentClients": typeof lib_componentClients;
   "lib/constants": typeof lib_constants;
   "lib/convexAuth": typeof lib_convexAuth;
   "lib/debug": typeof lib_debug;
@@ -246,7 +251,6 @@ declare const fullApi: ApiFromModules<{
   "lib/helpers": typeof lib_helpers;
   "lib/rateLimit": typeof lib_rateLimit;
   "lib/spellSpeedHelper": typeof lib_spellSpeedHelper;
-  "lib/streamingPlatforms": typeof lib_streamingPlatforms;
   "lib/validation": typeof lib_validation;
   "lib/wagerTiers": typeof lib_wagerTiers;
   "lib/x402/config": typeof lib_x402_config;
@@ -9814,142 +9818,6 @@ export declare const components: {
         "mutation",
         "internal",
         { stageId: string; updates: any },
-        null
-      >;
-    };
-  };
-  lunchtable_tcg_streaming: {
-    destinations: {
-      addDestination: FunctionReference<
-        "mutation",
-        "internal",
-        {
-          errorMessage?: string;
-          platform:
-            | "twitch"
-            | "youtube"
-            | "kick"
-            | "custom"
-            | "retake"
-            | "x"
-            | "pumpfun";
-          rtmpUrl: string;
-          sessionId: string;
-          status?: "active" | "failed" | "removed";
-          streamKeyHash: string;
-        },
-        string
-      >;
-      getActiveDestinations: FunctionReference<
-        "query",
-        "internal",
-        { sessionId: string },
-        any
-      >;
-      getDestinations: FunctionReference<
-        "query",
-        "internal",
-        { sessionId: string },
-        any
-      >;
-      removeDestination: FunctionReference<
-        "mutation",
-        "internal",
-        { destinationId: string },
-        null
-      >;
-    };
-    sessions: {
-      createSession: FunctionReference<
-        "mutation",
-        "internal",
-        {
-          agentId?: string;
-          currentLobbyId?: string;
-          egressId?: string;
-          overlayConfig: {
-            matchOverHoldMs?: number;
-            playerVisualMode?: "webcam" | "profile-picture";
-            profilePictureUrl?: string;
-            sceneTransitions?: boolean;
-            showAgentInfo: boolean;
-            showDecisions: boolean;
-            showEventFeed: boolean;
-            showPlayerCam: boolean;
-            showSceneLabel?: boolean;
-            theme: "dark" | "light";
-            voiceLoop?: boolean;
-            voiceTrackUrl?: string;
-            voiceVolume?: number;
-            webcamPosition?:
-              | "top-left"
-              | "top-right"
-              | "bottom-left"
-              | "bottom-right";
-            webcamSize?: "small" | "medium" | "large";
-          };
-          overlayUrl?: string;
-          platform:
-            | "twitch"
-            | "youtube"
-            | "kick"
-            | "custom"
-            | "retake"
-            | "x"
-            | "pumpfun";
-          pumpfunMintAddress?: string;
-          retakeAccessToken?: string;
-          retakeUserDbId?: string;
-          streamKeyHash?: string;
-          streamTitle: string;
-          streamType: "user" | "agent";
-          userId?: string;
-        },
-        string
-      >;
-      endSession: FunctionReference<
-        "mutation",
-        "internal",
-        {
-          endReason?: string;
-          sessionId: string;
-          stats?: {
-            decisionsLogged: number;
-            duration: number;
-            eventsRecorded: number;
-          };
-        },
-        null
-      >;
-      getActiveSessions: FunctionReference<"query", "internal", {}, any>;
-      getSession: FunctionReference<
-        "query",
-        "internal",
-        { sessionId: string },
-        any
-      >;
-      getSessionByEgress: FunctionReference<
-        "query",
-        "internal",
-        { egressId: string },
-        any
-      >;
-      getSessionsByAgent: FunctionReference<
-        "query",
-        "internal",
-        { agentId: string; limit?: number },
-        any
-      >;
-      getSessionsByUser: FunctionReference<
-        "query",
-        "internal",
-        { limit?: number; userId: string },
-        any
-      >;
-      updateSession: FunctionReference<
-        "mutation",
-        "internal",
-        { sessionId: string; updates: any },
         null
       >;
     };

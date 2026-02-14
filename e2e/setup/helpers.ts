@@ -152,7 +152,7 @@ export class GameStateHelper {
   /**
    * Wait for a specific game phase
    */
-  async waitForPhase(phase: "draw" | "standby" | "main1" | "battle" | "main2" | "end") {
+  async waitForPhase(phase: "draw" | "main" | "combat" | "breakdown_check" | "end") {
     await this.page.waitForSelector(`[data-phase="${phase}"]`, {
       timeout: TEST_CONFIG.DEFAULT_TIMEOUT,
     });

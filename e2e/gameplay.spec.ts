@@ -143,7 +143,7 @@ test.describe("Gameplay", () => {
     test.skip("can summon monster in attack position", async ({ gamePage }) => {
       // Requires active game with cards in hand
       await gamePage.navigate();
-      await gamePage.waitForPhase("main1");
+      await gamePage.waitForPhase("main");
 
       // Get initial hand count
       const initialCount = await gamePage.handCards.count();
@@ -162,7 +162,7 @@ test.describe("Gameplay", () => {
     test.skip("can summon monster in defense position", async ({ gamePage }) => {
       // Requires active game with cards in hand
       await gamePage.navigate();
-      await gamePage.waitForPhase("main1");
+      await gamePage.waitForPhase("main");
 
       const initialCount = await gamePage.handCards.count();
       expect(initialCount).toBeGreaterThan(0);
@@ -180,7 +180,7 @@ test.describe("Gameplay", () => {
     test.skip("can set spell/trap card face-down", async ({ gamePage }) => {
       // Requires active game with spell/trap cards in hand
       await gamePage.navigate();
-      await gamePage.waitForPhase("main1");
+      await gamePage.waitForPhase("main");
 
       const initialCount = await gamePage.handCards.count();
       expect(initialCount).toBeGreaterThan(0);
@@ -199,7 +199,7 @@ test.describe("Gameplay", () => {
     test.skip("enforces one normal summon per turn", async ({ gamePage }) => {
       // Requires active game with multiple monsters in hand
       await gamePage.navigate();
-      await gamePage.waitForPhase("main1");
+      await gamePage.waitForPhase("main");
 
       // First summon should succeed
       await gamePage.summonMonster(0, "attack");
@@ -220,7 +220,7 @@ test.describe("Gameplay", () => {
     test.skip("can declare direct attack", async ({ gamePage }) => {
       // Requires active game with monster on player field
       await gamePage.navigate();
-      await gamePage.waitForPhase("battle");
+      await gamePage.waitForPhase("combat");
 
       // Should have at least one monster
       await gamePage.expectPlayerMonsterCount(1);
@@ -242,7 +242,7 @@ test.describe("Gameplay", () => {
     test.skip("can attack opponent monster", async ({ gamePage }) => {
       // Requires active game with monsters on both sides
       await gamePage.navigate();
-      await gamePage.waitForPhase("battle");
+      await gamePage.waitForPhase("combat");
 
       await gamePage.expectPlayerMonsterCount(1);
       await gamePage.expectOpponentMonsterCount(1);
@@ -259,7 +259,7 @@ test.describe("Gameplay", () => {
     test.skip("cannot attack on first turn", async ({ gamePage }) => {
       // Requires active game on turn 1
       await gamePage.navigate();
-      await gamePage.waitForPhase("main1");
+      await gamePage.waitForPhase("main");
 
       // Verify turn 1
       await gamePage.expectTurnNumber(1);
@@ -271,36 +271,36 @@ test.describe("Gameplay", () => {
   });
 
   test.describe("Phase Management", () => {
-    test.skip("can advance from Main Phase 1 to Battle Phase", async ({ gamePage }) => {
-      // Requires active game in main1 phase
+    test.skip("can advance from Main Phase to Combat Phase", async ({ gamePage }) => {
+      // Requires active game in main phase
       await gamePage.navigate();
-      await gamePage.waitForPhase("main1");
+      await gamePage.waitForPhase("main");
 
-      await gamePage.expectPhase("main1");
+      await gamePage.expectPhase("main");
 
-      // Advance to battle phase
+      // Advance to combat phase
       await gamePage.advancePhase();
 
-      await gamePage.expectPhase("battle");
+      await gamePage.expectPhase("combat");
     });
 
-    test.skip("can advance from Battle Phase to Main Phase 2", async ({ gamePage }) => {
-      // Requires active game in battle phase
+    test.skip("can advance from Combat Phase to End", async ({ gamePage }) => {
+      // Requires active game in combat phase
       await gamePage.navigate();
-      await gamePage.waitForPhase("battle");
+      await gamePage.waitForPhase("combat");
 
-      await gamePage.expectPhase("battle");
+      await gamePage.expectPhase("combat");
 
-      // Advance to main phase 2
+      // Advance to end phase
       await gamePage.advancePhase();
 
-      await gamePage.expectPhase("main2");
+      await gamePage.expectPhase("end");
     });
 
     test.skip("can end turn", async ({ gamePage }) => {
       // Requires active game
       await gamePage.navigate();
-      await gamePage.waitForPhase("main1");
+      await gamePage.waitForPhase("main");
 
       // Get current turn number
       const turnText = await gamePage.turnNumber.textContent();

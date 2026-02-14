@@ -14,7 +14,16 @@
  * - Maintain backwards compatibility with ParsedEffect interface
  */
 
-import type { Doc, Id } from "../../_generated/dataModel";
+// These tables live in Convex component packages (lunchtable-tcg-game,
+// lunchtable-tcg-cards), not the main app's schema. The generated Doc/Id
+// types don't include them, so we use `any`-typed aliases instead.
+// biome-ignore lint/suspicious/noExplicitAny: Component table — not in main DataModel
+type GameState = any;
+// biome-ignore lint/suspicious/noExplicitAny: Component table — not in main DataModel
+type CardDef = any;
+// biome-ignore lint/suspicious/noExplicitAny: Component table — not in main DataModel
+type CardDefId = any;
+
 import type { EffectType, ParsedAbility, ParsedEffect, TriggerCondition } from "./types";
 
 // ============================================================================
@@ -343,7 +352,7 @@ export interface JsonCondition {
  * Card on board representation for condition evaluation
  */
 export interface CardOnBoard {
-  cardId: Id<"cardDefinitions">;
+  cardId: CardDefId;
   position: number; // 1 = Attack, -1 = Defense
   attack: number;
   defense: number;
@@ -359,7 +368,7 @@ export interface CardOnBoard {
  */
 export interface CardInfo {
   // From cardDefinitions
-  _id: Id<"cardDefinitions">;
+  _id: CardDefId;
   name: string;
   archetype: string;
   cardType: "stereotype" | "spell" | "trap" | "class";
@@ -385,21 +394,21 @@ export interface CardInfo {
  */
 export interface ConditionContext {
   // Game state
-  gameState: Doc<"gameStates">;
+  gameState: GameState;
 
   // Source card (the card whose effect is being evaluated)
   sourceCard: CardOnBoard;
-  sourceCardDef?: Doc<"cardDefinitions">;
+  sourceCardDef?: CardDef;
 
   // Target card (optional - for effects that target specific cards)
   targetCard?: CardOnBoard;
-  targetCardDef?: Doc<"cardDefinitions">;
+  targetCardDef?: CardDef;
 
   // Player context
   playerIs: "host" | "guest"; // Which player is activating the effect
 
   // Additional card definitions cache (to avoid repeated DB lookups)
-  cardDefsCache?: Map<string, Doc<"cardDefinitions">>;
+  cardDefsCache?: Map<string, CardDef>;
 }
 
 // ============================================================================
@@ -1189,15 +1198,15 @@ export interface JsonAbility {
  */
 export interface GameEvent {
   type: string;
-  cardId?: Id<"cardDefinitions">;
+  cardId?: CardDefId;
   cardName?: string;
   cardType?: "stereotype" | "spell" | "trap" | "class";
   archetype?: string;
   level?: number;
   attack?: number;
   defense?: number;
-  owner?: Id<"users">;
-  targetId?: Id<"cardDefinitions">;
+  owner?: string; // user ID
+  targetId?: CardDefId;
   value?: number;
   zone?: TargetZone;
   fromZone?: TargetZone;
@@ -1208,7 +1217,7 @@ export interface GameEvent {
  * Card in hand representation
  */
 export interface CardInHand {
-  cardId: Id<"cardDefinitions">;
+  cardId: CardDefId;
 }
 
 // ============================================================================
@@ -1283,7 +1292,7 @@ export function jsonEffectToParsedEffect(effect: JsonEffect | JsonGenericEffect)
 
   // Get target info
   let targetCount: number | undefined;
-  let targetType: "monster" | "spell" | "trap" | "any" | undefined;
+  let targetType: "stereotype" | "spell" | "trap" | "any" | undefined;
   let targetLocation: "board" | "hand" | "graveyard" | "deck" | "banished" | undefined;
 
   if ("target" in effect && effect.target) {
@@ -1293,7 +1302,7 @@ export function jsonEffectToParsedEffect(effect: JsonEffect | JsonGenericEffect)
     else if (target.maxCount) targetCount = target.maxCount;
 
     const type = target.type ?? target.cardType;
-    if (type === "monster" || type === "stereotype") targetType = "monster";
+    if (type === "monster" || type === "stereotype") targetType = "stereotype";
     else if (type === "spell" || type === "trap" || type === "any") targetType = type;
 
     const zone = target.zone ?? target.location;
@@ -1312,7 +1321,7 @@ export function jsonEffectToParsedEffect(effect: JsonEffect | JsonGenericEffect)
   if (genericEffect.targetCount !== undefined) targetCount = genericEffect.targetCount;
   if (genericEffect.targetType) {
     const t = genericEffect.targetType;
-    if (t === "monster" || t === "stereotype") targetType = "monster";
+    if (t === "monster" || t === "stereotype") targetType = "stereotype";
     else if (t === "spell" || t === "trap" || t === "any") targetType = t;
   }
   if (genericEffect.targetLocation) {
@@ -1346,7 +1355,7 @@ export function jsonEffectToParsedEffect(effect: JsonEffect | JsonGenericEffect)
             (genericEffect.cost.target as JsonCostTarget | undefined)?.count,
           targetType: ((genericEffect.cost.target as JsonCostTarget | undefined)?.type ??
             (genericEffect.cost.target as JsonCostTarget | undefined)?.cardType) as
-            | "monster"
+            | "stereotype"
             | "spell"
             | "trap"
             | "any"
@@ -1409,8 +1418,11 @@ export function parsedEffectToJsonEffect(effect: ParsedEffect): JsonGenericEffec
       zone: (effect.targetLocation as TargetZone) ?? "board",
     };
     if (effect.targetType) {
-      (jsonEffect.target as JsonTarget).cardType =
-        effect.targetType === "monster" ? "stereotype" : effect.targetType;
+      if ((effect.targetType as string) === "monster") {
+        (jsonEffect.target as JsonTarget).cardType = "stereotype";
+      } else {
+        (jsonEffect.target as JsonTarget).cardType = effect.targetType;
+      }
     }
   }
 

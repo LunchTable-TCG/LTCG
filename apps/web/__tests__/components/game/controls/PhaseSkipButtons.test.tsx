@@ -41,7 +41,7 @@ describe("PhaseSkipButtons", () => {
 
   const defaultProps = {
     lobbyId: mockLobbyId,
-    currentPhase: "main1" as GamePhase,
+    currentPhase: "main" as GamePhase,
     isCurrentPlayerTurn: true,
     onPhaseChange: mockOnPhaseChange,
   };
@@ -50,40 +50,26 @@ describe("PhaseSkipButtons", () => {
     vi.clearAllMocks();
 
     // Setup default successful responses
-    mockSkipBattlePhase.mockResolvedValue({ success: true, newPhase: "main2" });
+    mockSkipBattlePhase.mockResolvedValue({ success: true, newPhase: "end" });
     mockSkipToEndPhase.mockResolvedValue({ success: true, newPhase: "end" });
     mockSkipMainPhase2.mockResolvedValue({ success: true, newPhase: "end" });
   });
 
   describe("Rendering based on phase", () => {
-    it("should render Skip Battle and Skip to End buttons during main1 phase", () => {
-      render(<PhaseSkipButtons {...defaultProps} currentPhase="main1" />);
+    it("should render Skip Combat, Skip to End, and End Turn buttons during main phase", () => {
+      render(<PhaseSkipButtons {...defaultProps} currentPhase="main" />);
 
       expect(screen.getByTestId("skip-battle-btn")).toBeInTheDocument();
       expect(screen.getByTestId("skip-to-end-btn")).toBeInTheDocument();
-      expect(screen.queryByTestId("end-turn-btn")).not.toBeInTheDocument();
-    });
-
-    it("should render To Main 2 and Skip to End buttons during battle phases", () => {
-      const battlePhases: GamePhase[] = ["battle_start", "battle", "battle_end"];
-
-      for (const phase of battlePhases) {
-        const { unmount } = render(<PhaseSkipButtons {...defaultProps} currentPhase={phase} />);
-
-        expect(screen.getByTestId("skip-to-main2-btn")).toBeInTheDocument();
-        expect(screen.getByTestId("skip-to-end-btn")).toBeInTheDocument();
-        expect(screen.queryByTestId("end-turn-btn")).not.toBeInTheDocument();
-
-        unmount();
-      }
-    });
-
-    it("should render End Turn button during main2 phase", () => {
-      render(<PhaseSkipButtons {...defaultProps} currentPhase="main2" />);
-
       expect(screen.getByTestId("end-turn-btn")).toBeInTheDocument();
+    });
+
+    it("should render Skip to End and End Turn buttons during combat phase", () => {
+      render(<PhaseSkipButtons {...defaultProps} currentPhase="combat" />);
+
       expect(screen.queryByTestId("skip-battle-btn")).not.toBeInTheDocument();
-      expect(screen.queryByTestId("skip-to-end-btn")).not.toBeInTheDocument();
+      expect(screen.getByTestId("skip-to-end-btn")).toBeInTheDocument();
+      expect(screen.getByTestId("end-turn-btn")).toBeInTheDocument();
     });
 
     it("should not render during draw phase", () => {
@@ -92,8 +78,10 @@ describe("PhaseSkipButtons", () => {
       expect(container.firstChild).toBeNull();
     });
 
-    it("should not render during standby phase", () => {
-      const { container } = render(<PhaseSkipButtons {...defaultProps} currentPhase="standby" />);
+    it("should not render during breakdown_check phase", () => {
+      const { container } = render(
+        <PhaseSkipButtons {...defaultProps} currentPhase="breakdown_check" />
+      );
 
       expect(container.firstChild).toBeNull();
     });
@@ -108,7 +96,7 @@ describe("PhaseSkipButtons", () => {
   describe("Button disabled states", () => {
     it("should disable buttons when not current player's turn", () => {
       render(
-        <PhaseSkipButtons {...defaultProps} currentPhase="main1" isCurrentPlayerTurn={false} />
+        <PhaseSkipButtons {...defaultProps} currentPhase="main" isCurrentPlayerTurn={false} />
       );
 
       expect(screen.getByTestId("skip-battle-btn")).toBeDisabled();
@@ -117,7 +105,7 @@ describe("PhaseSkipButtons", () => {
 
     it("should enable buttons when it is current player's turn", () => {
       render(
-        <PhaseSkipButtons {...defaultProps} currentPhase="main1" isCurrentPlayerTurn={true} />
+        <PhaseSkipButtons {...defaultProps} currentPhase="main" isCurrentPlayerTurn={true} />
       );
 
       expect(screen.getByTestId("skip-battle-btn")).not.toBeDisabled();
@@ -125,10 +113,10 @@ describe("PhaseSkipButtons", () => {
     });
   });
 
-  describe("Skip Battle button interactions", () => {
-    it("should call skipBattlePhase mutation when clicked during main1", async () => {
+  describe("Skip Combat button interactions", () => {
+    it("should call skipBattlePhase mutation when clicked during main", async () => {
       const user = userEvent.setup();
-      render(<PhaseSkipButtons {...defaultProps} currentPhase="main1" />);
+      render(<PhaseSkipButtons {...defaultProps} currentPhase="main" />);
 
       const skipButton = screen.getByTestId("skip-battle-btn");
       await user.click(skipButton);
@@ -142,13 +130,13 @@ describe("PhaseSkipButtons", () => {
 
     it("should call onPhaseChange with new phase after successful skip", async () => {
       const user = userEvent.setup();
-      render(<PhaseSkipButtons {...defaultProps} currentPhase="main1" />);
+      render(<PhaseSkipButtons {...defaultProps} currentPhase="main" />);
 
       const skipButton = screen.getByTestId("skip-battle-btn");
       await user.click(skipButton);
 
       await waitFor(() => {
-        expect(mockOnPhaseChange).toHaveBeenCalledWith("main2");
+        expect(mockOnPhaseChange).toHaveBeenCalledWith("end");
       });
     });
 
@@ -156,7 +144,7 @@ describe("PhaseSkipButtons", () => {
       mockSkipBattlePhase.mockResolvedValue({ success: false });
 
       const user = userEvent.setup();
-      render(<PhaseSkipButtons {...defaultProps} currentPhase="main1" />);
+      render(<PhaseSkipButtons {...defaultProps} currentPhase="main" />);
 
       const skipButton = screen.getByTestId("skip-battle-btn");
       await user.click(skipButton);
@@ -175,7 +163,7 @@ describe("PhaseSkipButtons", () => {
       );
 
       const user = userEvent.setup();
-      render(<PhaseSkipButtons {...defaultProps} currentPhase="main1" />);
+      render(<PhaseSkipButtons {...defaultProps} currentPhase="main" />);
 
       const skipButton = screen.getByTestId("skip-battle-btn");
       await user.click(skipButton);
@@ -186,26 +174,10 @@ describe("PhaseSkipButtons", () => {
     });
   });
 
-  describe("Skip to Main 2 button interactions", () => {
-    it("should call skipBattlePhase mutation during battle phase", async () => {
-      const user = userEvent.setup();
-      render(<PhaseSkipButtons {...defaultProps} currentPhase="battle" />);
-
-      const skipToMain2Button = screen.getByTestId("skip-to-main2-btn");
-      await user.click(skipToMain2Button);
-
-      await waitFor(() => {
-        expect(mockSkipBattlePhase).toHaveBeenCalledWith({
-          lobbyId: mockLobbyId,
-        });
-      });
-    });
-  });
-
   describe("Skip to End button interactions", () => {
     it("should call skipToEndPhase mutation when clicked", async () => {
       const user = userEvent.setup();
-      render(<PhaseSkipButtons {...defaultProps} currentPhase="main1" />);
+      render(<PhaseSkipButtons {...defaultProps} currentPhase="main" />);
 
       const skipToEndButton = screen.getByTestId("skip-to-end-btn");
       await user.click(skipToEndButton);
@@ -219,7 +191,7 @@ describe("PhaseSkipButtons", () => {
 
     it("should call onPhaseChange with end phase after successful skip", async () => {
       const user = userEvent.setup();
-      render(<PhaseSkipButtons {...defaultProps} currentPhase="main1" />);
+      render(<PhaseSkipButtons {...defaultProps} currentPhase="main" />);
 
       const skipToEndButton = screen.getByTestId("skip-to-end-btn");
       await user.click(skipToEndButton);
@@ -228,12 +200,40 @@ describe("PhaseSkipButtons", () => {
         expect(mockOnPhaseChange).toHaveBeenCalledWith("end");
       });
     });
+
+    it("should show skip to end during combat phase", async () => {
+      const user = userEvent.setup();
+      render(<PhaseSkipButtons {...defaultProps} currentPhase="combat" />);
+
+      const skipToEndButton = screen.getByTestId("skip-to-end-btn");
+      await user.click(skipToEndButton);
+
+      await waitFor(() => {
+        expect(mockSkipToEndPhase).toHaveBeenCalledWith({
+          lobbyId: mockLobbyId,
+        });
+      });
+    });
   });
 
   describe("End Turn button interactions", () => {
-    it("should call skipMainPhase2 mutation when clicked during main2", async () => {
+    it("should call skipMainPhase2 mutation when clicked during main", async () => {
       const user = userEvent.setup();
-      render(<PhaseSkipButtons {...defaultProps} currentPhase="main2" />);
+      render(<PhaseSkipButtons {...defaultProps} currentPhase="main" />);
+
+      const endTurnButton = screen.getByTestId("end-turn-btn");
+      await user.click(endTurnButton);
+
+      await waitFor(() => {
+        expect(mockSkipMainPhase2).toHaveBeenCalledWith({
+          lobbyId: mockLobbyId,
+        });
+      });
+    });
+
+    it("should call skipMainPhase2 mutation when clicked during combat", async () => {
+      const user = userEvent.setup();
+      render(<PhaseSkipButtons {...defaultProps} currentPhase="combat" />);
 
       const endTurnButton = screen.getByTestId("end-turn-btn");
       await user.click(endTurnButton);
@@ -247,7 +247,7 @@ describe("PhaseSkipButtons", () => {
 
     it("should call onPhaseChange with end phase after successful end turn", async () => {
       const user = userEvent.setup();
-      render(<PhaseSkipButtons {...defaultProps} currentPhase="main2" />);
+      render(<PhaseSkipButtons {...defaultProps} currentPhase="main" />);
 
       const endTurnButton = screen.getByTestId("end-turn-btn");
       await user.click(endTurnButton);
@@ -264,7 +264,7 @@ describe("PhaseSkipButtons", () => {
       mockSkipBattlePhase.mockRejectedValue(new Error("Network error"));
 
       const user = userEvent.setup();
-      render(<PhaseSkipButtons {...defaultProps} currentPhase="main1" />);
+      render(<PhaseSkipButtons {...defaultProps} currentPhase="main" />);
 
       const skipButton = screen.getByTestId("skip-battle-btn");
       await user.click(skipButton);
@@ -289,7 +289,7 @@ describe("PhaseSkipButtons", () => {
       mockSkipToEndPhase.mockRejectedValue(new Error("Network error"));
 
       const user = userEvent.setup();
-      render(<PhaseSkipButtons {...defaultProps} currentPhase="main1" />);
+      render(<PhaseSkipButtons {...defaultProps} currentPhase="main" />);
 
       const skipButton = screen.getByTestId("skip-to-end-btn");
       await user.click(skipButton);
@@ -309,7 +309,7 @@ describe("PhaseSkipButtons", () => {
       mockSkipMainPhase2.mockRejectedValue(new Error("Network error"));
 
       const user = userEvent.setup();
-      render(<PhaseSkipButtons {...defaultProps} currentPhase="main2" />);
+      render(<PhaseSkipButtons {...defaultProps} currentPhase="main" />);
 
       const skipButton = screen.getByTestId("end-turn-btn");
       await user.click(skipButton);
@@ -323,29 +323,22 @@ describe("PhaseSkipButtons", () => {
   });
 
   describe("Button text", () => {
-    it("should show Skip Battle text on skip battle button", () => {
-      render(<PhaseSkipButtons {...defaultProps} currentPhase="main1" />);
+    it("should show Skip Combat text on skip battle button", () => {
+      render(<PhaseSkipButtons {...defaultProps} currentPhase="main" />);
 
       const button = screen.getByTestId("skip-battle-btn");
-      expect(button).toHaveTextContent(/Skip Battle|Skip/);
-    });
-
-    it("should show To Main 2 text on skip to main2 button", () => {
-      render(<PhaseSkipButtons {...defaultProps} currentPhase="battle" />);
-
-      const button = screen.getByTestId("skip-to-main2-btn");
-      expect(button).toHaveTextContent(/To Main 2|M2/);
+      expect(button).toHaveTextContent(/Skip Combat|Skip/);
     });
 
     it("should show Skip to End text on skip to end button", () => {
-      render(<PhaseSkipButtons {...defaultProps} currentPhase="main1" />);
+      render(<PhaseSkipButtons {...defaultProps} currentPhase="main" />);
 
       const button = screen.getByTestId("skip-to-end-btn");
       expect(button).toHaveTextContent(/Skip to End|End/);
     });
 
     it("should show End Turn text on end turn button", () => {
-      render(<PhaseSkipButtons {...defaultProps} currentPhase="main2" />);
+      render(<PhaseSkipButtons {...defaultProps} currentPhase="main" />);
 
       const button = screen.getByTestId("end-turn-btn");
       expect(button).toHaveTextContent(/End Turn|End/);
@@ -356,7 +349,7 @@ describe("PhaseSkipButtons", () => {
     it("should work without onPhaseChange callback", async () => {
       const user = userEvent.setup();
       render(
-        <PhaseSkipButtons lobbyId={mockLobbyId} currentPhase="main1" isCurrentPlayerTurn={true} />
+        <PhaseSkipButtons lobbyId={mockLobbyId} currentPhase="main" isCurrentPlayerTurn={true} />
       );
 
       const skipButton = screen.getByTestId("skip-battle-btn");

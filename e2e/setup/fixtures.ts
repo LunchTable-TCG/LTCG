@@ -32,7 +32,7 @@ export { expect };
  * Game Helper provides high-level methods for game interactions
  */
 export interface GameHelper {
-  waitForPhase(phase: "main1" | "main2" | "battle" | "end"): Promise<void>;
+  waitForPhase(phase: "main" | "combat" | "breakdown_check" | "end"): Promise<void>;
   summonCreature(cardIndex: number): Promise<void>;
   attack(attackerIndex: number, targetIndex: number): Promise<void>;
   endTurn(): Promise<void>;

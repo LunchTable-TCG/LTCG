@@ -64,7 +64,7 @@ class HandCard:
 
 @dataclass
 class BoardMonster:
-    """Monster on the field"""
+    """Stereotype on the field"""
     _id: str
     name: str
     attack: int
@@ -173,7 +173,7 @@ class LTCGClient:
     # -------------------------------------------------------------------------
 
     def summon_monster(self, game_id: str, card_id: str, position: str) -> Dict:
-        """Normal summon a monster"""
+        """Normal summon a stereotype"""
         return self._request("POST", "/games/actions/summon", {
             "gameId": game_id,
             "cardId": card_id,
@@ -202,7 +202,7 @@ class LTCGClient:
         return self._request("POST", "/games/actions/attack", body)
 
     def enter_battle_phase(self, game_id: str) -> Dict:
-        """Enter battle phase from main phase 1"""
+        """Enter combat phase from main phase"""
         return self._request("POST", "/games/actions/enter-battle", {"gameId": game_id})
 
     def end_turn(self, game_id: str) -> Dict:
@@ -267,13 +267,13 @@ class BasicAgent:
                 f"Turn {state.turnNumber}, Phase: {state.phase}, "
                 f"LP: {state.myLifePoints} vs {state.opponentLifePoints}"
             )
-            self.log(f"Hand: {len(state.hand)} cards, Board: {len(state.myBoard)} monsters")
+            self.log(f"Hand: {len(state.hand)} cards, Board: {len(state.myBoard)} stereotypes")
 
             # Basic strategy: Summon → Set Backrow → Attack → End Turn
 
-            # 1. Summon strongest monster if we haven't summoned yet
-            if not state.normalSummonedThisTurn and state.phase == "main1":
-                summonable = [c for c in state.hand if c.cardType == "creature" and (c.cost or 0) <= 4]
+            # 1. Summon strongest stereotype if we haven't summoned yet
+            if not state.normalSummonedThisTurn and state.phase == "main":
+                summonable = [c for c in state.hand if c.cardType == "stereotype" and (c.cost or 0) <= 4]
 
                 if summonable:
                     # Summon strongest (by ATK)
@@ -284,7 +284,7 @@ class BasicAgent:
                     time.sleep(0.5)
 
             # 2. Set spell/trap cards
-            if state.phase in ["main1", "main2"]:
+            if state.phase == "main":
                 backrow = [c for c in state.hand if c.cardType in ["spell", "trap"]]
 
                 for card in backrow[:2]:  # Set up to 2 backrow cards
@@ -295,15 +295,15 @@ class BasicAgent:
                     except:
                         break  # Zone probably full
 
-            # 3. Enter battle phase if we have monsters
-            if state.phase == "main1":
+            # 3. Enter combat phase if we have stereotypes
+            if state.phase == "main":
                 can_attack = any(
                     not m.isFaceDown and m.position == 1 and not m.hasAttacked
                     for m in state.myBoard
                 )
 
                 if can_attack:
-                    self.log("Entering Battle Phase")
+                    self.log("Entering Combat Phase")
                     self.client.enter_battle_phase(game_id)
                     time.sleep(0.5)
 
@@ -311,12 +311,12 @@ class BasicAgent:
                     state_data = self.client.get_game_state(game_id)
                     state = self.parse_game_state(state_data)
 
-                    # 4. Attack with all available monsters
+                    # 4. Attack with all available stereotypes
                     for monster in state.myBoard:
                         if monster.isFaceDown or monster.position != 1 or monster.hasAttacked:
                             continue
 
-                        # Simple strategy: Attack strongest opponent monster or direct
+                        # Simple strategy: Attack strongest opponent stereotype or direct
                         if state.opponentBoard:
                             targets = [m for m in state.opponentBoard if not m.isFaceDown]
                             if targets:

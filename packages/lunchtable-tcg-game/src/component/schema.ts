@@ -115,7 +115,7 @@ export default defineSchema({
     hostUsername: v.string(),
     hostRank: v.string(),
     hostRating: v.number(),
-    deckArchetype: v.string(), // "fire", "water", "earth", "wind"
+    deckArchetype: v.string(), // "dropout", "prep", "geek", "freak", "nerd", "goodie_two_shoes"
     mode: v.string(), // "casual" | "ranked"
     status: v.string(), // "waiting" | "active" | "completed" | "cancelled" | "forfeited"
     isPrivate: v.boolean(), // true for private matches

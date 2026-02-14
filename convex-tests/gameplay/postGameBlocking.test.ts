@@ -53,14 +53,14 @@ async function createTestCard(
     name: string;
     attack?: number;
     defense?: number;
-    cardType?: "creature" | "spell" | "trap" | "equipment";
+    cardType?: "stereotype" | "spell" | "trap" | "class";
     cost?: number;
   }
 ): Promise<Id<"cardDefinitions">> {
   return await t.run(async (ctx: MutationCtx) => {
     return await ctx.db.insert("cardDefinitions", {
       name: cardData.name,
-      cardType: cardData.cardType || "creature",
+      cardType: cardData.cardType || "stereotype",
       archetype: "neutral",
       rarity: "common",
       attack: cardData.attack ?? 1000,
@@ -146,12 +146,12 @@ async function createCompletedGame(
       hostId: host.id,
       opponentId: opponent.id,
       currentTurnPlayerId: options.currentTurnPlayerId ?? host.id,
-      currentPhase: options.currentPhase ?? "main1",
+      currentPhase: options.currentPhase ?? "main",
       turnNumber: 5,
       hostLifePoints: 8000,
       opponentLifePoints: 0, // Opponent lost
-      hostMana: 5,
-      opponentMana: 5,
+      hostClout: 5,
+      opponentClout: 5,
       hostDeck: [],
       opponentDeck: [],
       hostHand: options.hostHand ?? [],
@@ -213,7 +213,7 @@ describe("Post-Game Blocking - Combat Actions", () => {
     });
 
     const { lobbyId } = await createCompletedGame(t, host, opponent, {
-      currentPhase: "battle",
+      currentPhase: "combat",
       hostBoard: [
         {
           cardId: attackerCard,
@@ -254,7 +254,7 @@ describe("Post-Game Blocking - Combat Actions", () => {
     });
 
     const { lobbyId } = await createCompletedGame(t, host, opponent, {
-      currentPhase: "battle",
+      currentPhase: "combat",
       hostBoard: [
         {
           cardId: attackerCard,
@@ -298,7 +298,7 @@ describe("Post-Game Blocking - Combat Actions", () => {
     });
 
     const { lobbyId } = await createCompletedGame(t, host, opponent, {
-      currentPhase: "battle",
+      currentPhase: "combat",
       hostBoard: [
         {
           cardId: attackerCard,
@@ -339,7 +339,7 @@ describe("Post-Game Blocking - Summon Actions", () => {
     });
 
     const { lobbyId } = await createCompletedGame(t, host, opponent, {
-      currentPhase: "main1",
+      currentPhase: "main",
       hostHand: [monsterCard],
     });
 
@@ -367,7 +367,7 @@ describe("Post-Game Blocking - Summon Actions", () => {
     });
 
     const { lobbyId } = await createCompletedGame(t, host, opponent, {
-      currentPhase: "main1",
+      currentPhase: "main",
       hostHand: [monsterCard],
     });
 
@@ -394,7 +394,7 @@ describe("Post-Game Blocking - Summon Actions", () => {
     });
 
     const { lobbyId } = await createCompletedGame(t, host, opponent, {
-      currentPhase: "main1",
+      currentPhase: "main",
       hostBoard: [
         {
           cardId: faceDownMonster,
@@ -436,7 +436,7 @@ describe("Post-Game Blocking - Spell/Trap Actions", () => {
     });
 
     const { lobbyId } = await createCompletedGame(t, host, opponent, {
-      currentPhase: "main1",
+      currentPhase: "main",
       hostHand: [spellCard],
     });
 
@@ -463,7 +463,7 @@ describe("Post-Game Blocking - Spell/Trap Actions", () => {
     });
 
     const { lobbyId } = await createCompletedGame(t, host, opponent, {
-      currentPhase: "main1",
+      currentPhase: "main",
       hostHand: [trapCard],
     });
 
@@ -490,7 +490,7 @@ describe("Post-Game Blocking - Spell/Trap Actions", () => {
     });
 
     const { lobbyId } = await createCompletedGame(t, host, opponent, {
-      currentPhase: "main1",
+      currentPhase: "main",
       hostSpellTrapZone: [
         {
           cardId: trapCard,
@@ -524,7 +524,7 @@ describe("Post-Game Blocking - Phase Actions", () => {
     const opponent = await createTestUser(t, "opponent@test.com", "opponent");
 
     const { lobbyId } = await createCompletedGame(t, host, opponent, {
-      currentPhase: "main1",
+      currentPhase: "main",
     });
 
     const asHost = t.withIdentity({ subject: host.privyId });
@@ -541,7 +541,7 @@ describe("Post-Game Blocking - Phase Actions", () => {
     const opponent = await createTestUser(t, "opponent@test.com", "opponent");
 
     const { lobbyId } = await createCompletedGame(t, host, opponent, {
-      currentPhase: "main1",
+      currentPhase: "main",
     });
 
     const asHost = t.withIdentity({ subject: host.privyId });
@@ -558,7 +558,7 @@ describe("Post-Game Blocking - Phase Actions", () => {
     const opponent = await createTestUser(t, "opponent@test.com", "opponent");
 
     const { lobbyId } = await createCompletedGame(t, host, opponent, {
-      currentPhase: "main1",
+      currentPhase: "main",
     });
 
     const asHost = t.withIdentity({ subject: host.privyId });
@@ -575,7 +575,7 @@ describe("Post-Game Blocking - Phase Actions", () => {
     const opponent = await createTestUser(t, "opponent@test.com", "opponent");
 
     const { lobbyId } = await createCompletedGame(t, host, opponent, {
-      currentPhase: "main2",
+      currentPhase: "breakdown_check",
     });
 
     const asHost = t.withIdentity({ subject: host.privyId });
@@ -622,7 +622,7 @@ describe("Post-Game Blocking - Opponent Actions", () => {
 
     // Game is completed but set up as if it's opponent's turn
     const { lobbyId } = await createCompletedGame(t, host, opponent, {
-      currentPhase: "main1",
+      currentPhase: "main",
       currentTurnPlayerId: opponent.id,
       opponentHand: [opponentMonster],
     });
@@ -646,7 +646,7 @@ describe("Post-Game Blocking - Opponent Actions", () => {
     const opponent = await createTestUser(t, "opponent@test.com", "opponent");
 
     const { lobbyId } = await createCompletedGame(t, host, opponent, {
-      currentPhase: "main1",
+      currentPhase: "main",
       currentTurnPlayerId: opponent.id,
     });
 
@@ -674,7 +674,7 @@ describe("Post-Game Blocking - Edge Cases", () => {
     const card2 = await createTestCard(t, { name: "Card 2", attack: 1200 });
 
     const { lobbyId } = await createCompletedGame(t, host, opponent, {
-      currentPhase: "battle",
+      currentPhase: "combat",
       hostBoard: [
         {
           cardId: card1,
@@ -728,7 +728,7 @@ describe("Post-Game Blocking - Edge Cases", () => {
     });
 
     const { lobbyId } = await createCompletedGame(t, host, opponent, {
-      currentPhase: "main1",
+      currentPhase: "main",
       hostHand: [hostSpell],
       opponentHand: [opponentSpell],
     });
@@ -765,7 +765,7 @@ describe("Post-Game Blocking - Edge Cases", () => {
     const faceDown = await createTestCard(t, { name: "Face Down", attack: 500 });
 
     const { lobbyId } = await createCompletedGame(t, host, opponent, {
-      currentPhase: "main1",
+      currentPhase: "main",
       hostHand: [monster, spell, trap],
       hostBoard: [
         {
