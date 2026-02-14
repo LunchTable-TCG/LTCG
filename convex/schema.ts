@@ -1657,6 +1657,15 @@ export default defineSchema({
     .index("by_key", ["key"])
     .index("by_enabled", ["isEnabled"]),
 
+  // Game configuration singleton — runtime-overridable config values
+  // Stores a JSON-serialized subset of LTCGConfig
+  gameConfig: defineTable({
+    key: v.literal("active"),
+    config: v.string(), // JSON-serialized partial LTCGConfig
+    updatedAt: v.number(),
+    updatedBy: v.optional(v.string()),
+  }).index("by_key", ["key"]),
+
   // ============================================================================
   // CONTENT COMPONENT TABLES
   // ============================================================================
