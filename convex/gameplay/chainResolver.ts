@@ -620,7 +620,7 @@ export async function resolveChainHelper(
               : currentState.opponentSpellTrapZone;
 
             // Check zone limit before placing equip spell
-            if (spellTrapZone.length >= 5) {
+            if (spellTrapZone.length >= 3) {
               // Zone is full — equip spell goes to graveyard instead
               const graveyard = isHost
                 ? currentState.hostGraveyard

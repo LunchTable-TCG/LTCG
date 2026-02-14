@@ -59,29 +59,41 @@ interface GameLobbyEntry {
 }
 
 const ARCHETYPE_CONFIG = {
-  fire: {
+  dropout: {
     icon: Flame,
     color: "text-red-500",
     bg: "bg-red-500/10",
     border: "border-red-500/30",
   },
-  water: {
+  prep: {
     icon: Waves,
     color: "text-blue-500",
     bg: "bg-blue-500/10",
     border: "border-blue-500/30",
   },
-  earth: {
+  geek: {
     icon: Shield,
-    color: "text-slate-400",
-    bg: "bg-slate-500/10",
-    border: "border-slate-400/30",
+    color: "text-green-500",
+    bg: "bg-green-500/10",
+    border: "border-green-500/30",
   },
-  wind: {
+  freak: {
+    icon: Sparkles,
+    color: "text-purple-500",
+    bg: "bg-purple-500/10",
+    border: "border-purple-500/30",
+  },
+  nerd: {
     icon: Zap,
     color: "text-yellow-500",
     bg: "bg-yellow-500/10",
     border: "border-yellow-500/30",
+  },
+  goodie_two_shoes: {
+    icon: Users,
+    color: "text-slate-100",
+    bg: "bg-slate-500/10",
+    border: "border-slate-400/30",
   },
 };
 

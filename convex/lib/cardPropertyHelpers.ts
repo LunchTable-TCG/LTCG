@@ -126,6 +126,8 @@ interface BoardCard {
   equippedCards?: Doc<"cardDefinitions">["_id"][];
   isToken?: boolean;
   tokenData?: TokenData;
+  viceCounters?: number;
+  viceType?: string;
 }
 
 /**
@@ -196,6 +198,8 @@ export function createBoardCard(
     isFaceDown,
     hasChangedPosition: false,
     turnSummoned: currentTurn,
+    viceCounters: 0,
+    viceType: card.viceType,
   };
 }
 

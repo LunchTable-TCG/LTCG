@@ -278,7 +278,7 @@ export interface CompleteChapterResult {
     rarity: string;
     /** Card archetype */
     archetype: string;
-    /** Card type (creature, spell, trap) */
+    /** Card type (stereotype, spell, trap, class) */
     cardType: string;
     /** Attack value for creatures */
     attack?: number;

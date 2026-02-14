@@ -59,11 +59,12 @@ const RARITY_COLORS: Record<Rarity, string> = {
 
 const ARCHETYPES = [
   { value: "all", label: "All Archetypes" },
-  { value: "infernal_dragons", label: "Infernal Dragons", count: INFERNAL_DRAGONS_CARDS.length },
-  { value: "abyssal_depths", label: "Abyssal Depths", count: ABYSSAL_DEPTHS_CARDS.length },
-  { value: "iron_legion", label: "Iron Legion", count: IRON_LEGION_CARDS.length },
-  { value: "necro_empire", label: "Necro Empire", count: NECRO_EMPIRE_CARDS.length },
-  { value: "storm_elementals", label: "Storm Elementals", count: STORM_ELEMENTALS_CARDS.length },
+  { value: "dropout", label: "Dropout" },
+  { value: "prep", label: "Prep" },
+  { value: "geek", label: "Geek" },
+  { value: "freak", label: "Freak" },
+  { value: "nerd", label: "Nerd" },
+  { value: "goodie_two_shoes", label: "Goodie Two Shoes" },
 ];
 
 const CARD_TYPES = [
@@ -139,13 +140,6 @@ export default function BatchRenderPage() {
       stereotypes,
       spells,
       traps,
-      byArchetype: {
-        infernal_dragons: INFERNAL_DRAGONS_CARDS.length,
-        abyssal_depths: ABYSSAL_DEPTHS_CARDS.length,
-        iron_legion: IRON_LEGION_CARDS.length,
-        necro_empire: NECRO_EMPIRE_CARDS.length,
-        storm_elementals: STORM_ELEMENTALS_CARDS.length,
-      },
     };
   }, []);
 
@@ -269,23 +263,6 @@ export default function BatchRenderPage() {
           </div>
         </Card>
       </div>
-
-      {/* Archetype Breakdown */}
-      <Card className="mb-6">
-        <Title className="mb-4">Cards by Archetype</Title>
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-          {ARCHETYPES.filter((a) => a.value !== "all").map((archetype) => (
-            <div
-              key={archetype.value}
-              className="p-4 rounded-lg bg-muted/30 border text-center cursor-pointer hover:bg-muted/50 transition-colors"
-              onClick={() => setArchetypeFilter(archetype.value)}
-            >
-              <Text className="text-lg font-bold">{archetype.count}</Text>
-              <Text className="text-sm text-muted-foreground">{archetype.label}</Text>
-            </div>
-          ))}
-        </div>
-      </Card>
 
       {/* Render Controls */}
       <Card className="mb-6">

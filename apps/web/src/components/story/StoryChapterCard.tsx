@@ -1,6 +1,5 @@
 "use client";
 
-import { FantasyFrame } from "@/components/ui/FantasyFrame";
 import { getArchetypeTheme } from "@/lib/archetypeThemes";
 import { getAssetUrl } from "@/lib/blob";
 import { cn } from "@/lib/utils";
@@ -48,10 +47,8 @@ export function StoryChapterCard({ chapter, onClick }: StoryChapterCardProps) {
         !isUnlocked && "opacity-80 grayscale"
       )}
     >
-      <FantasyFrame
-        variant={isCompleted ? "gold" : isUnlocked ? "ethereal" : "obsidian"}
-        className="h-full overflow-hidden"
-        noPadding
+      <div
+        className="h-full overflow-hidden zine-border bg-card"
       >
         {/* Background Image */}
         <div className="absolute inset-0" data-testid="chapter-artwork">
@@ -141,7 +138,7 @@ export function StoryChapterCard({ chapter, onClick }: StoryChapterCardProps) {
             )}
           </div>
         </div>
-      </FantasyFrame>
+      </div>
     </motion.button>
   );
 }

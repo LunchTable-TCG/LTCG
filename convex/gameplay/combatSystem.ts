@@ -326,12 +326,12 @@ export const declareAttack = mutation({
       };
     }
 
-    // 10. Check for "on_battle_start" trigger effects on attacker
+    // 10. Check for "on_combat_start" trigger effects on attacker
     {
       const attackerAbility = getCardAbility(attackerCard);
       if (attackerAbility) {
         for (const parsedEffect of attackerAbility.effects) {
-          if (parsedEffect.trigger !== "on_battle_start") continue;
+          if (parsedEffect.trigger !== "on_combat_start") continue;
 
           const refreshedState = await ctx.db
             .query("gameStates")
@@ -365,7 +365,7 @@ export const declareAttack = mutation({
                 playerId: user.userId,
                 playerUsername: user.username,
                 description: `${attackerCard.name} attack effect: ${effectResult.message}`,
-                metadata: { cardId: args.attackerCardId, trigger: "on_battle_start" },
+                metadata: { cardId: args.attackerCardId, trigger: "on_combat_start" },
               });
             }
           }

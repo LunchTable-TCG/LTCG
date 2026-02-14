@@ -24,7 +24,7 @@ const BLOB_BASE_URL = process.env.NEXT_PUBLIC_BLOB_BASE_URL || "";
  */
 const ASSET_PATH_MAP: Record<string, string> = {
   // Logos
-  "/assets/logo-main.png": "logo-main.png",
+  "/assets/logo-zine.png": "logo-zine.png",
   "/assets/logo-icon.png": "logo-icon.png",
 
   // Backgrounds
@@ -40,11 +40,11 @@ const ASSET_PATH_MAP: Record<string, string> = {
   "/assets/dashboard-bg.jpg": "dashboard-bg.jpg",
 
   // Textures - upgraded to seamless 1024px brand versions
-  "/assets/textures/parchment.png": "brand/textures/parchment-seamless-1024.png",
-  "/assets/textures/leather.png": "brand/textures/leather-seamless-1024.png",
+  "/assets/textures/crumpled-paper.png": "brand/textures/crumpled-paper.png",
+  "/assets/textures/photocopy-noise.png": "brand/textures/photocopy-noise.png",
   "/assets/textures/arcane-stone.png": "brand/textures/arcane-stone-seamless-1024.png",
   "/assets/textures/gold-metal.png": "brand/textures/gold-metal-seamless-1024.png",
-  "/assets/parchment-frame.png": "parchment-frame.png",
+  "/assets/zine-border-frame.png": "zine-border-frame.png",
 
   // UI Elements - using high-quality alpha PNG versions from brand directory
   "/assets/ui/fantasy_gold_metal.png": "ui/fantasy_gold_metal.png",
@@ -58,23 +58,19 @@ const ASSET_PATH_MAP: Record<string, string> = {
   "/assets/card-bg.svg": "card-bg.svg",
 
   // Shop
-  "/assets/shop/pack.png": "shop/pack.png",
-  "/assets/shop/box.png": "shop/box.png",
-  "/assets/shop/starter-pack.png": "shop/starter-pack.png",
-  "/assets/shop/premium-pack.png": "shop/premium-pack.png",
+  "/assets/shop/foil-pack-generic.png": "shop/foil-pack-generic.png",
+  "/assets/shop/cardboard-box.png": "shop/cardboard-box.png",
+  "/assets/shop/brown-bag-pack.png": "shop/brown-bag-pack.png",
+  "/assets/shop/foil-booster-pack.png": "shop/foil-booster-pack.png",
   "/assets/shop/packopening.mp4": "shop/packopening.mp4",
 
-  // Story characters
-  "/assets/story/mechanical_constructs.png": "story/mechanical_constructs.png",
-  "/assets/story/undead_legion.png": "story/undead_legion.png",
-  "/assets/story/storm_elementals.png": "story/storm_elementals.png",
-  "/assets/story/nature_spirits.png": "story/nature_spirits.png",
-  "/assets/story/divine_knights.png": "story/divine_knights.png",
-  "/assets/story/arcane_mages.png": "story/arcane_mages.png",
-  "/assets/story/shadow_assassins.png": "story/shadow_assassins.png",
-  "/assets/story/celestial_guardians.png": "story/celestial_guardians.png",
-  "/assets/story/abyssal_horrors.png": "story/abyssal_horrors.png",
-  "/assets/story/infernal_dragons.png": "story/infernal_dragons.png",
+  // Story characters - LunchTable TCG archetypes
+  "/assets/story/dropout.png": "story/dropout.png",
+  "/assets/story/prep.png": "story/prep.png",
+  "/assets/story/geek.png": "story/geek.png",
+  "/assets/story/freak.png": "story/freak.png",
+  "/assets/story/nerd.png": "story/nerd.png",
+  "/assets/story/goodie_two_shoes.png": "story/goodie_two_shoes.png",
 
   // Social media assets (for external marketing use)
   "/brand/social/og-1200x630.png": "brand/social/og-1200x630.png",

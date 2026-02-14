@@ -45,10 +45,10 @@ const RARITY_BORDERS: Record<string, string> = {
 };
 
 const CARD_TYPE_COLORS: Record<string, string> = {
-  monster: "bg-amber-600",
+  stereotype: "bg-amber-600",
   spell: "bg-green-600",
   trap: "bg-purple-600",
-  equipment: "bg-cyan-600",
+  class: "bg-cyan-600",
   field: "bg-teal-600",
 };
 

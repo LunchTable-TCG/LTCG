@@ -1,6 +1,5 @@
 "use client";
 
-import { FantasyFrame } from "@/components/ui/FantasyFrame";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
@@ -70,7 +69,7 @@ export function StoryBattleCompleteDialog({
         {won ? (
           <div className="space-y-6">
             {/* Stars Earned */}
-            <FantasyFrame variant="gold" className="p-6 text-center">
+            <div className="p-6 text-center zine-border bg-card">
               <div
                 className="flex items-center justify-center gap-2 mb-3"
                 data-testid="stage-stars"
@@ -98,11 +97,11 @@ export function StoryBattleCompleteDialog({
                     ? "Excellent Performance!"
                     : "Victory!"}
               </p>
-            </FantasyFrame>
+            </div>
 
             {/* Rewards */}
             <div className="grid grid-cols-2 gap-4">
-              <FantasyFrame className="p-4 flex items-center gap-3">
+              <div className="p-4 flex items-center gap-3 zine-border bg-card">
                 <div className="w-12 h-12 rounded-full bg-[#d4af37]/20 flex items-center justify-center">
                   <Coins className="w-6 h-6 text-[#d4af37]" />
                 </div>
@@ -110,9 +109,9 @@ export function StoryBattleCompleteDialog({
                   <div className="text-2xl font-bold text-[#d4af37]">+{rewards.gold}</div>
                   <div className="text-xs text-[#a89f94]">Gold</div>
                 </div>
-              </FantasyFrame>
+              </div>
 
-              <FantasyFrame className="p-4 flex items-center gap-3">
+              <div className="p-4 flex items-center gap-3 zine-border bg-card">
                 <div className="w-12 h-12 rounded-full bg-purple-500/20 flex items-center justify-center">
                   <Zap className="w-6 h-6 text-purple-400" />
                 </div>
@@ -120,7 +119,7 @@ export function StoryBattleCompleteDialog({
                   <div className="text-2xl font-bold text-purple-400">+{rewards.xp}</div>
                   <div className="text-xs text-[#a89f94]">XP</div>
                 </div>
-              </FantasyFrame>
+              </div>
             </div>
 
             {/* Level Up */}
@@ -130,9 +129,8 @@ export function StoryBattleCompleteDialog({
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ delay: 0.5 }}
               >
-                <FantasyFrame
-                  variant="gold"
-                  className="p-4 text-center bg-linear-to-br from-purple-900/40 to-blue-900/40"
+                <div
+                  className="p-4 text-center zine-border bg-linear-to-br from-purple-900/40 to-blue-900/40"
                 >
                   <div className="flex items-center justify-center gap-3 mb-2">
                     <Trophy className="w-6 h-6 text-[#d4af37]" />
@@ -142,13 +140,13 @@ export function StoryBattleCompleteDialog({
                   <p className="text-[#a89f94]">
                     Level {levelUp.oldLevel} → Level {levelUp.newLevel}
                   </p>
-                </FantasyFrame>
+                </div>
               </motion.div>
             )}
 
             {/* New Badges */}
             {newBadges && newBadges.length > 0 && (
-              <FantasyFrame variant="gold" className="p-4 relative overflow-hidden">
+              <div className="p-4 relative overflow-hidden zine-border bg-card">
                 {/* Gold Metal Texture Background */}
                 <div
                   className="absolute inset-0 opacity-20"
@@ -182,12 +180,12 @@ export function StoryBattleCompleteDialog({
                     ))}
                   </div>
                 </div>
-              </FantasyFrame>
+              </div>
             )}
 
             {/* Cards Received */}
             {cardsReceived && cardsReceived.length > 0 && (
-              <FantasyFrame className="p-4">
+              <div className="p-4 zine-border bg-card">
                 <div className="flex items-center gap-2 mb-3">
                   <Star className="w-5 h-5 text-[#d4af37]" />
                   <div className="text-lg font-bold text-[#e8e0d5]">Cards Received</div>
@@ -215,7 +213,7 @@ export function StoryBattleCompleteDialog({
                     </motion.div>
                   ))}
                 </div>
-              </FantasyFrame>
+              </div>
             )}
 
             {/* Continue Button */}

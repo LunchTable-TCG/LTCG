@@ -13,7 +13,6 @@ import {
   Award,
   BookOpen,
   Coins,
-  Crown,
   Gamepad2,
   Heart,
   LogOut,
@@ -158,12 +157,15 @@ export function Navbar() {
     <>
       <header
         className={cn(
-          "fixed top-0 left-0 right-0 z-40 transition-all duration-500",
+          "sticky top-0 z-40 transition-all duration-300 w-full",
           isScrolled
-            ? "tcg-panel py-3"
-            : "bg-linear-to-b from-background via-background/80 to-transparent py-4"
+            ? "bg-background border-b-2 border-primary py-2"
+            : "bg-background/80 py-4"
         )}
       >
+        {/* Comic Overlays */}
+        <div className="absolute inset-0 pointer-events-none z-0 opacity-10 mix-blend-multiply" style={{ backgroundImage: 'url(/assets/overlays/paper-texture.png)', backgroundSize: '256px' }} />
+        <div className="absolute inset-0 pointer-events-none z-0 opacity-5" style={{ backgroundImage: 'url(/assets/overlays/halftone-dots.png)', backgroundSize: '128px' }} />
         <div className="container mx-auto px-4">
           <nav className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -171,23 +173,22 @@ export function Navbar() {
               <button
                 type="button"
                 onClick={toggle}
-                className="tcg-button w-12 h-12 rounded-lg flex md:hidden items-center justify-center"
+                className="tcg-button w-10 h-10 flex md:hidden items-center justify-center cursor-pointer"
                 aria-label="Toggle menu"
               >
                 <Menu className="w-5 h-5 text-primary" />
               </button>
 
-              {/* Logo - Only visible on mobile or if sidebar is hidden (but sidebar is always visible on desktop now) */}
+              {/* Logo - Only visible on mobile */}
               <Link href="/" className="flex md:hidden items-center gap-3 group">
                 <div className="relative">
-                  <div className="absolute inset-0 bg-primary/30 rounded-lg blur-lg opacity-50 group-hover:opacity-100 transition-opacity" />
-                  <div className="relative w-10 h-10 flex items-center justify-center">
+                  <div className="relative w-8 h-8 flex items-center justify-center border-2 border-primary overflow-hidden">
                     <Image
                       src={getAssetUrl("/assets/logo-icon.png")}
                       alt="LT"
                       width={32}
                       height={32}
-                      className="w-8 h-8 object-contain"
+                      className="w-full h-full object-cover filter grayscale contrast-150"
                       sizes="32px"
                     />
                   </div>
@@ -199,28 +200,28 @@ export function Navbar() {
               {isAuthenticated ? (
                 <>
                   {/* Desktop Header Actions */}
-                  <div className="hidden md:flex items-center gap-6 mr-6">
-                    <div className="flex items-center gap-2 px-3 py-1.5 bg-black/40 border border-border/50 rounded-full">
-                      <div className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse" />
-                      <span className="text-xs font-mono text-primary/80">Online</span>
+                  <div className="hidden md:flex items-center gap-6 mr-4">
+                    <div className="flex items-center gap-2 px-3 py-1 bg-primary text-primary-foreground font-mono text-[10px] uppercase tracking-tighter">
+                      <span className="w-2 h-2 rounded-full bg-destructive animate-pulse" />
+                      Status: Active
                     </div>
                   </div>
 
-                  <WalletButton expandable className="hidden sm:flex" />
+                  <WalletButton className="hidden sm:flex" />
 
                   <InboxDropdown className="hidden sm:block" />
 
                   {/* Profile Link - distinct from Sidebar's footprint */}
                   <Link href="/profile" className="group md:hidden">
                     <div className="relative">
-                      <Avatar className="relative w-10 h-10 border-2 border-border group-hover:border-primary/50 transition-colors">
+                      <Avatar className="relative w-10 h-10 border-2 border-primary grayscale group-hover:grayscale-0 transition-all">
                         {currentUser?.image && (
                           <AvatarImage
                             src={currentUser.image}
                             alt={currentUser.username || "User"}
                           />
                         )}
-                        <AvatarFallback className="bg-secondary text-primary text-sm font-bold">
+                        <AvatarFallback className="bg-primary text-primary-foreground text-sm font-bold">
                           {currentUser === undefined
                             ? "..."
                             : currentUser?.username?.[0]?.toUpperCase() || "?"}
@@ -234,14 +235,13 @@ export function Navbar() {
                   <Button
                     asChild
                     variant="ghost"
-                    className="text-muted-foreground hover:text-foreground"
+                    className="text-foreground font-bold hover:underline"
                   >
-                    <Link href="/login">Enter</Link>
+                    <Link href="/login">LOGIN</Link>
                   </Button>
-                  <Button asChild className="tcg-button-primary rounded-lg px-5 py-5">
+                  <Button asChild className="tcg-button-primary px-6 py-4">
                     <Link href="/signup">
-                      <Crown className="w-4 h-4 mr-2" />
-                      Join
+                      JOIN US
                     </Link>
                   </Button>
                 </div>
@@ -253,7 +253,7 @@ export function Navbar() {
 
       <div
         className={cn(
-          "fixed inset-0 z-50 bg-black/70 backdrop-blur-sm transition-opacity duration-300",
+          "fixed inset-0 z-50 bg-black/40 backdrop-blur-[1px] transition-opacity duration-300",
           isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
         )}
         onClick={() => setIsOpen(false)}
@@ -261,52 +261,47 @@ export function Navbar() {
 
       <aside
         className={cn(
-          "fixed top-0 left-0 z-50 h-full w-72 transition-transform duration-500 ease-out",
+          "fixed top-0 left-0 z-50 h-full w-72 transition-transform duration-500 ease-in-out",
           isOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
-        <div className="h-full tcg-panel flex flex-col overflow-hidden">
-          <div className="ornament-corner ornament-corner-tr" />
-          <div className="ornament-corner ornament-corner-br" />
-
-          <div className="flex items-center justify-between px-4 py-4 border-b border-border">
-            <Link href="/" onClick={() => setIsOpen(false)} className="flex items-center gap-2">
-              <div className="w-9 h-9 flex items-center justify-center">
+        <div className="h-full bg-background border-r-4 border-primary flex flex-col overflow-hidden relative scanner-noise">
+          <div className="flex items-center justify-between px-6 py-6 border-b-2 border-primary">
+            <Link href="/" onClick={() => setIsOpen(false)} className="flex items-center gap-3">
+              <div className="w-10 h-10 flex items-center justify-center border-4 border-primary overflow-hidden">
                 <Image
                   src={getAssetUrl("/assets/logo-icon.png")}
                   alt="LT"
-                  width={28}
-                  height={28}
-                  className="w-7 h-7 object-contain"
-                  sizes="28px"
+                  width={32}
+                  height={32}
+                  className="w-full h-full object-cover filter grayscale contrast-200"
+                  sizes="32px"
                 />
               </div>
-              <div className="flex items-center gap-2">
-                <span className="text-lg font-bold gold-gradient">Lunchtable</span>
-                <span className="px-1 py-0.5 text-[8px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-full uppercase tracking-wider">
-                  α
-                </span>
+              <div className="flex flex-col">
+                <span className="text-xl font-black uppercase tracking-tighter leading-none ink-bleed">LunchTable</span>
+                <span className="text-[10px] font-bold text-destructive uppercase tracking-widest mt-0.5">Hierarchy Chronicle</span>
               </div>
             </Link>
             <button
               type="button"
               onClick={() => setIsOpen(false)}
-              className="tcg-button w-9 h-9 rounded-lg flex items-center justify-center"
+              className="tcg-button w-10 h-10 flex items-center justify-center cursor-pointer"
             >
-              <X className="w-4 h-4 text-primary" />
+              <X className="w-5 h-5 text-primary" />
             </button>
           </div>
 
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto py-6 px-4 space-y-8">
             {isAuthenticated && (
-              <div className="px-3 py-3 border-b border-border/50">
-                <div className="flex items-center gap-3">
+              <div className="p-4 border-2 border-primary bg-secondary/30 relative">
+                <div className="flex items-center gap-4">
                   <Link href="/profile" onClick={() => setIsOpen(false)} className="shrink-0">
-                    <Avatar className="w-10 h-10 border-2 border-primary/30 hover:border-primary/50 transition-colors">
+                    <Avatar className="w-12 h-12 border-2 border-primary grayscale">
                       {currentUser?.image && (
                         <AvatarImage src={currentUser.image} alt={currentUser.username || "User"} />
                       )}
-                      <AvatarFallback className="bg-secondary text-primary text-sm font-bold">
+                      <AvatarFallback className="bg-primary text-primary-foreground text-sm font-bold">
                         {currentUser === undefined
                           ? "..."
                           : currentUser?.username?.[0]?.toUpperCase() || "?"}
@@ -314,51 +309,49 @@ export function Navbar() {
                     </Avatar>
                   </Link>
                   <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-foreground text-sm truncate">
+                    <p className="font-black text-foreground text-lg uppercase tracking-tighter truncate ink-bleed">
                       {currentUser === undefined
-                        ? "Loading..."
-                        : currentUser?.username || "Champion"}
+                        ? "LOADING..."
+                        : currentUser?.username || "STUDENT"}
                     </p>
-                    <p className="text-[11px] text-muted-foreground">Welcome back</p>
+                    <p className="text-[10px] font-bold uppercase text-muted-foreground">Regret Level: {currentUser?.level ?? 1}</p>
                   </div>
-                  <InboxDropdown />
                 </div>
               </div>
             )}
 
-            {isAuthenticated && (
-              <nav className="px-3 py-2 space-y-1">
+            {isAuthenticated ? (
+              <nav className="space-y-6">
                 {/* Primary CTA - The Table */}
                 <Link
                   href="/lunchtable"
                   onClick={() => setIsOpen(false)}
-                  className="flex items-center gap-3 px-3 py-3 rounded-xl bg-gradient-to-r from-primary/20 to-primary/5 border border-primary/30 hover:from-primary/30 hover:to-primary/10 transition-all group mb-4"
+                  className="flex items-center gap-4 px-4 py-4 border-4 border-primary bg-primary text-primary-foreground hover:scale-[1.02] transition-transform group"
                 >
-                  <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
-                    <Swords className="w-5 h-5 text-primary" />
+                  <div className="w-10 h-10 border-2 border-primary-foreground flex items-center justify-center bg-transparent">
+                    <Swords className="w-6 h-6" />
                   </div>
                   <div className="flex-1">
-                    <span className="block font-bold text-primary">Play Now</span>
-                    <span className="text-[11px] text-primary/60">Enter The Table</span>
+                    <span className="block font-black text-xl uppercase tracking-tighter leading-none">Play Now</span>
+                    <span className="text-[10px] font-bold uppercase text-primary-foreground/70">Claim Your Seat</span>
                   </div>
                 </Link>
 
                 {/* Grouped Navigation */}
                 {navGroups.map((group) => {
                   const GroupIcon = group.icon;
-                  // Skip "The Table" from Play group since it's featured above
                   const filteredLinks = group.links.filter((l) => l.href !== "/lunchtable");
                   if (filteredLinks.length === 0) return null;
 
                   return (
-                    <div key={group.label} className="mb-2">
-                      <div className="flex items-center gap-2 px-3 py-2">
-                        <GroupIcon className="w-3.5 h-3.5 text-muted-foreground/50" />
-                        <span className="text-[10px] font-bold text-muted-foreground/50 uppercase tracking-widest">
+                    <div key={group.label} className="space-y-2">
+                      <div className="flex items-center gap-2 px-1">
+                        <GroupIcon className="w-4 h-4 text-muted-foreground" />
+                        <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest opacity-80">
                           {group.label}
                         </span>
                       </div>
-                      <div className="space-y-0.5">
+                      <div className="space-y-1">
                         {filteredLinks.map((link) => {
                           const Icon = link.icon;
                           const isActive =
@@ -369,13 +362,11 @@ export function Navbar() {
                             return (
                               <div
                                 key={link.href}
-                                className="flex items-center gap-3 px-3 py-2 rounded-lg opacity-40 cursor-not-allowed"
+                                className="flex items-center gap-4 px-4 py-2 border-2 border-dashed border-muted/50 opacity-40 grayscale"
                               >
-                                <Icon className="w-4 h-4 text-muted-foreground" />
-                                <span className="text-sm text-muted-foreground">{link.label}</span>
-                                <span className="ml-auto text-[9px] font-bold text-primary/60 px-1.5 py-0.5 rounded border border-primary/20 bg-primary/5 uppercase">
-                                  Soon
-                                </span>
+                                <Icon className="w-5 h-5" />
+                                <span className="text-sm font-black uppercase tracking-tighter">{link.label}</span>
+                                <span className="ml-auto text-[8px] font-bold bg-muted px-1 py-0.5 uppercase tracking-tighter">Soon</span>
                               </div>
                             );
                           }
@@ -386,16 +377,14 @@ export function Navbar() {
                               href={link.href}
                               onClick={() => setIsOpen(false)}
                               className={cn(
-                                "flex items-center gap-3 px-3 py-2 rounded-lg transition-colors",
+                                "flex items-center gap-4 px-4 py-2 border-2 transition-all font-black uppercase tracking-tighter",
                                 isActive
-                                  ? "bg-primary/10 text-primary"
-                                  : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
+                                  ? "bg-primary text-primary-foreground border-primary ink-bleed"
+                                  : "border-transparent text-foreground/70 hover:border-primary hover:text-foreground hover:bg-secondary/20"
                               )}
                             >
-                              <Icon
-                                className={cn("w-4 h-4", isActive ? "text-primary" : "opacity-70")}
-                              />
-                              <span className="text-sm font-medium">{link.label}</span>
+                              <Icon className="w-5 h-5" />
+                              <span className="text-sm">{link.label}</span>
                             </Link>
                           );
                         })}
@@ -404,45 +393,41 @@ export function Navbar() {
                   );
                 })}
               </nav>
-            )}
+            ) : null}
           </div>
 
-          {isAuthenticated && (
-            <div className="px-3 py-3 border-t border-border">
+          <div className="px-6 py-6 border-t-2 border-primary bg-secondary/10">
+            {isAuthenticated ? (
               <button
                 type="button"
                 onClick={() => {
                   setIsOpen(false);
                   setShowLogoutDialog(true);
                 }}
-                className="w-full flex items-center justify-center gap-2 py-2 rounded-lg text-sm text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors"
+                className="w-full flex items-center justify-center gap-3 py-3 border-2 border-primary font-black uppercase tracking-tighter hover:bg-destructive hover:text-destructive-foreground hover:border-destructive transition-colors"
               >
-                <LogOut className="w-4 h-4" />
-                <span className="font-medium">Sign Out</span>
+                <LogOut className="w-5 h-5" />
+                <span>Withdraw</span>
               </button>
-            </div>
-          )}
-
-          {!isAuthenticated && (
-            <div className="px-3 py-3 border-t border-border space-y-2">
-              <Button asChild className="w-full tcg-button-primary rounded-lg py-5">
-                <Link href="/signup" onClick={() => setIsOpen(false)}>
-                  <Crown className="w-4 h-4 mr-2" />
-                  Begin Your Journey
-                </Link>
-              </Button>
-              <Button
-                asChild
-                variant="ghost"
-                size="sm"
-                className="w-full text-muted-foreground hover:text-foreground"
-              >
-                <Link href="/login" onClick={() => setIsOpen(false)}>
-                  Already a Champion? Enter
-                </Link>
-              </Button>
-            </div>
-          )}
+            ) : (
+              <div className="space-y-3">
+                <Button asChild className="w-full tcg-button-primary py-6">
+                  <Link href="/signup" onClick={() => setIsOpen(false)}>
+                    ENROLL NOW
+                  </Link>
+                </Button>
+                <Button
+                  asChild
+                  variant="ghost"
+                  className="w-full text-foreground/70 font-bold uppercase tracking-tight text-xs hover:underline"
+                >
+                  <Link href="/login" onClick={() => setIsOpen(false)}>
+                    Already Registred? Enter
+                  </Link>
+                </Button>
+              </div>
+            )}
+          </div>
         </div>
       </aside>
 

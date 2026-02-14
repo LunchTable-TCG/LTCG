@@ -19,6 +19,7 @@ import {
   RefreshCw,
   Shield,
   Skull,
+  Sparkles,
   Target,
   Trash2,
   Trophy,
@@ -55,37 +56,21 @@ interface AgentCardProps {
 
 /** Map archetype/deckCode to a Lucide icon */
 const DECK_ICONS: Record<string, typeof Flame> = {
-  fire: Flame,
-  water: Waves,
-  earth: Shield,
-  wind: Zap,
-  dark: Skull,
-  infernal_dragons: Flame,
-  abyssal_depths: Waves,
-  iron_legion: Shield,
-  storm_riders: Zap,
-  storm_elementals: Zap,
-  necro_empire: Skull,
-  // Legacy uppercase deck codes
-  INFERNAL_DRAGONS: Flame,
-  ABYSSAL_DEPTHS: Waves,
-  IRON_LEGION: Shield,
-  STORM_RIDERS: Zap,
-  NECRO_EMPIRE: Skull,
+  dropout: Flame,
+  prep: Shield,
+  geek: Zap,
+  freak: Skull,
+  nerd: Waves,
+  goodie_two_shoes: Sparkles,
 };
 
 const DECK_COLORS: Record<string, string> = {
-  infernal_dragons: "text-red-500",
-  abyssal_depths: "text-blue-500",
-  iron_legion: "text-slate-400",
-  storm_riders: "text-yellow-500",
-  necro_empire: "text-purple-500",
-  // Legacy uppercase deck codes
-  INFERNAL_DRAGONS: "text-red-500",
-  ABYSSAL_DEPTHS: "text-blue-500",
-  IRON_LEGION: "text-slate-400",
-  STORM_RIDERS: "text-yellow-500",
-  NECRO_EMPIRE: "text-purple-500",
+  dropout: "text-red-500",
+  prep: "text-blue-500",
+  geek: "text-yellow-500",
+  freak: "text-purple-500",
+  nerd: "text-green-500",
+  goodie_two_shoes: "text-slate-300",
 };
 
 export function AgentCard({ agent, onDeleted }: AgentCardProps) {

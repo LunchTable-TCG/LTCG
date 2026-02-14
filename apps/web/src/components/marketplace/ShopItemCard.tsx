@@ -22,7 +22,7 @@ export function ShopItemCard({ item, onPurchase }: ShopItemCardProps) {
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--color-primary)_0%,_transparent_70%)] opacity-0 group-hover:opacity-20 transition-opacity" />
         {item.type === "pack" && (
           <Image
-            src={getAssetUrl("/assets/shop/pack.png")}
+            src={getAssetUrl("/assets/shop/foil-pack-generic.png")}
             alt="Booster Pack"
             width={200}
             height={200}
@@ -31,7 +31,7 @@ export function ShopItemCard({ item, onPurchase }: ShopItemCardProps) {
         )}
         {item.type === "box" && (
           <Image
-            src={getAssetUrl("/assets/shop/box.png")}
+            src={getAssetUrl("/assets/shop/cardboard-box.png")}
             alt="Booster Box"
             width={200}
             height={200}

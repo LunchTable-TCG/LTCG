@@ -2,7 +2,7 @@
 
 import { getArchetypeTheme } from "@/lib/archetypeThemes";
 import { cn } from "@/lib/utils";
-import { Check, Flame, Shield, Skull, Waves, Zap } from "lucide-react";
+import { Check, Flame, Shield, Skull, Sparkles, Waves, Zap } from "lucide-react";
 
 interface StarterDeck {
   name: string;
@@ -19,19 +19,14 @@ interface StarterDeckPickerProps {
   onSelect: (deckCode: string) => void;
 }
 
-/** Map archetype/element to a Lucide icon */
+/** Map archetype to a Lucide icon */
 const ARCHETYPE_ICONS: Record<string, typeof Flame> = {
-  fire: Flame,
-  water: Waves,
-  earth: Shield,
-  wind: Zap,
-  dark: Skull,
-  infernal_dragons: Flame,
-  abyssal_depths: Waves,
-  iron_legion: Shield,
-  storm_riders: Zap,
-  storm_elementals: Zap,
-  necro_empire: Skull,
+  dropout: Flame,
+  prep: Shield,
+  geek: Zap,
+  freak: Skull,
+  nerd: Waves,
+  goodie_two_shoes: Sparkles,
 };
 
 export function StarterDeckPicker({ decks, selectedDeck, onSelect }: StarterDeckPickerProps) {

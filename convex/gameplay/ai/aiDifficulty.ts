@@ -260,7 +260,7 @@ export function handleMainPhase(
     return false;
   });
 
-  if (setableSpellTraps.length > 0 && mySpellTrapZone.length < 5) {
+  if (setableSpellTraps.length > 0 && mySpellTrapZone.length < 3) {
     const setChance = { easy: 0.1, medium: 0.3, hard: 0.6, boss: 0.8 };
     if (Math.random() < setChance[difficulty]) {
       // Prefer setting traps over spells

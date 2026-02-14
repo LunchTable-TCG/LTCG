@@ -1,0 +1,6782 @@
+[
+  {
+    "name": "Crypto All-In Carl",
+    "rarity": "rare",
+    "archetype": "dropout",
+    "cardType": "stereotype",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellPlayed",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation +300"
+        ]
+      },
+      {
+        "trigger": "OnStabilityZero",
+        "speed": 1,
+        "targets": [
+          "self",
+          "alliedStereotypes"
+        ],
+        "operations": [
+          "DESTROY: alliedStereotypes",
+          "MODIFY_STAT: reputation +1500"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "level": 6,
+    "attack": 2000,
+    "defense": 1000,
+    "attribute": "red",
+    "viceType": "crypto"
+  },
+  {
+    "name": "Back Alley Bookie",
+    "rarity": "rare",
+    "archetype": "dropout",
+    "cardType": "stereotype",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnMainPhase",
+        "speed": "ignition",
+        "targets": [
+          "bothPlayers"
+        ],
+        "operations": [
+          "RANDOM_GAIN: reputation +500 to winner"
+        ]
+      },
+      {
+        "trigger": "OnStabilityZero",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "DRAW: 3",
+          "MODIFY_STAT: reputation -1000?"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "level": 5,
+    "attack": 1700,
+    "defense": 1200,
+    "attribute": "red",
+    "viceType": "gambling"
+  },
+  {
+    "name": "Late Rent Ricky",
+    "rarity": "rare",
+    "archetype": "dropout",
+    "cardType": "stereotype",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSummon",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "GRANT_IMMUNITY: trap targeting until end of turn"
+        ]
+      },
+      {
+        "trigger": "OnStabilityZero",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "SKIP_NEXT_DRAW_PHASE",
+          "MODIFY_STAT: reputation +1000"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "level": 4,
+    "attack": 1600,
+    "defense": 900,
+    "attribute": "red",
+    "viceType": "avoidance"
+  },
+  {
+    "name": "Detention Dealer",
+    "rarity": "rare",
+    "archetype": "dropout",
+    "cardType": "stereotype",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellPlayed",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation +300"
+        ]
+      },
+      {
+        "trigger": "OnStabilityZero",
+        "speed": 1,
+        "targets": [
+          "opponent"
+        ],
+        "operations": [
+          "DISCARD: 2"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "level": 5,
+    "attack": 1800,
+    "defense": 1100,
+    "attribute": "red",
+    "viceType": "hustle"
+  },
+  {
+    "name": "Community College King",
+    "rarity": "rare",
+    "archetype": "dropout",
+    "cardType": "stereotype",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnMainPhase",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation +200 per Dropout you control"
+        ]
+      },
+      {
+        "trigger": "OnStabilityZero",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "MODIFY_STAT: stability +1000"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "level": 4,
+    "attack": 1500,
+    "defense": 1500,
+    "attribute": "red",
+    "viceType": "delusion"
+  },
+  {
+    "name": "One More Shot",
+    "rarity": "common",
+    "archetype": "dropout",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation +500",
+          "MODIFY_STAT: stability -300"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Text Your Ex",
+    "rarity": "common",
+    "archetype": "dropout",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "opponent",
+          "self"
+        ],
+        "operations": [
+          "DISCARD: 1",
+          "MODIFY_STAT: stability -200 to self"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Skip Work",
+    "rarity": "common",
+    "archetype": "dropout",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "SKIP_NEXT_BATTLE_PHASE",
+          "DRAW: 2"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Start a Podcast",
+    "rarity": "common",
+    "archetype": "dropout",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation +300",
+          "DRAW: 1"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "All-In Gamble",
+    "rarity": "rare",
+    "archetype": "dropout",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation +1000",
+          "MODIFY_STAT: stability -700"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Side Hustle",
+    "rarity": "uncommon",
+    "archetype": "dropout",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation +200 per card in graveyard"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Last-Minute Borrow",
+    "rarity": "uncommon",
+    "archetype": "dropout",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "opponent",
+          "self"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation +500 to self",
+          "MODIFY_STAT: reputation -500 to opponent",
+          "MODIFY_STAT: stability +500 to opponent"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Wingman Wager",
+    "rarity": "common",
+    "archetype": "dropout",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "bothPlayers"
+        ],
+        "operations": [
+          "RANDOM_GAIN: reputation +700 to winner"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "HR Complaint",
+    "rarity": "uncommon",
+    "archetype": "dropout",
+    "cardType": "trap",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnOpponentStereotypeSummoned",
+        "speed": 2,
+        "targets": [
+          "opponent"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation -500"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "trapType": "normal"
+  },
+  {
+    "name": "DUI Checkpoint",
+    "rarity": "uncommon",
+    "archetype": "dropout",
+    "cardType": "trap",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnOpponentSpellActivation",
+        "speed": 2,
+        "targets": [
+          "opponent"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation -400"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "trapType": "normal"
+  },
+  {
+    "name": "Child Support Reminder",
+    "rarity": "uncommon",
+    "archetype": "dropout",
+    "cardType": "trap",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnAttackDeclaration",
+        "speed": 2,
+        "targets": [
+          "attacker"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation -300"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "trapType": "normal"
+  },
+  {
+    "name": "Debt Collector",
+    "rarity": "uncommon",
+    "archetype": "dropout",
+    "cardType": "trap",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnDestroy",
+        "speed": 2,
+        "targets": [
+          "opponent"
+        ],
+        "operations": [
+          "DISCARD: 1"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "trapType": "normal"
+  },
+  {
+    "name": "Rock Bottom",
+    "rarity": "uncommon",
+    "archetype": "dropout",
+    "cardType": "trap",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnStabilityZero",
+        "speed": 2,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "DRAW: 3"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "trapType": "normal"
+  },
+  {
+    "name": "Rehabilitation",
+    "rarity": "rare",
+    "archetype": "dropout",
+    "cardType": "trap",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnDestroy",
+        "speed": 2,
+        "targets": [
+          "destroyedCard"
+        ],
+        "operations": [
+          "MOVE_TO_ZONE: destroyedCard to hand"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "trapType": "normal"
+  },
+  {
+    "name": "Back Alley Poker Night",
+    "rarity": "uncommon",
+    "archetype": "dropout",
+    "cardType": "class",
+    "cost": 2,
+    "ability": [
+      {
+        "trigger": "OnTurnStart",
+        "speed": 1,
+        "targets": [
+          "Dropouts"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation +300"
+        ]
+      },
+      {
+        "trigger": "OnTurnStart",
+        "speed": 1,
+        "targets": [
+          "allPlayers"
+        ],
+        "operations": [
+          "MODIFY_STAT: stability -200"
+        ]
+      }
+    ],
+    "flavorText": null
+  },
+  {
+    "name": "Dive Bar Karaoke",
+    "rarity": "uncommon",
+    "archetype": "dropout",
+    "cardType": "class",
+    "cost": 2,
+    "ability": [
+      {
+        "trigger": "OnDrawPhase",
+        "speed": 1,
+        "targets": [
+          "allPlayers"
+        ],
+        "operations": [
+          "DRAW: 1",
+          "MODIFY_STAT: stability -100"
+        ]
+      }
+    ],
+    "flavorText": null
+  },
+  {
+    "name": "Unpaid Internship",
+    "rarity": "rare",
+    "archetype": "dropout",
+    "cardType": "class",
+    "cost": 2,
+    "ability": [
+      {
+        "trigger": "OnMainPhase",
+        "speed": 1,
+        "targets": [
+          "Dropouts"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation +100 per card"
+        ]
+      },
+      {
+        "trigger": "OnMainPhase",
+        "speed": 1,
+        "targets": [
+          "Preps"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation -100"
+        ]
+      }
+    ],
+    "flavorText": null
+  },
+  {
+    "name": "Washed Varsity Legend",
+    "rarity": "legendary",
+    "archetype": "prep",
+    "cardType": "stereotype",
+    "cost": 2,
+    "ability": [
+      {
+        "trigger": "OnCardDestroyed",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation +300"
+        ]
+      },
+      {
+        "trigger": "OnStabilityZero",
+        "speed": 1,
+        "targets": [
+          "opponent"
+        ],
+        "operations": [
+          "STEAL: 1 stereotype for 1 turn"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "level": 7,
+    "attack": 2100,
+    "defense": 1400,
+    "attribute": "blue",
+    "viceType": "validation"
+  },
+  {
+    "name": "Party Queen Bri",
+    "rarity": "rare",
+    "archetype": "prep",
+    "cardType": "stereotype",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnMainPhase",
+        "speed": 1,
+        "targets": [
+          "allStereotypes"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation +300"
+        ]
+      },
+      {
+        "trigger": "OnStabilityZero",
+        "speed": 1,
+        "targets": [
+          "allPlayers"
+        ],
+        "operations": [
+          "MODIFY_STAT: stability -800"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "level": 5,
+    "attack": 1900,
+    "defense": 1200,
+    "attribute": "blue",
+    "viceType": "alcohol"
+  },
+  {
+    "name": "Homecoming Committee",
+    "rarity": "rare",
+    "archetype": "prep",
+    "cardType": "stereotype",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnMainPhase",
+        "speed": 1,
+        "targets": [
+          "Preps"
+        ],
+        "operations": [
+          "MODIFY_STAT: stability +500"
+        ]
+      },
+      {
+        "trigger": "OnStabilityZero",
+        "speed": 1,
+        "targets": [
+          "Environment"
+        ],
+        "operations": [
+          "DESTROY: 1"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "level": 4,
+    "attack": 1200,
+    "defense": 2000,
+    "attribute": "blue",
+    "viceType": "status"
+  },
+  {
+    "name": "Corporate Ladder Chad",
+    "rarity": "rare",
+    "archetype": "prep",
+    "cardType": "stereotype",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnMainPhase",
+        "speed": "ignition",
+        "cost": "Sacrifice 1 card",
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation +700"
+        ]
+      },
+      {
+        "trigger": "OnStabilityZero",
+        "speed": 1,
+        "targets": [
+          "opponent"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation -1000"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "level": 6,
+    "attack": 1800,
+    "defense": 1700,
+    "attribute": "blue",
+    "viceType": "ambition"
+  },
+  {
+    "name": "Influencer Couple",
+    "rarity": "rare",
+    "archetype": "prep",
+    "cardType": "stereotype",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSummon",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "DRAW: 1"
+        ]
+      },
+      {
+        "trigger": "OnStabilityZero",
+        "speed": 1,
+        "targets": [
+          "opponent"
+        ],
+        "operations": [
+          "DISCARD: 2 random"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "level": 5,
+    "attack": 1600,
+    "defense": 1500,
+    "attribute": "blue",
+    "viceType": "social_media"
+  },
+  {
+    "name": "Senior Party",
+    "rarity": "common",
+    "archetype": "prep",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "Preps",
+          "allPlayers"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation +500 to Preps",
+          "MODIFY_STAT: stability -200 to all players"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Networking Event",
+    "rarity": "common",
+    "archetype": "prep",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "self",
+          "Preps"
+        ],
+        "operations": [
+          "DRAW: 2",
+          "MODIFY_STAT: reputation +300 to Preps"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Sponsorship Deal",
+    "rarity": "rare",
+    "archetype": "prep",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation +700",
+          "MODIFY_STAT: stability -300"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Dress Code Violation",
+    "rarity": "common",
+    "archetype": "prep",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "opponent"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation -400"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Rumor Mill",
+    "rarity": "common",
+    "archetype": "prep",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "opponent",
+          "self"
+        ],
+        "operations": [
+          "DISCARD: 1 from opponent",
+          "DRAW: 1"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Study Abroad",
+    "rarity": "uncommon",
+    "archetype": "prep",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "Preps",
+          "self"
+        ],
+        "operations": [
+          "MODIFY_STAT: stability +300 to Preps",
+          "SKIP_NEXT_TURN: self"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Fundraiser",
+    "rarity": "uncommon",
+    "archetype": "prep",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation +500 per Prep you control"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Social Media Blitz",
+    "rarity": "common",
+    "archetype": "prep",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "allPlayers",
+          "self"
+        ],
+        "operations": [
+          "DRAW: 1",
+          "MODIFY_STAT: reputation +200 to all stereotypes"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Probation",
+    "rarity": "uncommon",
+    "archetype": "prep",
+    "cardType": "trap",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnOpponentAttackDeclaration",
+        "speed": 2,
+        "targets": [
+          "opponent"
+        ],
+        "operations": [
+          "DISABLE_BATTLE_PHASE: opponent next"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "trapType": "normal"
+  },
+  {
+    "name": "Screenshots Leaked",
+    "rarity": "uncommon",
+    "archetype": "prep",
+    "cardType": "trap",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnOpponentSpellActivation",
+        "speed": 2,
+        "targets": [
+          "opponent"
+        ],
+        "operations": [
+          "NEGATE: spell",
+          "MODIFY_STAT: reputation -500"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "trapType": "normal"
+  },
+  {
+    "name": "Parent-Teacher Conference",
+    "rarity": "uncommon",
+    "archetype": "prep",
+    "cardType": "trap",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnTrapTargetingYou",
+        "speed": 2,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "NEGATE: trap"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "trapType": "normal"
+  },
+  {
+    "name": "Disciplinary Action",
+    "rarity": "uncommon",
+    "archetype": "prep",
+    "cardType": "trap",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnOpponentEffectResolution",
+        "speed": 2,
+        "targets": [
+          "opponentCard"
+        ],
+        "operations": [
+          "DESTROY: opponentCard"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "trapType": "normal"
+  },
+  {
+    "name": "Surprise Quiz",
+    "rarity": "uncommon",
+    "archetype": "prep",
+    "cardType": "trap",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnDeckEmpty",
+        "speed": 2,
+        "targets": [
+          "bothPlayers"
+        ],
+        "operations": [
+          "MOVE_TO_ZONE: graveyard to deck",
+          "SHUFFLE"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "trapType": "normal"
+  },
+  {
+    "name": "Slander",
+    "rarity": "rare",
+    "archetype": "prep",
+    "cardType": "trap",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnOpponentStereotypeSummoned",
+        "speed": 2,
+        "targets": [
+          "opponent"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation -700"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "trapType": "normal"
+  },
+  {
+    "name": "Class Reunion",
+    "rarity": "uncommon",
+    "archetype": "prep",
+    "cardType": "class",
+    "cost": 2,
+    "ability": [
+      {
+        "trigger": "OnTurnStart",
+        "speed": 1,
+        "targets": [
+          "Preps"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation +300"
+        ]
+      },
+      {
+        "trigger": "OnTurnStart",
+        "speed": 1,
+        "targets": [
+          "Dropouts"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation -300"
+        ]
+      }
+    ],
+    "flavorText": null
+  },
+  {
+    "name": "Corporate Happy Hour",
+    "rarity": "uncommon",
+    "archetype": "prep",
+    "cardType": "class",
+    "cost": 2,
+    "ability": [
+      {
+        "trigger": "OnTurnStart",
+        "speed": 1,
+        "targets": [
+          "allPlayers"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation +200",
+          "MODIFY_STAT: stability -100"
+        ]
+      }
+    ],
+    "flavorText": null
+  },
+  {
+    "name": "College Campus",
+    "rarity": "rare",
+    "archetype": "prep",
+    "cardType": "class",
+    "cost": 2,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "spells"
+        ],
+        "operations": [
+          "MODIFY_COST: spells to 0"
+        ]
+      },
+      {
+        "trigger": "OnTrapActivation",
+        "speed": 1,
+        "targets": [
+          "traps"
+        ],
+        "operations": [
+          "MODIFY_COST: traps x2"
+        ]
+      }
+    ],
+    "flavorText": null
+  },
+  {
+    "name": "Hackathon Hero",
+    "rarity": "rare",
+    "archetype": "geek",
+    "cardType": "stereotype",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellPlayed",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "DRAW: 1"
+        ]
+      },
+      {
+        "trigger": "OnStabilityZero",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "SKIP_NEXT_BATTLE_PHASE",
+          "DRAW: 3"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "level": 4,
+    "attack": 1400,
+    "defense": 1600,
+    "attribute": "yellow",
+    "viceType": "adderall"
+  },
+  {
+    "name": "LAN Party Larry",
+    "rarity": "rare",
+    "archetype": "geek",
+    "cardType": "stereotype",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnMainPhase",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation +300 per Geek you control"
+        ]
+      },
+      {
+        "trigger": "OnStabilityZero",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "GRANT_IMMUNITY: battle destruction for next turn"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "level": 4,
+    "attack": 1500,
+    "defense": 1500,
+    "attribute": "yellow",
+    "viceType": "isolation"
+  },
+  {
+    "name": "Debugging Dana",
+    "rarity": "rare",
+    "archetype": "geek",
+    "cardType": "stereotype",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnTrapActivated",
+        "speed": 2,
+        "targets": [
+          "trap"
+        ],
+        "operations": [
+          "NEGATE: trap"
+        ]
+      },
+      {
+        "trigger": "OnStabilityZero",
+        "speed": 1,
+        "targets": [
+          "traps"
+        ],
+        "operations": [
+          "DESTROY: all traps"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "level": 4,
+    "attack": 1300,
+    "defense": 1800,
+    "attribute": "yellow",
+    "viceType": "perfectionism"
+  },
+  {
+    "name": "Keyboard Warrior",
+    "rarity": "rare",
+    "archetype": "geek",
+    "cardType": "stereotype",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnAttackDeclaration",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation +500"
+        ]
+      },
+      {
+        "trigger": "OnStabilityZero",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "FORCE_ATTACK: each turn"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "level": 5,
+    "attack": 1700,
+    "defense": 1100,
+    "attribute": "yellow",
+    "viceType": "rage"
+  },
+  {
+    "name": "Indie Dev Dropout",
+    "rarity": "rare",
+    "archetype": "geek",
+    "cardType": "stereotype",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnMainPhase",
+        "speed": "ignition",
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation +600",
+          "MODIFY_STAT: stability -400"
+        ]
+      },
+      {
+        "trigger": "OnStabilityZero",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "DISABLE_EFFECTS: 2 turns"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "level": 5,
+    "attack": 1800,
+    "defense": 1000,
+    "attribute": "yellow",
+    "viceType": "burnout"
+  },
+  {
+    "name": "Code Refactor",
+    "rarity": "common",
+    "archetype": "geek",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "VIEW_TOP_CARDS: 3",
+          "REARRANGE_CARDS"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "All-Nighter",
+    "rarity": "common",
+    "archetype": "geek",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "DRAW: 2",
+          "MODIFY_STAT: stability -400"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Cheat Sheet",
+    "rarity": "common",
+    "archetype": "geek",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "COPY_LAST_SPELL_EFFECT",
+          "MODIFY_STAT: stability +200"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Hardware Upgrade",
+    "rarity": "common",
+    "archetype": "geek",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "Geek"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation +800"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Debugging Session",
+    "rarity": "common",
+    "archetype": "geek",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "trap"
+        ],
+        "operations": [
+          "NEGATE: trap",
+          "DRAW: 1"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Stack Overflow",
+    "rarity": "common",
+    "archetype": "geek",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "DRAW: number of Geeks you control"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Coffee Break",
+    "rarity": "uncommon",
+    "archetype": "geek",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "MODIFY_STAT: stability +300",
+          "DISABLE_ATTACKS: 1 turn"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Open Source",
+    "rarity": "uncommon",
+    "archetype": "geek",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "self",
+          "opponent"
+        ],
+        "operations": [
+          "DRAW: 1 for both",
+          "MODIFY_STAT: reputation +300 to self"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Critical Bug",
+    "rarity": "uncommon",
+    "archetype": "geek",
+    "cardType": "trap",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnOpponentCardActivation",
+        "speed": 2,
+        "targets": [
+          "opponentCard"
+        ],
+        "operations": [
+          "NEGATE"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "trapType": "normal"
+  },
+  {
+    "name": "Blue Screen",
+    "rarity": "uncommon",
+    "archetype": "geek",
+    "cardType": "trap",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnOpponentDrawPhaseStart",
+        "speed": 2,
+        "targets": [
+          "opponent"
+        ],
+        "operations": [
+          "DISABLE_DRAW_PHASE: 1"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "trapType": "normal"
+  },
+  {
+    "name": "System Overload",
+    "rarity": "uncommon",
+    "archetype": "geek",
+    "cardType": "trap",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellCountThree",
+        "speed": 2,
+        "targets": [
+          "field"
+        ],
+        "operations": [
+          "DESTROY: all spells"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "trapType": "normal"
+  },
+  {
+    "name": "404 Error",
+    "rarity": "uncommon",
+    "archetype": "geek",
+    "cardType": "trap",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnAttackDeclaration",
+        "speed": 2,
+        "targets": [
+          "attacker"
+        ],
+        "operations": [
+          "NEGATE: attack"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "trapType": "normal"
+  },
+  {
+    "name": "Brain Fog",
+    "rarity": "uncommon",
+    "archetype": "geek",
+    "cardType": "trap",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnOpponentDrawPhaseStart",
+        "speed": 2,
+        "targets": [
+          "opponent"
+        ],
+        "operations": [
+          "DISCARD: 2"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "trapType": "normal"
+  },
+  {
+    "name": "Kernel Panic",
+    "rarity": "rare",
+    "archetype": "geek",
+    "cardType": "trap",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnStabilityBelowThreshold",
+        "speed": 2,
+        "targets": [
+          "field"
+        ],
+        "operations": [
+          "DESTROY: all traps"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "trapType": "normal"
+  },
+  {
+    "name": "Hackathon",
+    "rarity": "uncommon",
+    "archetype": "geek",
+    "cardType": "class",
+    "cost": 2,
+    "ability": [
+      {
+        "trigger": "OnDrawPhase",
+        "speed": 1,
+        "targets": [
+          "allPlayers"
+        ],
+        "operations": [
+          "DRAW: 1"
+        ]
+      },
+      {
+        "trigger": "OnTurnStart",
+        "speed": 1,
+        "targets": [
+          "Geeks"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation +300"
+        ]
+      }
+    ],
+    "flavorText": null
+  },
+  {
+    "name": "LAN Arena",
+    "rarity": "uncommon",
+    "archetype": "geek",
+    "cardType": "class",
+    "cost": 2,
+    "ability": [
+      {
+        "trigger": "OnTurnStart",
+        "speed": 1,
+        "targets": [
+          "Geeks"
+        ],
+        "operations": [
+          "MODIFY_STAT: stability +200"
+        ]
+      },
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "spells"
+        ],
+        "operations": [
+          "MODIFY_COST: spells -1"
+        ]
+      }
+    ],
+    "flavorText": null
+  },
+  {
+    "name": "Campus Library",
+    "rarity": "rare",
+    "archetype": "geek",
+    "cardType": "class",
+    "cost": 2,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "DRAW: 1"
+        ]
+      },
+      {
+        "trigger": "OnAttackDeclaration",
+        "speed": 1,
+        "targets": [
+          "attacker"
+        ],
+        "operations": [
+          "REDUCE_DAMAGE: 50%"
+        ]
+      }
+    ],
+    "flavorText": null
+  },
+  {
+    "name": "Conspiracy Kyle",
+    "rarity": "rare",
+    "archetype": "freak",
+    "cardType": "stereotype",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnMainPhase",
+        "speed": "ignition",
+        "targets": [
+          "opponent"
+        ],
+        "operations": [
+          "DISCARD: 1 random"
+        ]
+      },
+      {
+        "trigger": "OnStabilityZero",
+        "speed": 1,
+        "targets": [
+          "bothPlayers"
+        ],
+        "operations": [
+          "MOVE_TO_ZONE: hand to deck",
+          "SHUFFLE"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "level": 5,
+    "attack": 1600,
+    "defense": 1300,
+    "attribute": "purple",
+    "viceType": "paranoia"
+  },
+  {
+    "name": "Tattooed Philosophy Major",
+    "rarity": "rare",
+    "archetype": "freak",
+    "cardType": "stereotype",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnStabilityBelowThreshold",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation +800"
+        ]
+      },
+      {
+        "trigger": "OnStabilityZero",
+        "speed": 1,
+        "targets": [
+          "allPlayers"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation -500"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "level": 5,
+    "attack": 1700,
+    "defense": 1400,
+    "attribute": "purple",
+    "viceType": "existentialism"
+  },
+  {
+    "name": "Afterparty Goblin",
+    "rarity": "legendary",
+    "archetype": "freak",
+    "cardType": "stereotype",
+    "cost": 2,
+    "ability": [
+      {
+        "trigger": "OnMainPhase",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation +400 per spell in graveyard"
+        ]
+      },
+      {
+        "trigger": "OnStabilityZero",
+        "speed": 1,
+        "targets": [
+          "field"
+        ],
+        "operations": [
+          "DESTROY: 1 random card"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "level": 6,
+    "attack": 2000,
+    "defense": 900,
+    "attribute": "purple",
+    "viceType": "alcohol"
+  },
+  {
+    "name": "Basement Streamer",
+    "rarity": "rare",
+    "archetype": "freak",
+    "cardType": "stereotype",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnMainPhase",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation +200"
+        ]
+      },
+      {
+        "trigger": "OnStabilityZero",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation *2"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "level": 4,
+    "attack": 1500,
+    "defense": 1400,
+    "attribute": "purple",
+    "viceType": "validation"
+  },
+  {
+    "name": "Gas Station Mystic",
+    "rarity": "rare",
+    "archetype": "freak",
+    "cardType": "stereotype",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnMainPhase",
+        "speed": "ignition",
+        "targets": [
+          "opponent"
+        ],
+        "operations": [
+          "REVEAL_HAND"
+        ]
+      },
+      {
+        "trigger": "OnStabilityZero",
+        "speed": 1,
+        "targets": [
+          "opponent"
+        ],
+        "operations": [
+          "DISCARD: all"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "level": 4,
+    "attack": 1400,
+    "defense": 1700,
+    "attribute": "purple",
+    "viceType": "conspiracy"
+  },
+  {
+    "name": "Sudden Epiphany",
+    "rarity": "common",
+    "archetype": "freak",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "MOVE_TO_ZONE: hand to deck",
+          "SHUFFLE",
+          "DRAW: hand_size +1"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Midnight Tattoo",
+    "rarity": "common",
+    "archetype": "freak",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "Freaks"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation +500"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Impromptu Jam",
+    "rarity": "common",
+    "archetype": "freak",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "bothPlayers"
+        ],
+        "operations": [
+          "DISCARD: 2",
+          "DRAW: 2"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Chaotic Muse",
+    "rarity": "common",
+    "archetype": "freak",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "RANDOM_CARD: from deck to hand"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Street Performance",
+    "rarity": "uncommon",
+    "archetype": "freak",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "Freaks",
+          "self"
+        ],
+        "operations": [
+          "MODIFY_STAT: stability +300 to Freaks",
+          "MODIFY_STAT: reputation -300 to self"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Experimental Brew",
+    "rarity": "rare",
+    "archetype": "freak",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "RANDOM_MODIFY_STAT: reputation +/-400"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Dumpster Dive",
+    "rarity": "uncommon",
+    "archetype": "freak",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "MOVE_TO_ZONE: selected card from graveyard to hand",
+          "MODIFY_STAT: stability -200"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Flash Mob",
+    "rarity": "common",
+    "archetype": "freak",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "Freaks"
+        ],
+        "operations": [
+          "FORCE_ATTACK: all Freaks immediately"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Mood Swing",
+    "rarity": "uncommon",
+    "archetype": "freak",
+    "cardType": "trap",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnOpponentAttackDeclaration",
+        "speed": 2,
+        "targets": [
+          "attacker"
+        ],
+        "operations": [
+          "CHANGE_ATTACK_TARGET"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "trapType": "normal"
+  },
+  {
+    "name": "Self-Sabotage",
+    "rarity": "uncommon",
+    "archetype": "freak",
+    "cardType": "trap",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnReputationGain",
+        "speed": 2,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation -X (equal to gained)"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "trapType": "normal"
+  },
+  {
+    "name": "Wild Card",
+    "rarity": "uncommon",
+    "archetype": "freak",
+    "cardType": "trap",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnOpponentSpellActivation",
+        "speed": 2,
+        "targets": [
+          "spell"
+        ],
+        "operations": [
+          "RANDOM_NEGATE"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "trapType": "normal"
+  },
+  {
+    "name": "Public Meltdown",
+    "rarity": "uncommon",
+    "archetype": "freak",
+    "cardType": "trap",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnStabilityZero",
+        "speed": 2,
+        "targets": [
+          "opponent"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation -1000"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "trapType": "normal"
+  },
+  {
+    "name": "Anarchy",
+    "rarity": "uncommon",
+    "archetype": "freak",
+    "cardType": "trap",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnTrapActivation",
+        "speed": 2,
+        "targets": [
+          "field"
+        ],
+        "operations": [
+          "ACTIVATE_TRAPS_TWICE"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "trapType": "normal"
+  },
+  {
+    "name": "Peer Pressure",
+    "rarity": "rare",
+    "archetype": "freak",
+    "cardType": "trap",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnOpponentSummon",
+        "speed": 2,
+        "targets": [
+          "opponent"
+        ],
+        "operations": [
+          "MODIFY_STAT: stability -500"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "trapType": "normal"
+  },
+  {
+    "name": "Underground Club",
+    "rarity": "uncommon",
+    "archetype": "freak",
+    "cardType": "class",
+    "cost": 2,
+    "ability": [
+      {
+        "trigger": "OnTurnStart",
+        "speed": 1,
+        "targets": [
+          "Freaks"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation +400"
+        ]
+      },
+      {
+        "trigger": "OnTurnStart",
+        "speed": 1,
+        "targets": [
+          "Preps"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation -200"
+        ]
+      }
+    ],
+    "flavorText": null
+  },
+  {
+    "name": "Street Art Alley",
+    "rarity": "uncommon",
+    "archetype": "freak",
+    "cardType": "class",
+    "cost": 2,
+    "ability": [
+      {
+        "trigger": "OnGameStart",
+        "speed": 1,
+        "targets": [
+          "Freaks"
+        ],
+        "operations": [
+          "GRANT_IMMUNITY: traps"
+        ]
+      },
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "spells"
+        ],
+        "operations": [
+          "MODIFY_COST: spells +1"
+        ]
+      }
+    ],
+    "flavorText": null
+  },
+  {
+    "name": "Warehouse Rave",
+    "rarity": "rare",
+    "archetype": "freak",
+    "cardType": "class",
+    "cost": 2,
+    "ability": [
+      {
+        "trigger": "OnTurnStart",
+        "speed": 1,
+        "targets": [
+          "allPlayers"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation +300",
+          "MODIFY_STAT: stability -200"
+        ]
+      }
+    ],
+    "flavorText": null
+  },
+  {
+    "name": "Spreadsheet Assassin",
+    "rarity": "rare",
+    "archetype": "nerd",
+    "cardType": "stereotype",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnMainPhase",
+        "speed": "ignition",
+        "targets": [
+          "opponent"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation -300"
+        ]
+      },
+      {
+        "trigger": "OnStabilityZero",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "MODIFY_STAT: stability +1000"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "level": 5,
+    "attack": 1700,
+    "defense": 1700,
+    "attribute": "green",
+    "viceType": "control"
+  },
+  {
+    "name": "Debate Team Captain",
+    "rarity": "rare",
+    "archetype": "nerd",
+    "cardType": "stereotype",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnEffectActivation",
+        "speed": 2,
+        "targets": [
+          "effect"
+        ],
+        "operations": [
+          "NEGATE"
+        ]
+      },
+      {
+        "trigger": "OnStabilityZero",
+        "speed": 1,
+        "targets": [
+          "opponent"
+        ],
+        "operations": [
+          "DISABLE_EFFECTS: 1 turn"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "level": 5,
+    "attack": 1500,
+    "defense": 1900,
+    "attribute": "green",
+    "viceType": "ego"
+  },
+  {
+    "name": "Scholarship Sniper",
+    "rarity": "rare",
+    "archetype": "nerd",
+    "cardType": "stereotype",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnMainPhase",
+        "speed": "ignition",
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "CONDITIONAL_MODIFY_STAT: reputation +500 if opponent hand > self hand"
+        ]
+      },
+      {
+        "trigger": "OnStabilityZero",
+        "speed": 1,
+        "targets": [
+          "field"
+        ],
+        "operations": [
+          "DESTROY: highest reputation card"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "level": 6,
+    "attack": 1800,
+    "defense": 1600,
+    "attribute": "green",
+    "viceType": "pressure"
+  },
+  {
+    "name": "Lab Partner From Hell",
+    "rarity": "rare",
+    "archetype": "nerd",
+    "cardType": "stereotype",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnDrawPhase",
+        "speed": 1,
+        "targets": [
+          "opponent"
+        ],
+        "operations": [
+          "REVEAL_HAND"
+        ]
+      },
+      {
+        "trigger": "OnStabilityZero",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "DRAW: 2"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "level": 5,
+    "attack": 1600,
+    "defense": 1500,
+    "attribute": "green",
+    "viceType": "micromanagement"
+  },
+  {
+    "name": "Test Curve Tyrant",
+    "rarity": "legendary",
+    "archetype": "nerd",
+    "cardType": "stereotype",
+    "cost": 2,
+    "ability": [
+      {
+        "trigger": "OnMainPhase",
+        "speed": 1,
+        "targets": [
+          "opponent"
+        ],
+        "operations": [
+          "MODIFY_STAT: stability -300"
+        ]
+      },
+      {
+        "trigger": "OnStabilityZero",
+        "speed": 1,
+        "targets": [
+          "allPlayers"
+        ],
+        "operations": [
+          "SET_STAT: stability 1000"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "level": 6,
+    "attack": 1400,
+    "defense": 2100,
+    "attribute": "green",
+    "viceType": "perfection"
+  },
+  {
+    "name": "Extra Credit",
+    "rarity": "common",
+    "archetype": "nerd",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "CONDITIONAL_DRAW: 2 if hand size < opponent"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Formula Memorization",
+    "rarity": "common",
+    "archetype": "nerd",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "Nerd"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation +600"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Pop Quiz",
+    "rarity": "common",
+    "archetype": "nerd",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "bothPlayers",
+          "Nerds"
+        ],
+        "operations": [
+          "REVEAL_HAND: both",
+          "MODIFY_STAT: stability +200 to Nerds"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Study Group",
+    "rarity": "common",
+    "archetype": "nerd",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "DRAW: number of Nerds you control"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Research Grant",
+    "rarity": "rare",
+    "archetype": "nerd",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "self",
+          "opponent"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation +500 to self",
+          "MODIFY_STAT: stability +200 to opponent"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Sleep Deprivation",
+    "rarity": "rare",
+    "archetype": "nerd",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "SKIP_NEXT_DRAW_PHASE",
+          "DRAW: 3"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Peer Review",
+    "rarity": "common",
+    "archetype": "nerd",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "trap",
+          "self"
+        ],
+        "operations": [
+          "NEGATE: trap",
+          "MODIFY_STAT: reputation +300"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Logical Fallacy",
+    "rarity": "uncommon",
+    "archetype": "nerd",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "opponent"
+        ],
+        "operations": [
+          "DISCARD: chosen card"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Trick Question",
+    "rarity": "uncommon",
+    "archetype": "nerd",
+    "cardType": "trap",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnAttackDeclaration",
+        "speed": 2,
+        "targets": [
+          "attacker"
+        ],
+        "operations": [
+          "NEGATE: attack",
+          "DRAW: 1"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "trapType": "normal"
+  },
+  {
+    "name": "All-Night Study",
+    "rarity": "uncommon",
+    "archetype": "nerd",
+    "cardType": "trap",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnStabilityBelowThreshold",
+        "speed": 2,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "MODIFY_STAT: stability +800"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "trapType": "normal"
+  },
+  {
+    "name": "Lecture Time",
+    "rarity": "uncommon",
+    "archetype": "nerd",
+    "cardType": "trap",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnOpponentStereotypeSummoned",
+        "speed": 2,
+        "targets": [
+          "opponent"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation -300"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "trapType": "normal"
+  },
+  {
+    "name": "Data Breach",
+    "rarity": "uncommon",
+    "archetype": "nerd",
+    "cardType": "trap",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnMainPhase",
+        "speed": 2,
+        "targets": [
+          "opponent"
+        ],
+        "operations": [
+          "REVEAL_HAND",
+          "DISCARD: 1"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "trapType": "normal"
+  },
+  {
+    "name": "Curveball",
+    "rarity": "uncommon",
+    "archetype": "nerd",
+    "cardType": "trap",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnOpponentEffectActivation",
+        "speed": 2,
+        "targets": [
+          "opponentCard"
+        ],
+        "operations": [
+          "REVERSE_EFFECT"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "trapType": "normal"
+  },
+  {
+    "name": "Social Anxiety",
+    "rarity": "rare",
+    "archetype": "nerd",
+    "cardType": "trap",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnBattlePhaseStart",
+        "speed": 2,
+        "targets": [
+          "allPlayers"
+        ],
+        "operations": [
+          "DISABLE_ATTACKS: 1 turn"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "trapType": "normal"
+  },
+  {
+    "name": "Campus Lab",
+    "rarity": "uncommon",
+    "archetype": "nerd",
+    "cardType": "class",
+    "cost": 2,
+    "ability": [
+      {
+        "trigger": "OnTurnStart",
+        "speed": 1,
+        "targets": [
+          "Nerds"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation +300"
+        ]
+      },
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "DRAW: 2"
+        ]
+      }
+    ],
+    "flavorText": null
+  },
+  {
+    "name": "Debate Hall",
+    "rarity": "uncommon",
+    "archetype": "nerd",
+    "cardType": "class",
+    "cost": 2,
+    "ability": [
+      {
+        "trigger": "OnTrapActivation",
+        "speed": 1,
+        "targets": [
+          "traps"
+        ],
+        "operations": [
+          "MODIFY_COST: traps -1"
+        ]
+      },
+      {
+        "trigger": "OnTurnStart",
+        "speed": 1,
+        "targets": [
+          "Preps"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation -200"
+        ]
+      }
+    ],
+    "flavorText": null
+  },
+  {
+    "name": "Library Basement",
+    "rarity": "rare",
+    "archetype": "nerd",
+    "cardType": "class",
+    "cost": 2,
+    "ability": [
+      {
+        "trigger": "OnEnvironmentActivation",
+        "speed": 1,
+        "targets": [
+          "environment"
+        ],
+        "operations": [
+          "NEGATE: environment"
+        ]
+      },
+      {
+        "trigger": "OnTurnStart",
+        "speed": 1,
+        "targets": [
+          "Nerds"
+        ],
+        "operations": [
+          "MODIFY_STAT: stability +100"
+        ]
+      }
+    ],
+    "flavorText": null
+  },
+  {
+    "name": "Student Council President",
+    "rarity": "rare",
+    "archetype": "goodie_two_shoes",
+    "cardType": "stereotype",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnMainPhase",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "MODIFY_STAT: stability +300"
+        ]
+      },
+      {
+        "trigger": "OnStabilityZero",
+        "speed": 1,
+        "targets": [
+          "field"
+        ],
+        "operations": [
+          "REMOVE_COUNTERS: vice"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "level": 5,
+    "attack": 1600,
+    "defense": 2000,
+    "attribute": "white",
+    "viceType": "morality"
+  },
+  {
+    "name": "Volunteer Valedictorian",
+    "rarity": "rare",
+    "archetype": "goodie_two_shoes",
+    "cardType": "stereotype",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnDestroy",
+        "speed": 2,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "NEGATE: destruction"
+        ]
+      },
+      {
+        "trigger": "OnStabilityZero",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "DISABLE_ATTACKS: 2 turns",
+          "MODIFY_STAT: stability +1500"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "level": 5,
+    "attack": 1500,
+    "defense": 2100,
+    "attribute": "white",
+    "viceType": "burnout"
+  },
+  {
+    "name": "Church Camp Survivor",
+    "rarity": "rare",
+    "archetype": "goodie_two_shoes",
+    "cardType": "stereotype",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnAttackDeclaration",
+        "speed": 2,
+        "targets": [
+          "attacker"
+        ],
+        "operations": [
+          "MODIFY_STAT: stability -300"
+        ]
+      },
+      {
+        "trigger": "OnStabilityZero",
+        "speed": 1,
+        "targets": [
+          "allPlayers"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation -1000"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "level": 4,
+    "attack": 1400,
+    "defense": 1900,
+    "attribute": "white",
+    "viceType": "repression"
+  },
+  {
+    "name": "Attendance Award Annie",
+    "rarity": "rare",
+    "archetype": "goodie_two_shoes",
+    "cardType": "stereotype",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnMainPhase",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "MODIFY_STAT: stability +200"
+        ]
+      },
+      {
+        "trigger": "OnStabilityZero",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "GRANT_IMMUNITY: battle destruction"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "level": 4,
+    "attack": 1300,
+    "defense": 2200,
+    "attribute": "white",
+    "viceType": "validation"
+  },
+  {
+    "name": "Hall Monitor Mark",
+    "rarity": "rare",
+    "archetype": "goodie_two_shoes",
+    "cardType": "stereotype",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnAttackDeclaration",
+        "speed": 1,
+        "targets": [
+          "opponent"
+        ],
+        "operations": [
+          "FORCE_TARGET: this card must be attacked first"
+        ]
+      },
+      {
+        "trigger": "OnStabilityZero",
+        "speed": 1,
+        "targets": [
+          "Dropouts"
+        ],
+        "operations": [
+          "DESTROY: 1 Dropout"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "level": 5,
+    "attack": 1700,
+    "defense": 1800,
+    "attribute": "white",
+    "viceType": "authority"
+  },
+  {
+    "name": "Charity Drive",
+    "rarity": "common",
+    "archetype": "goodie_two_shoes",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "self",
+          "opponent"
+        ],
+        "operations": [
+          "MODIFY_STAT: stability +300 to self",
+          "MODIFY_STAT: reputation +200 to opponent"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Group Study",
+    "rarity": "uncommon",
+    "archetype": "goodie_two_shoes",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "Goodies"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation +300"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Meditation Session",
+    "rarity": "common",
+    "archetype": "goodie_two_shoes",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "targetCard"
+        ],
+        "operations": [
+          "REMOVE_COUNTERS: vice"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Bake Sale",
+    "rarity": "common",
+    "archetype": "goodie_two_shoes",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "DRAW: 1",
+          "MODIFY_STAT: reputation +200"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Community Service",
+    "rarity": "common",
+    "archetype": "goodie_two_shoes",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "opponent",
+          "self"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation -300 to opponent",
+          "MODIFY_STAT: stability -300 to self"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Tutoring",
+    "rarity": "uncommon",
+    "archetype": "goodie_two_shoes",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "DRAW: 2",
+          "DISABLE_ATTACKS: this turn"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Apology Note",
+    "rarity": "uncommon",
+    "archetype": "goodie_two_shoes",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "trap",
+          "bothPlayers"
+        ],
+        "operations": [
+          "NEGATE: trap",
+          "DRAW: 1 for both"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Counseling Session",
+    "rarity": "rare",
+    "archetype": "goodie_two_shoes",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "bothPlayers"
+        ],
+        "operations": [
+          "DISCARD: all from both hands",
+          "DRAW: equal to discarded"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Intervention",
+    "rarity": "uncommon",
+    "archetype": "goodie_two_shoes",
+    "cardType": "trap",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnOpponentAttackDeclaration",
+        "speed": 2,
+        "targets": [
+          "opponent"
+        ],
+        "operations": [
+          "DISABLE_BATTLE_PHASE: next turn"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "trapType": "normal"
+  },
+  {
+    "name": "Guilt Trip",
+    "rarity": "uncommon",
+    "archetype": "goodie_two_shoes",
+    "cardType": "trap",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnOpponentReputationGain",
+        "speed": 2,
+        "targets": [
+          "opponent"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation -X (mirror)"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "trapType": "normal"
+  },
+  {
+    "name": "Moral High Ground",
+    "rarity": "uncommon",
+    "archetype": "goodie_two_shoes",
+    "cardType": "trap",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnDestroy",
+        "speed": 2,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "MODIFY_STAT: stability +500"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "trapType": "normal"
+  },
+  {
+    "name": "Consequence",
+    "rarity": "uncommon",
+    "archetype": "goodie_two_shoes",
+    "cardType": "trap",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellResolution",
+        "speed": 2,
+        "targets": [
+          "bothPlayers"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation -200"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "trapType": "normal"
+  },
+  {
+    "name": "Time-Out",
+    "rarity": "uncommon",
+    "archetype": "goodie_two_shoes",
+    "cardType": "trap",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnTrapActivation",
+        "speed": 2,
+        "targets": [
+          "bothPlayers"
+        ],
+        "operations": [
+          "DISABLE_BATTLE_PHASE: next turn"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "trapType": "normal"
+  },
+  {
+    "name": "Volunteer Overload",
+    "rarity": "rare",
+    "archetype": "goodie_two_shoes",
+    "cardType": "trap",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnDrawPhase",
+        "speed": 2,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "DISCARD: hand_size - 5 if hand > 5",
+          "MODIFY_STAT: stability +300"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "trapType": "normal"
+  },
+  {
+    "name": "Soup Kitchen",
+    "rarity": "uncommon",
+    "archetype": "goodie_two_shoes",
+    "cardType": "class",
+    "cost": 2,
+    "ability": [
+      {
+        "trigger": "OnTurnStart",
+        "speed": 1,
+        "targets": [
+          "Goodies"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation +200"
+        ]
+      },
+      {
+        "trigger": "OnTurnStart",
+        "speed": 1,
+        "targets": [
+          "Dropouts"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation -200"
+        ]
+      }
+    ],
+    "flavorText": null
+  },
+  {
+    "name": "Study Hall",
+    "rarity": "uncommon",
+    "archetype": "goodie_two_shoes",
+    "cardType": "class",
+    "cost": 2,
+    "ability": [
+      {
+        "trigger": "OnDrawPhase",
+        "speed": 1,
+        "targets": [
+          "allPlayers"
+        ],
+        "operations": [
+          "DRAW: 1"
+        ]
+      },
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "spells"
+        ],
+        "operations": [
+          "MODIFY_COST: spells +1"
+        ]
+      }
+    ],
+    "flavorText": null
+  },
+  {
+    "name": "Community Center",
+    "rarity": "rare",
+    "archetype": "goodie_two_shoes",
+    "cardType": "class",
+    "cost": 2,
+    "ability": [
+      {
+        "trigger": "OnTurnStart",
+        "speed": 1,
+        "targets": [
+          "allPlayers"
+        ],
+        "operations": [
+          "MODIFY_STAT: stability +100"
+        ]
+      },
+      {
+        "trigger": "OnTurnStart",
+        "speed": 1,
+        "targets": [
+          "Freaks"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation -100"
+        ]
+      }
+    ],
+    "flavorText": null
+  },
+  {
+    "name": "Crypto All-In Carl",
+    "rarity": "rare",
+    "archetype": "booster",
+    "cardType": "stereotype",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellPlayed",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation +300"
+        ]
+      },
+      {
+        "trigger": "OnStabilityZero",
+        "speed": 1,
+        "targets": [
+          "self",
+          "alliedStereotypes"
+        ],
+        "operations": [
+          "DESTROY: alliedStereotypes",
+          "MODIFY_STAT: reputation +1500"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "level": 6,
+    "attack": 2000,
+    "defense": 1000,
+    "attribute": "white",
+    "viceType": "crypto"
+  },
+  {
+    "name": "Back Alley Bookie",
+    "rarity": "rare",
+    "archetype": "booster",
+    "cardType": "stereotype",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnMainPhase",
+        "speed": "ignition",
+        "targets": [
+          "bothPlayers"
+        ],
+        "operations": [
+          "RANDOM_GAIN: reputation +500 to winner"
+        ]
+      },
+      {
+        "trigger": "OnStabilityZero",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "DRAW: 3",
+          "MODIFY_STAT: reputation -1000?"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "level": 5,
+    "attack": 1700,
+    "defense": 1200,
+    "attribute": "white",
+    "viceType": "gambling"
+  },
+  {
+    "name": "Late Rent Ricky",
+    "rarity": "rare",
+    "archetype": "booster",
+    "cardType": "stereotype",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSummon",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "GRANT_IMMUNITY: trap targeting until end of turn"
+        ]
+      },
+      {
+        "trigger": "OnStabilityZero",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "SKIP_NEXT_DRAW_PHASE",
+          "MODIFY_STAT: reputation +1000"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "level": 4,
+    "attack": 1600,
+    "defense": 900,
+    "attribute": "white",
+    "viceType": "avoidance"
+  },
+  {
+    "name": "Detention Dealer",
+    "rarity": "rare",
+    "archetype": "booster",
+    "cardType": "stereotype",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellPlayed",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation +300"
+        ]
+      },
+      {
+        "trigger": "OnStabilityZero",
+        "speed": 1,
+        "targets": [
+          "opponent"
+        ],
+        "operations": [
+          "DISCARD: 2"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "level": 5,
+    "attack": 1800,
+    "defense": 1100,
+    "attribute": "white",
+    "viceType": "hustle"
+  },
+  {
+    "name": "Community College King",
+    "rarity": "rare",
+    "archetype": "booster",
+    "cardType": "stereotype",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnMainPhase",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation +200 per Dropout you control"
+        ]
+      },
+      {
+        "trigger": "OnStabilityZero",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "MODIFY_STAT: stability +1000"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "level": 4,
+    "attack": 1500,
+    "defense": 1500,
+    "attribute": "white",
+    "viceType": "delusion"
+  },
+  {
+    "name": "Washed Varsity Legend",
+    "rarity": "legendary",
+    "archetype": "booster",
+    "cardType": "stereotype",
+    "cost": 2,
+    "ability": [
+      {
+        "trigger": "OnCardDestroyed",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation +300"
+        ]
+      },
+      {
+        "trigger": "OnStabilityZero",
+        "speed": 1,
+        "targets": [
+          "opponent"
+        ],
+        "operations": [
+          "STEAL: 1 stereotype for 1 turn"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "level": 7,
+    "attack": 2100,
+    "defense": 1400,
+    "attribute": "white",
+    "viceType": "validation"
+  },
+  {
+    "name": "Party Queen Bri",
+    "rarity": "rare",
+    "archetype": "booster",
+    "cardType": "stereotype",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnMainPhase",
+        "speed": 1,
+        "targets": [
+          "allStereotypes"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation +300"
+        ]
+      },
+      {
+        "trigger": "OnStabilityZero",
+        "speed": 1,
+        "targets": [
+          "allPlayers"
+        ],
+        "operations": [
+          "MODIFY_STAT: stability -800"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "level": 5,
+    "attack": 1900,
+    "defense": 1200,
+    "attribute": "white",
+    "viceType": "alcohol"
+  },
+  {
+    "name": "Homecoming Committee",
+    "rarity": "rare",
+    "archetype": "booster",
+    "cardType": "stereotype",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnMainPhase",
+        "speed": 1,
+        "targets": [
+          "Preps"
+        ],
+        "operations": [
+          "MODIFY_STAT: stability +500"
+        ]
+      },
+      {
+        "trigger": "OnStabilityZero",
+        "speed": 1,
+        "targets": [
+          "Environment"
+        ],
+        "operations": [
+          "DESTROY: 1"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "level": 4,
+    "attack": 1200,
+    "defense": 2000,
+    "attribute": "white",
+    "viceType": "status"
+  },
+  {
+    "name": "Corporate Ladder Chad",
+    "rarity": "rare",
+    "archetype": "booster",
+    "cardType": "stereotype",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnMainPhase",
+        "speed": "ignition",
+        "cost": "Sacrifice 1 card",
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation +700"
+        ]
+      },
+      {
+        "trigger": "OnStabilityZero",
+        "speed": 1,
+        "targets": [
+          "opponent"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation -1000"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "level": 6,
+    "attack": 1800,
+    "defense": 1700,
+    "attribute": "white",
+    "viceType": "ambition"
+  },
+  {
+    "name": "Influencer Couple",
+    "rarity": "rare",
+    "archetype": "booster",
+    "cardType": "stereotype",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSummon",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "DRAW: 1"
+        ]
+      },
+      {
+        "trigger": "OnStabilityZero",
+        "speed": 1,
+        "targets": [
+          "opponent"
+        ],
+        "operations": [
+          "DISCARD: 2 random"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "level": 5,
+    "attack": 1600,
+    "defense": 1500,
+    "attribute": "white",
+    "viceType": "social_media"
+  },
+  {
+    "name": "Hackathon Hero",
+    "rarity": "rare",
+    "archetype": "booster",
+    "cardType": "stereotype",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellPlayed",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "DRAW: 1"
+        ]
+      },
+      {
+        "trigger": "OnStabilityZero",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "SKIP_NEXT_BATTLE_PHASE",
+          "DRAW: 3"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "level": 4,
+    "attack": 1400,
+    "defense": 1600,
+    "attribute": "white",
+    "viceType": "adderall"
+  },
+  {
+    "name": "LAN Party Larry",
+    "rarity": "rare",
+    "archetype": "booster",
+    "cardType": "stereotype",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnMainPhase",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation +300 per Geek you control"
+        ]
+      },
+      {
+        "trigger": "OnStabilityZero",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "GRANT_IMMUNITY: battle destruction for next turn"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "level": 4,
+    "attack": 1500,
+    "defense": 1500,
+    "attribute": "white",
+    "viceType": "isolation"
+  },
+  {
+    "name": "Debugging Dana",
+    "rarity": "rare",
+    "archetype": "booster",
+    "cardType": "stereotype",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnTrapActivated",
+        "speed": 2,
+        "targets": [
+          "trap"
+        ],
+        "operations": [
+          "NEGATE: trap"
+        ]
+      },
+      {
+        "trigger": "OnStabilityZero",
+        "speed": 1,
+        "targets": [
+          "traps"
+        ],
+        "operations": [
+          "DESTROY: all traps"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "level": 4,
+    "attack": 1300,
+    "defense": 1800,
+    "attribute": "white",
+    "viceType": "perfectionism"
+  },
+  {
+    "name": "Keyboard Warrior",
+    "rarity": "rare",
+    "archetype": "booster",
+    "cardType": "stereotype",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnAttackDeclaration",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation +500"
+        ]
+      },
+      {
+        "trigger": "OnStabilityZero",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "FORCE_ATTACK: each turn"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "level": 5,
+    "attack": 1700,
+    "defense": 1100,
+    "attribute": "white",
+    "viceType": "rage"
+  },
+  {
+    "name": "Indie Dev Dropout",
+    "rarity": "rare",
+    "archetype": "booster",
+    "cardType": "stereotype",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnMainPhase",
+        "speed": "ignition",
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation +600",
+          "MODIFY_STAT: stability -400"
+        ]
+      },
+      {
+        "trigger": "OnStabilityZero",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "DISABLE_EFFECTS: 2 turns"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "level": 5,
+    "attack": 1800,
+    "defense": 1000,
+    "attribute": "white",
+    "viceType": "burnout"
+  },
+  {
+    "name": "Conspiracy Kyle",
+    "rarity": "rare",
+    "archetype": "booster",
+    "cardType": "stereotype",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnMainPhase",
+        "speed": "ignition",
+        "targets": [
+          "opponent"
+        ],
+        "operations": [
+          "DISCARD: 1 random"
+        ]
+      },
+      {
+        "trigger": "OnStabilityZero",
+        "speed": 1,
+        "targets": [
+          "bothPlayers"
+        ],
+        "operations": [
+          "MOVE_TO_ZONE: hand to deck",
+          "SHUFFLE"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "level": 5,
+    "attack": 1600,
+    "defense": 1300,
+    "attribute": "white",
+    "viceType": "paranoia"
+  },
+  {
+    "name": "Tattooed Philosophy Major",
+    "rarity": "rare",
+    "archetype": "booster",
+    "cardType": "stereotype",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnStabilityBelowThreshold",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation +800"
+        ]
+      },
+      {
+        "trigger": "OnStabilityZero",
+        "speed": 1,
+        "targets": [
+          "allPlayers"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation -500"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "level": 5,
+    "attack": 1700,
+    "defense": 1400,
+    "attribute": "white",
+    "viceType": "existentialism"
+  },
+  {
+    "name": "Afterparty Goblin",
+    "rarity": "legendary",
+    "archetype": "booster",
+    "cardType": "stereotype",
+    "cost": 2,
+    "ability": [
+      {
+        "trigger": "OnMainPhase",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation +400 per spell in graveyard"
+        ]
+      },
+      {
+        "trigger": "OnStabilityZero",
+        "speed": 1,
+        "targets": [
+          "field"
+        ],
+        "operations": [
+          "DESTROY: 1 random card"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "level": 6,
+    "attack": 2000,
+    "defense": 900,
+    "attribute": "white",
+    "viceType": "alcohol"
+  },
+  {
+    "name": "Basement Streamer",
+    "rarity": "rare",
+    "archetype": "booster",
+    "cardType": "stereotype",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnMainPhase",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation +200"
+        ]
+      },
+      {
+        "trigger": "OnStabilityZero",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation *2"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "level": 4,
+    "attack": 1500,
+    "defense": 1400,
+    "attribute": "white",
+    "viceType": "validation"
+  },
+  {
+    "name": "Gas Station Mystic",
+    "rarity": "rare",
+    "archetype": "booster",
+    "cardType": "stereotype",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnMainPhase",
+        "speed": "ignition",
+        "targets": [
+          "opponent"
+        ],
+        "operations": [
+          "REVEAL_HAND"
+        ]
+      },
+      {
+        "trigger": "OnStabilityZero",
+        "speed": 1,
+        "targets": [
+          "opponent"
+        ],
+        "operations": [
+          "DISCARD: all"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "level": 4,
+    "attack": 1400,
+    "defense": 1700,
+    "attribute": "white",
+    "viceType": "conspiracy"
+  },
+  {
+    "name": "Spreadsheet Assassin",
+    "rarity": "rare",
+    "archetype": "booster",
+    "cardType": "stereotype",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnMainPhase",
+        "speed": "ignition",
+        "targets": [
+          "opponent"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation -300"
+        ]
+      },
+      {
+        "trigger": "OnStabilityZero",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "MODIFY_STAT: stability +1000"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "level": 5,
+    "attack": 1700,
+    "defense": 1700,
+    "attribute": "white",
+    "viceType": "control"
+  },
+  {
+    "name": "Debate Team Captain",
+    "rarity": "rare",
+    "archetype": "booster",
+    "cardType": "stereotype",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnEffectActivation",
+        "speed": 2,
+        "targets": [
+          "effect"
+        ],
+        "operations": [
+          "NEGATE"
+        ]
+      },
+      {
+        "trigger": "OnStabilityZero",
+        "speed": 1,
+        "targets": [
+          "opponent"
+        ],
+        "operations": [
+          "DISABLE_EFFECTS: 1 turn"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "level": 5,
+    "attack": 1500,
+    "defense": 1900,
+    "attribute": "white",
+    "viceType": "ego"
+  },
+  {
+    "name": "Scholarship Sniper",
+    "rarity": "rare",
+    "archetype": "booster",
+    "cardType": "stereotype",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnMainPhase",
+        "speed": "ignition",
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "CONDITIONAL_MODIFY_STAT: reputation +500 if opponent hand > self hand"
+        ]
+      },
+      {
+        "trigger": "OnStabilityZero",
+        "speed": 1,
+        "targets": [
+          "field"
+        ],
+        "operations": [
+          "DESTROY: highest reputation card"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "level": 6,
+    "attack": 1800,
+    "defense": 1600,
+    "attribute": "white",
+    "viceType": "pressure"
+  },
+  {
+    "name": "Lab Partner From Hell",
+    "rarity": "rare",
+    "archetype": "booster",
+    "cardType": "stereotype",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnDrawPhase",
+        "speed": 1,
+        "targets": [
+          "opponent"
+        ],
+        "operations": [
+          "REVEAL_HAND"
+        ]
+      },
+      {
+        "trigger": "OnStabilityZero",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "DRAW: 2"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "level": 5,
+    "attack": 1600,
+    "defense": 1500,
+    "attribute": "white",
+    "viceType": "micromanagement"
+  },
+  {
+    "name": "Test Curve Tyrant",
+    "rarity": "legendary",
+    "archetype": "booster",
+    "cardType": "stereotype",
+    "cost": 2,
+    "ability": [
+      {
+        "trigger": "OnMainPhase",
+        "speed": 1,
+        "targets": [
+          "opponent"
+        ],
+        "operations": [
+          "MODIFY_STAT: stability -300"
+        ]
+      },
+      {
+        "trigger": "OnStabilityZero",
+        "speed": 1,
+        "targets": [
+          "allPlayers"
+        ],
+        "operations": [
+          "SET_STAT: stability 1000"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "level": 6,
+    "attack": 1400,
+    "defense": 2100,
+    "attribute": "white",
+    "viceType": "perfection"
+  },
+  {
+    "name": "Student Council President",
+    "rarity": "rare",
+    "archetype": "booster",
+    "cardType": "stereotype",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnMainPhase",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "MODIFY_STAT: stability +300"
+        ]
+      },
+      {
+        "trigger": "OnStabilityZero",
+        "speed": 1,
+        "targets": [
+          "field"
+        ],
+        "operations": [
+          "REMOVE_COUNTERS: vice"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "level": 5,
+    "attack": 1600,
+    "defense": 2000,
+    "attribute": "white",
+    "viceType": "morality"
+  },
+  {
+    "name": "Volunteer Valedictorian",
+    "rarity": "rare",
+    "archetype": "booster",
+    "cardType": "stereotype",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnDestroy",
+        "speed": 2,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "NEGATE: destruction"
+        ]
+      },
+      {
+        "trigger": "OnStabilityZero",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "DISABLE_ATTACKS: 2 turns",
+          "MODIFY_STAT: stability +1500"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "level": 5,
+    "attack": 1500,
+    "defense": 2100,
+    "attribute": "white",
+    "viceType": "burnout"
+  },
+  {
+    "name": "Church Camp Survivor",
+    "rarity": "rare",
+    "archetype": "booster",
+    "cardType": "stereotype",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnAttackDeclaration",
+        "speed": 2,
+        "targets": [
+          "attacker"
+        ],
+        "operations": [
+          "MODIFY_STAT: stability -300"
+        ]
+      },
+      {
+        "trigger": "OnStabilityZero",
+        "speed": 1,
+        "targets": [
+          "allPlayers"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation -1000"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "level": 4,
+    "attack": 1400,
+    "defense": 1900,
+    "attribute": "white",
+    "viceType": "repression"
+  },
+  {
+    "name": "Attendance Award Annie",
+    "rarity": "rare",
+    "archetype": "booster",
+    "cardType": "stereotype",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnMainPhase",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "MODIFY_STAT: stability +200"
+        ]
+      },
+      {
+        "trigger": "OnStabilityZero",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "GRANT_IMMUNITY: battle destruction"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "level": 4,
+    "attack": 1300,
+    "defense": 2200,
+    "attribute": "white",
+    "viceType": "validation"
+  },
+  {
+    "name": "Hall Monitor Mark",
+    "rarity": "rare",
+    "archetype": "booster",
+    "cardType": "stereotype",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnAttackDeclaration",
+        "speed": 1,
+        "targets": [
+          "opponent"
+        ],
+        "operations": [
+          "FORCE_TARGET: this card must be attacked first"
+        ]
+      },
+      {
+        "trigger": "OnStabilityZero",
+        "speed": 1,
+        "targets": [
+          "Dropouts"
+        ],
+        "operations": [
+          "DESTROY: 1 Dropout"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "level": 5,
+    "attack": 1700,
+    "defense": 1800,
+    "attribute": "white",
+    "viceType": "authority"
+  },
+  {
+    "name": "One More Shot",
+    "rarity": "common",
+    "archetype": "booster",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation +500",
+          "MODIFY_STAT: stability -300"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Text Your Ex",
+    "rarity": "common",
+    "archetype": "booster",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "opponent",
+          "self"
+        ],
+        "operations": [
+          "DISCARD: 1",
+          "MODIFY_STAT: stability -200 to self"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Skip Work",
+    "rarity": "common",
+    "archetype": "booster",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "SKIP_NEXT_BATTLE_PHASE",
+          "DRAW: 2"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Start a Podcast",
+    "rarity": "common",
+    "archetype": "booster",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation +300",
+          "DRAW: 1"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "All-In Gamble",
+    "rarity": "rare",
+    "archetype": "booster",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation +1000",
+          "MODIFY_STAT: stability -700"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Side Hustle",
+    "rarity": "uncommon",
+    "archetype": "booster",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation +200 per card in graveyard"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Last-Minute Borrow",
+    "rarity": "uncommon",
+    "archetype": "booster",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "opponent",
+          "self"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation +500 to self",
+          "MODIFY_STAT: reputation -500 to opponent",
+          "MODIFY_STAT: stability +500 to opponent"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Wingman Wager",
+    "rarity": "common",
+    "archetype": "booster",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "bothPlayers"
+        ],
+        "operations": [
+          "RANDOM_GAIN: reputation +700 to winner"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Senior Party",
+    "rarity": "common",
+    "archetype": "booster",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "Preps",
+          "allPlayers"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation +500 to Preps",
+          "MODIFY_STAT: stability -200 to all players"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Networking Event",
+    "rarity": "common",
+    "archetype": "booster",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "self",
+          "Preps"
+        ],
+        "operations": [
+          "DRAW: 2",
+          "MODIFY_STAT: reputation +300 to Preps"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Sponsorship Deal",
+    "rarity": "rare",
+    "archetype": "booster",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation +700",
+          "MODIFY_STAT: stability -300"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Dress Code Violation",
+    "rarity": "common",
+    "archetype": "booster",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "opponent"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation -400"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Rumor Mill",
+    "rarity": "common",
+    "archetype": "booster",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "opponent",
+          "self"
+        ],
+        "operations": [
+          "DISCARD: 1 from opponent",
+          "DRAW: 1"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Study Abroad",
+    "rarity": "uncommon",
+    "archetype": "booster",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "Preps",
+          "self"
+        ],
+        "operations": [
+          "MODIFY_STAT: stability +300 to Preps",
+          "SKIP_NEXT_TURN: self"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Fundraiser",
+    "rarity": "uncommon",
+    "archetype": "booster",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation +500 per Prep you control"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Social Media Blitz",
+    "rarity": "common",
+    "archetype": "booster",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "allPlayers",
+          "self"
+        ],
+        "operations": [
+          "DRAW: 1",
+          "MODIFY_STAT: reputation +200 to all stereotypes"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Code Refactor",
+    "rarity": "common",
+    "archetype": "booster",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "VIEW_TOP_CARDS: 3",
+          "REARRANGE_CARDS"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "All-Nighter",
+    "rarity": "common",
+    "archetype": "booster",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "DRAW: 2",
+          "MODIFY_STAT: stability -400"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Cheat Sheet",
+    "rarity": "common",
+    "archetype": "booster",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "COPY_LAST_SPELL_EFFECT",
+          "MODIFY_STAT: stability +200"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Hardware Upgrade",
+    "rarity": "common",
+    "archetype": "booster",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "Geek"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation +800"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Debugging Session",
+    "rarity": "common",
+    "archetype": "booster",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "trap"
+        ],
+        "operations": [
+          "NEGATE: trap",
+          "DRAW: 1"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Stack Overflow",
+    "rarity": "common",
+    "archetype": "booster",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "DRAW: number of Geeks you control"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Coffee Break",
+    "rarity": "uncommon",
+    "archetype": "booster",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "MODIFY_STAT: stability +300",
+          "DISABLE_ATTACKS: 1 turn"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Open Source",
+    "rarity": "uncommon",
+    "archetype": "booster",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "self",
+          "opponent"
+        ],
+        "operations": [
+          "DRAW: 1 for both",
+          "MODIFY_STAT: reputation +300 to self"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Sudden Epiphany",
+    "rarity": "common",
+    "archetype": "booster",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "MOVE_TO_ZONE: hand to deck",
+          "SHUFFLE",
+          "DRAW: hand_size +1"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Midnight Tattoo",
+    "rarity": "common",
+    "archetype": "booster",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "Freaks"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation +500"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Impromptu Jam",
+    "rarity": "common",
+    "archetype": "booster",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "bothPlayers"
+        ],
+        "operations": [
+          "DISCARD: 2",
+          "DRAW: 2"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Chaotic Muse",
+    "rarity": "common",
+    "archetype": "booster",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "RANDOM_CARD: from deck to hand"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Street Performance",
+    "rarity": "uncommon",
+    "archetype": "booster",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "Freaks",
+          "self"
+        ],
+        "operations": [
+          "MODIFY_STAT: stability +300 to Freaks",
+          "MODIFY_STAT: reputation -300 to self"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Experimental Brew",
+    "rarity": "rare",
+    "archetype": "booster",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "RANDOM_MODIFY_STAT: reputation +/-400"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Dumpster Dive",
+    "rarity": "uncommon",
+    "archetype": "booster",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "MOVE_TO_ZONE: selected card from graveyard to hand",
+          "MODIFY_STAT: stability -200"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Flash Mob",
+    "rarity": "common",
+    "archetype": "booster",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "Freaks"
+        ],
+        "operations": [
+          "FORCE_ATTACK: all Freaks immediately"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Extra Credit",
+    "rarity": "common",
+    "archetype": "booster",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "CONDITIONAL_DRAW: 2 if hand size < opponent"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Formula Memorization",
+    "rarity": "common",
+    "archetype": "booster",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "Nerd"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation +600"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Pop Quiz",
+    "rarity": "common",
+    "archetype": "booster",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "bothPlayers",
+          "Nerds"
+        ],
+        "operations": [
+          "REVEAL_HAND: both",
+          "MODIFY_STAT: stability +200 to Nerds"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Study Group",
+    "rarity": "common",
+    "archetype": "booster",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "DRAW: number of Nerds you control"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Research Grant",
+    "rarity": "rare",
+    "archetype": "booster",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "self",
+          "opponent"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation +500 to self",
+          "MODIFY_STAT: stability +200 to opponent"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Sleep Deprivation",
+    "rarity": "rare",
+    "archetype": "booster",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "SKIP_NEXT_DRAW_PHASE",
+          "DRAW: 3"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Peer Review",
+    "rarity": "common",
+    "archetype": "booster",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "trap",
+          "self"
+        ],
+        "operations": [
+          "NEGATE: trap",
+          "MODIFY_STAT: reputation +300"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Logical Fallacy",
+    "rarity": "uncommon",
+    "archetype": "booster",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "opponent"
+        ],
+        "operations": [
+          "DISCARD: chosen card"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Charity Drive",
+    "rarity": "common",
+    "archetype": "booster",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "self",
+          "opponent"
+        ],
+        "operations": [
+          "MODIFY_STAT: stability +300 to self",
+          "MODIFY_STAT: reputation +200 to opponent"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Group Study",
+    "rarity": "uncommon",
+    "archetype": "booster",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "Goodies"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation +300"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Meditation Session",
+    "rarity": "common",
+    "archetype": "booster",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "targetCard"
+        ],
+        "operations": [
+          "REMOVE_COUNTERS: vice"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Bake Sale",
+    "rarity": "common",
+    "archetype": "booster",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "DRAW: 1",
+          "MODIFY_STAT: reputation +200"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Community Service",
+    "rarity": "common",
+    "archetype": "booster",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "opponent",
+          "self"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation -300 to opponent",
+          "MODIFY_STAT: stability -300 to self"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Tutoring",
+    "rarity": "uncommon",
+    "archetype": "booster",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "DRAW: 2",
+          "DISABLE_ATTACKS: this turn"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Apology Note",
+    "rarity": "uncommon",
+    "archetype": "booster",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "trap",
+          "bothPlayers"
+        ],
+        "operations": [
+          "NEGATE: trap",
+          "DRAW: 1 for both"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "Counseling Session",
+    "rarity": "rare",
+    "archetype": "booster",
+    "cardType": "spell",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "bothPlayers"
+        ],
+        "operations": [
+          "DISCARD: all from both hands",
+          "DRAW: equal to discarded"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "spellType": "normal"
+  },
+  {
+    "name": "HR Complaint",
+    "rarity": "uncommon",
+    "archetype": "booster",
+    "cardType": "trap",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnOpponentStereotypeSummoned",
+        "speed": 2,
+        "targets": [
+          "opponent"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation -500"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "trapType": "normal"
+  },
+  {
+    "name": "DUI Checkpoint",
+    "rarity": "uncommon",
+    "archetype": "booster",
+    "cardType": "trap",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnOpponentSpellActivation",
+        "speed": 2,
+        "targets": [
+          "opponent"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation -400"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "trapType": "normal"
+  },
+  {
+    "name": "Child Support Reminder",
+    "rarity": "uncommon",
+    "archetype": "booster",
+    "cardType": "trap",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnAttackDeclaration",
+        "speed": 2,
+        "targets": [
+          "attacker"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation -300"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "trapType": "normal"
+  },
+  {
+    "name": "Debt Collector",
+    "rarity": "uncommon",
+    "archetype": "booster",
+    "cardType": "trap",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnDestroy",
+        "speed": 2,
+        "targets": [
+          "opponent"
+        ],
+        "operations": [
+          "DISCARD: 1"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "trapType": "normal"
+  },
+  {
+    "name": "Rock Bottom",
+    "rarity": "uncommon",
+    "archetype": "booster",
+    "cardType": "trap",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnStabilityZero",
+        "speed": 2,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "DRAW: 3"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "trapType": "normal"
+  },
+  {
+    "name": "Rehabilitation",
+    "rarity": "rare",
+    "archetype": "booster",
+    "cardType": "trap",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnDestroy",
+        "speed": 2,
+        "targets": [
+          "destroyedCard"
+        ],
+        "operations": [
+          "MOVE_TO_ZONE: destroyedCard to hand"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "trapType": "normal"
+  },
+  {
+    "name": "Probation",
+    "rarity": "uncommon",
+    "archetype": "booster",
+    "cardType": "trap",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnOpponentAttackDeclaration",
+        "speed": 2,
+        "targets": [
+          "opponent"
+        ],
+        "operations": [
+          "DISABLE_BATTLE_PHASE: opponent next"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "trapType": "normal"
+  },
+  {
+    "name": "Screenshots Leaked",
+    "rarity": "uncommon",
+    "archetype": "booster",
+    "cardType": "trap",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnOpponentSpellActivation",
+        "speed": 2,
+        "targets": [
+          "opponent"
+        ],
+        "operations": [
+          "NEGATE: spell",
+          "MODIFY_STAT: reputation -500"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "trapType": "normal"
+  },
+  {
+    "name": "Parent-Teacher Conference",
+    "rarity": "uncommon",
+    "archetype": "booster",
+    "cardType": "trap",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnTrapTargetingYou",
+        "speed": 2,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "NEGATE: trap"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "trapType": "normal"
+  },
+  {
+    "name": "Disciplinary Action",
+    "rarity": "uncommon",
+    "archetype": "booster",
+    "cardType": "trap",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnOpponentEffectResolution",
+        "speed": 2,
+        "targets": [
+          "opponentCard"
+        ],
+        "operations": [
+          "DESTROY: opponentCard"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "trapType": "normal"
+  },
+  {
+    "name": "Surprise Quiz",
+    "rarity": "uncommon",
+    "archetype": "booster",
+    "cardType": "trap",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnDeckEmpty",
+        "speed": 2,
+        "targets": [
+          "bothPlayers"
+        ],
+        "operations": [
+          "MOVE_TO_ZONE: graveyard to deck",
+          "SHUFFLE"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "trapType": "normal"
+  },
+  {
+    "name": "Slander",
+    "rarity": "rare",
+    "archetype": "booster",
+    "cardType": "trap",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnOpponentStereotypeSummoned",
+        "speed": 2,
+        "targets": [
+          "opponent"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation -700"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "trapType": "normal"
+  },
+  {
+    "name": "Critical Bug",
+    "rarity": "uncommon",
+    "archetype": "booster",
+    "cardType": "trap",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnOpponentCardActivation",
+        "speed": 2,
+        "targets": [
+          "opponentCard"
+        ],
+        "operations": [
+          "NEGATE"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "trapType": "normal"
+  },
+  {
+    "name": "Blue Screen",
+    "rarity": "uncommon",
+    "archetype": "booster",
+    "cardType": "trap",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnOpponentDrawPhaseStart",
+        "speed": 2,
+        "targets": [
+          "opponent"
+        ],
+        "operations": [
+          "DISABLE_DRAW_PHASE: 1"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "trapType": "normal"
+  },
+  {
+    "name": "System Overload",
+    "rarity": "uncommon",
+    "archetype": "booster",
+    "cardType": "trap",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellCountThree",
+        "speed": 2,
+        "targets": [
+          "field"
+        ],
+        "operations": [
+          "DESTROY: all spells"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "trapType": "normal"
+  },
+  {
+    "name": "404 Error",
+    "rarity": "uncommon",
+    "archetype": "booster",
+    "cardType": "trap",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnAttackDeclaration",
+        "speed": 2,
+        "targets": [
+          "attacker"
+        ],
+        "operations": [
+          "NEGATE: attack"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "trapType": "normal"
+  },
+  {
+    "name": "Brain Fog",
+    "rarity": "uncommon",
+    "archetype": "booster",
+    "cardType": "trap",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnOpponentDrawPhaseStart",
+        "speed": 2,
+        "targets": [
+          "opponent"
+        ],
+        "operations": [
+          "DISCARD: 2"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "trapType": "normal"
+  },
+  {
+    "name": "Kernel Panic",
+    "rarity": "rare",
+    "archetype": "booster",
+    "cardType": "trap",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnStabilityBelowThreshold",
+        "speed": 2,
+        "targets": [
+          "field"
+        ],
+        "operations": [
+          "DESTROY: all traps"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "trapType": "normal"
+  },
+  {
+    "name": "Mood Swing",
+    "rarity": "uncommon",
+    "archetype": "booster",
+    "cardType": "trap",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnOpponentAttackDeclaration",
+        "speed": 2,
+        "targets": [
+          "attacker"
+        ],
+        "operations": [
+          "CHANGE_ATTACK_TARGET"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "trapType": "normal"
+  },
+  {
+    "name": "Self-Sabotage",
+    "rarity": "uncommon",
+    "archetype": "booster",
+    "cardType": "trap",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnReputationGain",
+        "speed": 2,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation -X (equal to gained)"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "trapType": "normal"
+  },
+  {
+    "name": "Wild Card",
+    "rarity": "uncommon",
+    "archetype": "booster",
+    "cardType": "trap",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnOpponentSpellActivation",
+        "speed": 2,
+        "targets": [
+          "spell"
+        ],
+        "operations": [
+          "RANDOM_NEGATE"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "trapType": "normal"
+  },
+  {
+    "name": "Public Meltdown",
+    "rarity": "uncommon",
+    "archetype": "booster",
+    "cardType": "trap",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnStabilityZero",
+        "speed": 2,
+        "targets": [
+          "opponent"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation -1000"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "trapType": "normal"
+  },
+  {
+    "name": "Anarchy",
+    "rarity": "uncommon",
+    "archetype": "booster",
+    "cardType": "trap",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnTrapActivation",
+        "speed": 2,
+        "targets": [
+          "field"
+        ],
+        "operations": [
+          "ACTIVATE_TRAPS_TWICE"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "trapType": "normal"
+  },
+  {
+    "name": "Peer Pressure",
+    "rarity": "rare",
+    "archetype": "booster",
+    "cardType": "trap",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnOpponentSummon",
+        "speed": 2,
+        "targets": [
+          "opponent"
+        ],
+        "operations": [
+          "MODIFY_STAT: stability -500"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "trapType": "normal"
+  },
+  {
+    "name": "Trick Question",
+    "rarity": "uncommon",
+    "archetype": "booster",
+    "cardType": "trap",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnAttackDeclaration",
+        "speed": 2,
+        "targets": [
+          "attacker"
+        ],
+        "operations": [
+          "NEGATE: attack",
+          "DRAW: 1"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "trapType": "normal"
+  },
+  {
+    "name": "All-Night Study",
+    "rarity": "uncommon",
+    "archetype": "booster",
+    "cardType": "trap",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnStabilityBelowThreshold",
+        "speed": 2,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "MODIFY_STAT: stability +800"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "trapType": "normal"
+  },
+  {
+    "name": "Lecture Time",
+    "rarity": "uncommon",
+    "archetype": "booster",
+    "cardType": "trap",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnOpponentStereotypeSummoned",
+        "speed": 2,
+        "targets": [
+          "opponent"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation -300"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "trapType": "normal"
+  },
+  {
+    "name": "Data Breach",
+    "rarity": "uncommon",
+    "archetype": "booster",
+    "cardType": "trap",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnMainPhase",
+        "speed": 2,
+        "targets": [
+          "opponent"
+        ],
+        "operations": [
+          "REVEAL_HAND",
+          "DISCARD: 1"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "trapType": "normal"
+  },
+  {
+    "name": "Curveball",
+    "rarity": "uncommon",
+    "archetype": "booster",
+    "cardType": "trap",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnOpponentEffectActivation",
+        "speed": 2,
+        "targets": [
+          "opponentCard"
+        ],
+        "operations": [
+          "REVERSE_EFFECT"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "trapType": "normal"
+  },
+  {
+    "name": "Social Anxiety",
+    "rarity": "rare",
+    "archetype": "booster",
+    "cardType": "trap",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnBattlePhaseStart",
+        "speed": 2,
+        "targets": [
+          "allPlayers"
+        ],
+        "operations": [
+          "DISABLE_ATTACKS: 1 turn"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "trapType": "normal"
+  },
+  {
+    "name": "Intervention",
+    "rarity": "uncommon",
+    "archetype": "booster",
+    "cardType": "trap",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnOpponentAttackDeclaration",
+        "speed": 2,
+        "targets": [
+          "opponent"
+        ],
+        "operations": [
+          "DISABLE_BATTLE_PHASE: next turn"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "trapType": "normal"
+  },
+  {
+    "name": "Guilt Trip",
+    "rarity": "uncommon",
+    "archetype": "booster",
+    "cardType": "trap",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnOpponentReputationGain",
+        "speed": 2,
+        "targets": [
+          "opponent"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation -X (mirror)"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "trapType": "normal"
+  },
+  {
+    "name": "Moral High Ground",
+    "rarity": "uncommon",
+    "archetype": "booster",
+    "cardType": "trap",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnDestroy",
+        "speed": 2,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "MODIFY_STAT: stability +500"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "trapType": "normal"
+  },
+  {
+    "name": "Consequence",
+    "rarity": "uncommon",
+    "archetype": "booster",
+    "cardType": "trap",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnSpellResolution",
+        "speed": 2,
+        "targets": [
+          "bothPlayers"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation -200"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "trapType": "normal"
+  },
+  {
+    "name": "Time-Out",
+    "rarity": "uncommon",
+    "archetype": "booster",
+    "cardType": "trap",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnTrapActivation",
+        "speed": 2,
+        "targets": [
+          "bothPlayers"
+        ],
+        "operations": [
+          "DISABLE_BATTLE_PHASE: next turn"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "trapType": "normal"
+  },
+  {
+    "name": "Volunteer Overload",
+    "rarity": "rare",
+    "archetype": "booster",
+    "cardType": "trap",
+    "cost": 1,
+    "ability": [
+      {
+        "trigger": "OnDrawPhase",
+        "speed": 2,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "DISCARD: hand_size - 5 if hand > 5",
+          "MODIFY_STAT: stability +300"
+        ]
+      }
+    ],
+    "flavorText": null,
+    "trapType": "normal"
+  },
+  {
+    "name": "Back Alley Poker Night",
+    "rarity": "uncommon",
+    "archetype": "booster",
+    "cardType": "class",
+    "cost": 2,
+    "ability": [
+      {
+        "trigger": "OnTurnStart",
+        "speed": 1,
+        "targets": [
+          "Dropouts"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation +300"
+        ]
+      },
+      {
+        "trigger": "OnTurnStart",
+        "speed": 1,
+        "targets": [
+          "allPlayers"
+        ],
+        "operations": [
+          "MODIFY_STAT: stability -200"
+        ]
+      }
+    ],
+    "flavorText": null
+  },
+  {
+    "name": "Dive Bar Karaoke",
+    "rarity": "uncommon",
+    "archetype": "booster",
+    "cardType": "class",
+    "cost": 2,
+    "ability": [
+      {
+        "trigger": "OnDrawPhase",
+        "speed": 1,
+        "targets": [
+          "allPlayers"
+        ],
+        "operations": [
+          "DRAW: 1",
+          "MODIFY_STAT: stability -100"
+        ]
+      }
+    ],
+    "flavorText": null
+  },
+  {
+    "name": "Unpaid Internship",
+    "rarity": "rare",
+    "archetype": "booster",
+    "cardType": "class",
+    "cost": 2,
+    "ability": [
+      {
+        "trigger": "OnMainPhase",
+        "speed": 1,
+        "targets": [
+          "Dropouts"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation +100 per card"
+        ]
+      },
+      {
+        "trigger": "OnMainPhase",
+        "speed": 1,
+        "targets": [
+          "Preps"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation -100"
+        ]
+      }
+    ],
+    "flavorText": null
+  },
+  {
+    "name": "Class Reunion",
+    "rarity": "uncommon",
+    "archetype": "booster",
+    "cardType": "class",
+    "cost": 2,
+    "ability": [
+      {
+        "trigger": "OnTurnStart",
+        "speed": 1,
+        "targets": [
+          "Preps"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation +300"
+        ]
+      },
+      {
+        "trigger": "OnTurnStart",
+        "speed": 1,
+        "targets": [
+          "Dropouts"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation -300"
+        ]
+      }
+    ],
+    "flavorText": null
+  },
+  {
+    "name": "Corporate Happy Hour",
+    "rarity": "uncommon",
+    "archetype": "booster",
+    "cardType": "class",
+    "cost": 2,
+    "ability": [
+      {
+        "trigger": "OnTurnStart",
+        "speed": 1,
+        "targets": [
+          "allPlayers"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation +200",
+          "MODIFY_STAT: stability -100"
+        ]
+      }
+    ],
+    "flavorText": null
+  },
+  {
+    "name": "College Campus",
+    "rarity": "rare",
+    "archetype": "booster",
+    "cardType": "class",
+    "cost": 2,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "spells"
+        ],
+        "operations": [
+          "MODIFY_COST: spells to 0"
+        ]
+      },
+      {
+        "trigger": "OnTrapActivation",
+        "speed": 1,
+        "targets": [
+          "traps"
+        ],
+        "operations": [
+          "MODIFY_COST: traps x2"
+        ]
+      }
+    ],
+    "flavorText": null
+  },
+  {
+    "name": "Hackathon",
+    "rarity": "uncommon",
+    "archetype": "booster",
+    "cardType": "class",
+    "cost": 2,
+    "ability": [
+      {
+        "trigger": "OnDrawPhase",
+        "speed": 1,
+        "targets": [
+          "allPlayers"
+        ],
+        "operations": [
+          "DRAW: 1"
+        ]
+      },
+      {
+        "trigger": "OnTurnStart",
+        "speed": 1,
+        "targets": [
+          "Geeks"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation +300"
+        ]
+      }
+    ],
+    "flavorText": null
+  },
+  {
+    "name": "LAN Arena",
+    "rarity": "uncommon",
+    "archetype": "booster",
+    "cardType": "class",
+    "cost": 2,
+    "ability": [
+      {
+        "trigger": "OnTurnStart",
+        "speed": 1,
+        "targets": [
+          "Geeks"
+        ],
+        "operations": [
+          "MODIFY_STAT: stability +200"
+        ]
+      },
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "spells"
+        ],
+        "operations": [
+          "MODIFY_COST: spells -1"
+        ]
+      }
+    ],
+    "flavorText": null
+  },
+  {
+    "name": "Campus Library",
+    "rarity": "rare",
+    "archetype": "booster",
+    "cardType": "class",
+    "cost": 2,
+    "ability": [
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "DRAW: 1"
+        ]
+      },
+      {
+        "trigger": "OnAttackDeclaration",
+        "speed": 1,
+        "targets": [
+          "attacker"
+        ],
+        "operations": [
+          "REDUCE_DAMAGE: 50%"
+        ]
+      }
+    ],
+    "flavorText": null
+  },
+  {
+    "name": "Underground Club",
+    "rarity": "uncommon",
+    "archetype": "booster",
+    "cardType": "class",
+    "cost": 2,
+    "ability": [
+      {
+        "trigger": "OnTurnStart",
+        "speed": 1,
+        "targets": [
+          "Freaks"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation +400"
+        ]
+      },
+      {
+        "trigger": "OnTurnStart",
+        "speed": 1,
+        "targets": [
+          "Preps"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation -200"
+        ]
+      }
+    ],
+    "flavorText": null
+  },
+  {
+    "name": "Street Art Alley",
+    "rarity": "uncommon",
+    "archetype": "booster",
+    "cardType": "class",
+    "cost": 2,
+    "ability": [
+      {
+        "trigger": "OnGameStart",
+        "speed": 1,
+        "targets": [
+          "Freaks"
+        ],
+        "operations": [
+          "GRANT_IMMUNITY: traps"
+        ]
+      },
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "spells"
+        ],
+        "operations": [
+          "MODIFY_COST: spells +1"
+        ]
+      }
+    ],
+    "flavorText": null
+  },
+  {
+    "name": "Warehouse Rave",
+    "rarity": "rare",
+    "archetype": "booster",
+    "cardType": "class",
+    "cost": 2,
+    "ability": [
+      {
+        "trigger": "OnTurnStart",
+        "speed": 1,
+        "targets": [
+          "allPlayers"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation +300",
+          "MODIFY_STAT: stability -200"
+        ]
+      }
+    ],
+    "flavorText": null
+  },
+  {
+    "name": "Campus Lab",
+    "rarity": "uncommon",
+    "archetype": "booster",
+    "cardType": "class",
+    "cost": 2,
+    "ability": [
+      {
+        "trigger": "OnTurnStart",
+        "speed": 1,
+        "targets": [
+          "Nerds"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation +300"
+        ]
+      },
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "self"
+        ],
+        "operations": [
+          "DRAW: 2"
+        ]
+      }
+    ],
+    "flavorText": null
+  },
+  {
+    "name": "Debate Hall",
+    "rarity": "uncommon",
+    "archetype": "booster",
+    "cardType": "class",
+    "cost": 2,
+    "ability": [
+      {
+        "trigger": "OnTrapActivation",
+        "speed": 1,
+        "targets": [
+          "traps"
+        ],
+        "operations": [
+          "MODIFY_COST: traps -1"
+        ]
+      },
+      {
+        "trigger": "OnTurnStart",
+        "speed": 1,
+        "targets": [
+          "Preps"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation -200"
+        ]
+      }
+    ],
+    "flavorText": null
+  },
+  {
+    "name": "Library Basement",
+    "rarity": "rare",
+    "archetype": "booster",
+    "cardType": "class",
+    "cost": 2,
+    "ability": [
+      {
+        "trigger": "OnEnvironmentActivation",
+        "speed": 1,
+        "targets": [
+          "environment"
+        ],
+        "operations": [
+          "NEGATE: environment"
+        ]
+      },
+      {
+        "trigger": "OnTurnStart",
+        "speed": 1,
+        "targets": [
+          "Nerds"
+        ],
+        "operations": [
+          "MODIFY_STAT: stability +100"
+        ]
+      }
+    ],
+    "flavorText": null
+  },
+  {
+    "name": "Soup Kitchen",
+    "rarity": "uncommon",
+    "archetype": "booster",
+    "cardType": "class",
+    "cost": 2,
+    "ability": [
+      {
+        "trigger": "OnTurnStart",
+        "speed": 1,
+        "targets": [
+          "Goodies"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation +200"
+        ]
+      },
+      {
+        "trigger": "OnTurnStart",
+        "speed": 1,
+        "targets": [
+          "Dropouts"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation -200"
+        ]
+      }
+    ],
+    "flavorText": null
+  },
+  {
+    "name": "Study Hall",
+    "rarity": "uncommon",
+    "archetype": "booster",
+    "cardType": "class",
+    "cost": 2,
+    "ability": [
+      {
+        "trigger": "OnDrawPhase",
+        "speed": 1,
+        "targets": [
+          "allPlayers"
+        ],
+        "operations": [
+          "DRAW: 1"
+        ]
+      },
+      {
+        "trigger": "OnSpellActivation",
+        "speed": 1,
+        "targets": [
+          "spells"
+        ],
+        "operations": [
+          "MODIFY_COST: spells +1"
+        ]
+      }
+    ],
+    "flavorText": null
+  },
+  {
+    "name": "Community Center",
+    "rarity": "rare",
+    "archetype": "booster",
+    "cardType": "class",
+    "cost": 2,
+    "ability": [
+      {
+        "trigger": "OnTurnStart",
+        "speed": 1,
+        "targets": [
+          "allPlayers"
+        ],
+        "operations": [
+          "MODIFY_STAT: stability +100"
+        ]
+      },
+      {
+        "trigger": "OnTurnStart",
+        "speed": 1,
+        "targets": [
+          "Freaks"
+        ],
+        "operations": [
+          "MODIFY_STAT: reputation -100"
+        ]
+      }
+    ],
+    "flavorText": null
+  }
+]

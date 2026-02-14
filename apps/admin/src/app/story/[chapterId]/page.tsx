@@ -267,7 +267,7 @@ function CreateStageDialog({
             <Label htmlFor="archetype">Opponent Deck Archetype (optional)</Label>
             <Input
               id="archetype"
-              placeholder="infernal_dragons"
+              placeholder="dropout"
               value={opponentDeckArchetype}
               onChange={(e) => setOpponentDeckArchetype(e.target.value)}
             />

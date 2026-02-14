@@ -54,14 +54,14 @@ export async function executeGenerateToken(
     atk = 0,
     def = 0,
     level = 1,
-    attribute = "neutral",
+    attribute = "red",
     type = "Beast",
     count = 1,
     position = "attack",
   } = tokenData;
 
-  // Check board space (max 5 monster zones)
-  const availableSpace = 5 - board.length;
+  // Check board space (max 3 stereotype zones)
+  const availableSpace = 3 - board.length;
   const tokensToGenerate = Math.min(count, availableSpace);
 
   if (tokensToGenerate === 0) {

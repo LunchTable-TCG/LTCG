@@ -29,7 +29,7 @@ interface GameStats {
   damageDealt: number;
   damageReceived: number;
   cardsPlayed: number;
-  creaturesDestroyed: number;
+  stereotypesDestroyed: number;
   spellsCast: number;
   turnsPlayed: number;
   matchDuration: number;
@@ -307,7 +307,7 @@ export function GameResultScreen({
                     </div>
                     <div>
                       <Skull className="w-5 h-5 mx-auto mb-1 text-gray-400" />
-                      <p className="text-xl font-bold text-[#e8e0d5]">{stats.creaturesDestroyed}</p>
+                      <p className="text-xl font-bold text-[#e8e0d5]">{stats.stereotypesDestroyed}</p>
                       <p className="text-xs text-[#a89f94]">Slain</p>
                     </div>
                     <div>

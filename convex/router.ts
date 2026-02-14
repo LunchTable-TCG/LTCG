@@ -211,12 +211,6 @@ http.route({
   handler: games.enterBattlePhase,
 });
 
-// POST /api/agents/games/actions/enter-main2 - Enter Main Phase 2
-http.route({
-  path: "/api/agents/games/actions/enter-main2",
-  method: "POST",
-  handler: games.enterMain2,
-});
 
 // POST /api/agents/games/actions/end-turn - End turn
 http.route({

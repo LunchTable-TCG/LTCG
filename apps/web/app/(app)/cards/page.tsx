@@ -33,7 +33,7 @@ const RARITY_COLORS: Record<Rarity, { bg: string; text: string; border: string }
   common: { bg: "bg-gray-500/20", text: "text-gray-400", border: "border-gray-500/40" },
 };
 
-const ELEMENTS: Element[] = ["fire", "water", "earth", "wind", "neutral"];
+const ELEMENTS: Element[] = ["red", "blue", "yellow", "purple", "green", "white"];
 const RARITIES: Rarity[] = ["legendary", "epic", "rare", "uncommon", "common"];
 const CARD_TYPES: CardType[] = ["stereotype", "spell", "trap", "class"];
 
@@ -83,12 +83,14 @@ function CardCodexContent() {
       cardDefinitionId: card._id,
       name: card.name,
       rarity: card.rarity as Rarity,
-      element: (card.attribute === "fire" ||
-      card.attribute === "water" ||
-      card.attribute === "earth" ||
-      card.attribute === "wind"
+      element: (card.attribute === "red" ||
+      card.attribute === "blue" ||
+      card.attribute === "yellow" ||
+      card.attribute === "purple" ||
+      card.attribute === "green" ||
+      card.attribute === "white"
         ? card.attribute
-        : "neutral") as Element,
+        : "white") as Element,
       cardType: card.cardType as CardType,
       attack: card.attack,
       defense: card.defense,

@@ -619,7 +619,7 @@ export default function StageEditorPage() {
                     <Label htmlFor="archetype">Deck Archetype</Label>
                     <Input
                       id="archetype"
-                      placeholder="infernal_dragons, abyssal_horrors, etc."
+                      placeholder="dropout, prep, geek, freak, nerd, goodie_two_shoes"
                       value={opponentDeckArchetype}
                       onChange={(e) => handleFieldChange(setOpponentDeckArchetype)(e.target.value)}
                       disabled={!canEdit}

@@ -58,28 +58,12 @@ type ProductType = "pack" | "box" | "currency";
 type Rarity = "common" | "uncommon" | "rare" | "epic" | "legendary";
 type CurrencyType = "gold" | "gems";
 type Archetype =
-  // Primary archetypes
-  | "infernal_dragons"
-  | "abyssal_depths"
-  | "iron_legion"
-  | "necro_empire"
-  // Legacy archetypes
-  | "abyssal_horrors"
-  | "nature_spirits"
-  | "storm_elementals"
-  // Future/placeholder archetypes
-  | "shadow_assassins"
-  | "celestial_guardians"
-  | "undead_legion"
-  | "divine_knights"
-  | "arcane_mages"
-  | "mechanical_constructs"
-  | "neutral"
-  // Old archetypes
-  | "fire"
-  | "water"
-  | "earth"
-  | "wind";
+  | "dropout"
+  | "prep"
+  | "geek"
+  | "freak"
+  | "nerd"
+  | "goodie_two_shoes";
 
 interface ShopProduct {
   _id: Id<"shopProducts">;
@@ -106,21 +90,12 @@ const RARITIES = [
 ];
 
 const ARCHETYPES = [
-  { value: "infernal_dragons", label: "Infernal Dragons" },
-  { value: "abyssal_horrors", label: "Abyssal Horrors" },
-  { value: "nature_spirits", label: "Nature Spirits" },
-  { value: "storm_elementals", label: "Storm Elementals" },
-  { value: "shadow_assassins", label: "Shadow Assassins" },
-  { value: "celestial_guardians", label: "Celestial Guardians" },
-  { value: "undead_legion", label: "Undead Legion" },
-  { value: "divine_knights", label: "Divine Knights" },
-  { value: "arcane_mages", label: "Arcane Mages" },
-  { value: "mechanical_constructs", label: "Mechanical Constructs" },
-  { value: "neutral", label: "Neutral" },
-  { value: "fire", label: "Fire" },
-  { value: "water", label: "Water" },
-  { value: "earth", label: "Earth" },
-  { value: "wind", label: "Wind" },
+  { value: "dropout", label: "Dropout" },
+  { value: "prep", label: "Prep" },
+  { value: "geek", label: "Geek" },
+  { value: "freak", label: "Freak" },
+  { value: "nerd", label: "Nerd" },
+  { value: "goodie_two_shoes", label: "Goodie Two Shoes" },
 ];
 
 const CURRENCY_TYPES = [

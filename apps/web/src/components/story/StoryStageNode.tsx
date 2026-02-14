@@ -1,6 +1,5 @@
 "use client";
 
-import { FantasyFrame } from "@/components/ui/FantasyFrame";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { Crown, Gift, Lock, Shield, Star, Swords, Trophy } from "lucide-react";
@@ -61,10 +60,6 @@ export function StoryStageNode({ stage, onClick, className }: StoryStageNodeProp
   const isStarred = stage.status === "starred";
   const canClaimFirstClear = isCompleted && !stage.firstClearClaimed;
 
-  let frameVariant: "obsidian" | "gold" | "ethereal" = "obsidian";
-  if (isStarred) frameVariant = "gold";
-  else if (isCompleted) frameVariant = "ethereal";
-  else if (!isLocked) frameVariant = "obsidian";
 
   return (
     <motion.button
@@ -80,16 +75,14 @@ export function StoryStageNode({ stage, onClick, className }: StoryStageNodeProp
     >
       {/* Node Container */}
       <div className={cn("w-20 h-20 relative transition-all duration-300", config.glowColor)}>
-        <FantasyFrame
-          variant={frameVariant}
+        <div
           className={cn(
-            "w-full h-full flex items-center justify-center rounded-2xl",
+            "w-full h-full flex items-center justify-center rounded-sm zine-border bg-card",
             !isLocked && config.borderColor,
             stage.aiDifficulty === "boss" &&
               !isLocked &&
               "border-2 border-red-500 shadow-[0_0_15px_rgba(239,68,68,0.5)]"
           )}
-          noPadding
         >
           {/* Inner Content */}
           <div className="flex flex-col items-center gap-1">
@@ -103,7 +96,7 @@ export function StoryStageNode({ stage, onClick, className }: StoryStageNodeProp
 
             {!isLocked && <config.icon className={cn("w-4 h-4", config.color, "opacity-80")} />}
           </div>
-        </FantasyFrame>
+        </div>
 
         {/* Status Indicators */}
         {!isLocked && (

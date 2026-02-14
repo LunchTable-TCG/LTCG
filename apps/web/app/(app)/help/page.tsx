@@ -66,12 +66,12 @@ const FAQ_CATEGORIES: FAQCategory[] = [
       {
         question: "How does combat work?",
         answer:
-          "Each turn, you draw a card, play cards from your hand using mana, and can attack with your creatures. The goal is to reduce your opponent's life points to zero.",
+          "Each turn, you draw a card, play cards from your hand using mana, and can attack with your stereotypes. The goal is to reduce your opponent's life points to zero.",
       },
       {
         question: "What are the different card types?",
         answer:
-          "There are four card types: Creatures (attack and defend), Spells (one-time effects), Traps (triggered effects), and Equipment (boost your creatures).",
+          "There are four card types: Stereotypes (attack and defend), Spells (one-time effects), Traps (triggered effects), and Class (boost your stereotypes).",
       },
       {
         question: "How does the mana system work?",
@@ -79,9 +79,9 @@ const FAQ_CATEGORIES: FAQCategory[] = [
           "You gain 1 mana crystal each turn, up to a maximum of 10. Cards cost mana to play, shown in the top-left corner of each card.",
       },
       {
-        question: "What are elements?",
+        question: "What are attributes?",
         answer:
-          "Cards belong to elements: Fire, Water, Earth, Wind, or Neutral. Some cards have synergies with cards of the same element.",
+          "Cards belong to attributes: Red, Blue, Yellow, Purple, Green, or White. Some cards have synergies with cards of the same attribute.",
       },
     ],
   },

@@ -59,11 +59,12 @@ const ELEMENT_CONFIG: Record<
   Element,
   { icon: typeof Flame; color: string; bg: string; label: string }
 > = {
-  fire: { icon: Flame, color: "text-red-500", bg: "bg-red-500/20", label: "Fire" },
-  water: { icon: Waves, color: "text-blue-500", bg: "bg-blue-500/20", label: "Water" },
-  earth: { icon: Shield, color: "text-slate-400", bg: "bg-slate-500/20", label: "Earth" },
-  wind: { icon: Zap, color: "text-yellow-500", bg: "bg-yellow-500/20", label: "Wind" },
-  neutral: { icon: Star, color: "text-gray-400", bg: "bg-gray-500/20", label: "Neutral" },
+  red: { icon: Flame, color: "text-red-500", bg: "bg-red-500/20", label: "Red" },
+  blue: { icon: Waves, color: "text-blue-500", bg: "bg-blue-500/20", label: "Blue" },
+  yellow: { icon: Sparkles, color: "text-yellow-500", bg: "bg-yellow-500/20", label: "Yellow" },
+  purple: { icon: Star, color: "text-purple-500", bg: "bg-purple-500/20", label: "Purple" },
+  green: { icon: Shield, color: "text-green-500", bg: "bg-green-500/20", label: "Green" },
+  white: { icon: Zap, color: "text-slate-100", bg: "bg-slate-500/20", label: "White" },
 };
 
 export function CardPreviewModal({ card, isOpen, onClose, onFavorite }: CardPreviewModalProps) {

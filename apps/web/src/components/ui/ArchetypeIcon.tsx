@@ -27,8 +27,8 @@ const sizeMap = {
  *
  * @example
  * ```tsx
- * <ArchetypeIcon archetype="infernal_dragons" size="md" />
- * <ArchetypeIcon archetype="fire" size="lg" showLabel />
+ * <ArchetypeIcon archetype="dropout" size="md" />
+ * <ArchetypeIcon archetype="prep" size="lg" showLabel />
  * ```
  */
 export function ArchetypeIcon({

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Cinzel, Crimson_Text, Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ConvexClientProvider } from "@/components/ConvexClientProvider";
 import { PrivyAuthProvider } from "@/components/PrivyAuthProvider";
@@ -15,44 +15,36 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const cinzel = Cinzel({
-  variable: "--font-cinzel",
-  subsets: ["latin"],
-});
-
-const crimsonText = Crimson_Text({
-  weight: ["400", "600", "700"],
-  variable: "--font-crimson",
-  subsets: ["latin"],
-});
-
 export const metadata: Metadata = {
-  title: "Lunchtable TCG | Strategic Trading Card Game",
+  title: "LunchTable | Weaponized Nostalgia TCG",
   description:
-    "Enter the arena of Lunchtable TCG - a strategic trading card game where skill meets strategy. Collect powerful cards, build winning decks, and battle players worldwide.",
+    "Enter the world of LunchTable - a strategic trading card game where adult regret and social hierarchy collide. Collect powerful stereotypes, manage your reputation, and dominate the school.",
   keywords: [
+    "LunchTable",
     "TCG",
     "trading card game",
     "card game",
     "strategy game",
-    "online card game",
-    "Lunchtable",
+    "social hierarchy",
+    "underground zine",
   ],
-  authors: [{ name: "Lunchtable Games" }],
+  authors: [{ name: "LunchTable Team" }],
   openGraph: {
-    title: "Lunchtable TCG | Strategic Trading Card Game",
+    title: "LunchTable | Weaponized Nostalgia TCG",
     description:
-      "Enter the arena of Lunchtable TCG - a strategic trading card game where skill meets strategy.",
+      "A high-stakes competitive power fantasy codifying the LunchTable vision.",
     type: "website",
-    siteName: "Lunchtable TCG",
+    siteName: "LunchTable",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Lunchtable TCG | Strategic Trading Card Game",
+    title: "LunchTable | Weaponized Nostalgia TCG",
     description:
-      "Enter the arena of Lunchtable TCG - a strategic trading card game where skill meets strategy.",
+      "A high-stakes competitive power fantasy where monsters are replaced by life choices.",
   },
 };
+
+import { QueryProvider } from "@/components/providers/QueryProvider";
 
 export default function RootLayout({
   children,
@@ -62,11 +54,13 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${cinzel.variable} ${crimsonText.variable} antialiased min-h-screen bg-background font-serif`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-background font-sans`}
       >
         <PrivyAuthProvider>
           <ConvexClientProvider>
-            <LayoutWrapper>{children}</LayoutWrapper>
+            <QueryProvider>
+              <LayoutWrapper>{children}</LayoutWrapper>
+            </QueryProvider>
           </ConvexClientProvider>
         </PrivyAuthProvider>
       </body>

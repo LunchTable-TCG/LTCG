@@ -8,11 +8,8 @@
 /** Card rarity tiers (matches Convex schema `rarityValidator`). */
 export type Rarity = "common" | "uncommon" | "rare" | "epic" | "legendary";
 
-/** Elemental attributes (without neutral). */
-export type Element = "fire" | "water" | "earth" | "wind";
-
-/** Elemental attributes including neutral (used for card definitions). */
-export type ElementWithNeutral = Element | "neutral";
+/** Elemental attributes. */
+export type Element = "red" | "blue" | "yellow" | "purple" | "green" | "white";
 
 /** Card type categories (matches Convex schema `cardTypeValidator`). */
 export type CardType = "stereotype" | "spell" | "trap" | "class";

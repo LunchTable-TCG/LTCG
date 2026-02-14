@@ -311,7 +311,7 @@ function executeCardEffects(
       }
 
       case "summon": {
-        if (stateChanges.opponentBoard.length < 5) {
+        if (stateChanges.opponentBoard.length < 3) {
           const summonTarget = stateChanges.opponentHand.find((id) => {
             const c = cardDataMap.get(id);
             return c && c.cardType === "stereotype";
@@ -389,7 +389,7 @@ function executeCardEffects(
       }
 
       case "generateToken": {
-        if (stateChanges.opponentBoard.length < 5) {
+        if (stateChanges.opponentBoard.length < 3) {
           const tokenATK = effect.value || 0;
           const tokenDEF =
             (effect as { secondaryValue?: number }).secondaryValue || effect.value || 0;
@@ -483,8 +483,8 @@ function executeAction(
         }
       }
 
-      // Validate monster zone has space (max 5 slots, checked after tributes removed)
-      if (stateChanges.opponentBoard.length >= 5) {
+      // Validate monster zone has space (max 3 slots, checked after tributes removed)
+      if (stateChanges.opponentBoard.length >= 3) {
         return { success: false, description: "Monster zone is full" };
       }
 
@@ -536,8 +536,8 @@ function executeAction(
         return { success: false, description: "Cannot set high-level monster without tributes" };
       }
 
-      // Validate monster zone has space (max 5 slots)
-      if (stateChanges.opponentBoard.length >= 5) {
+      // Validate monster zone has space (max 3 slots)
+      if (stateChanges.opponentBoard.length >= 3) {
         return { success: false, description: "Monster zone is full" };
       }
 
@@ -953,7 +953,7 @@ function executeAction(
 
           case "summon": {
             // Special summon a monster from hand to the board
-            if (stateChanges.opponentBoard.length < 5) {
+            if (stateChanges.opponentBoard.length < 3) {
               const summonTarget = stateChanges.opponentHand.find((id) => {
                 const c = cardDataMap.get(id);
                 return c && c.cardType === "stereotype";
@@ -1038,7 +1038,7 @@ function executeAction(
 
           case "generateToken": {
             // Generate a token monster on the AI's board
-            if (stateChanges.opponentBoard.length < 5) {
+            if (stateChanges.opponentBoard.length < 3) {
               const tokenATK = effect.value || 0;
               const tokenDEF =
                 (effect as { secondaryValue?: number }).secondaryValue || effect.value || 0;
@@ -1088,7 +1088,7 @@ function executeAction(
         return { success: false, description: "Not a spell or trap card" };
       }
 
-      if (stateChanges.opponentSpellTrapZone.length >= 5) {
+      if (stateChanges.opponentSpellTrapZone.length >= 3) {
         return { success: false, description: "Spell/trap zone is full" };
       }
 

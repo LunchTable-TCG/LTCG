@@ -7,22 +7,22 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: "tcg-button hover:brightness-110",
+        default: "tcg-button",
         destructive:
-          "bg-destructive text-destructive-foreground hover:bg-destructive/90 border border-destructive-foreground/20 shadow-sm",
-        outline: "border border-border bg-background hover:bg-accent hover:text-accent-foreground",
+          "bg-destructive text-destructive-foreground hover:bg-destructive/90 border-2 border-primary shadow-[2px_2px_0px_0px_rgba(18,18,18,1)] text-[10px] uppercase font-black tracking-tighter",
+        outline: "border-2 border-primary bg-background hover:bg-secondary/50 font-bold uppercase tracking-tighter text-xs",
         secondary:
-          "bg-secondary text-secondary-foreground hover:bg-secondary/80 border border-border/50",
-        ghost: "hover:bg-accent hover:text-accent-foreground",
-        link: "text-primary underline-offset-4 hover:underline",
-        // Custom Grimoire Variants
-        primary: "tcg-button-primary hover:brightness-110",
-        gold: "bg-gradient-to-b from-yellow-400 to-yellow-600 text-black border-yellow-700 shadow-md hover:from-yellow-300 hover:to-yellow-500",
+          "bg-secondary text-secondary-foreground hover:bg-secondary/80 border-2 border-primary font-bold uppercase tracking-tighter text-xs",
+        ghost: "hover:bg-primary/10 hover:text-foreground font-bold uppercase tracking-tighter text-xs",
+        link: "text-primary underline-offset-4 hover:underline font-bold uppercase tracking-tighter text-xs",
+        // New LunchTable Variants
+        primary: "tcg-button-primary",
+        reputation: "bg-reputation text-black border-2 border-primary shadow-[3px_3px_0px_0px_rgba(18,18,18,1)] font-black uppercase tracking-tighter hover:-translate-x-0.5 hover:-translate-y-0.5 transition-transform",
       },
       size: {
-        default: "h-10 px-4 py-2",
-        sm: "h-9 rounded-md px-3",
-        lg: "h-11 rounded-md px-8",
+        default: "h-10 px-6 py-2",
+        sm: "h-8 px-3 text-[10px]",
+        lg: "h-12 px-8 text-lg",
         icon: "h-10 w-10",
       },
     },

@@ -38,7 +38,6 @@ import type {
   CardId,
   CardRarity,
   CardType,
-  MonsterType,
   SpellType,
   TrapType,
 } from "@/lib/convexTypes";
@@ -53,23 +52,12 @@ import { toast } from "sonner";
 // =============================================================================
 
 const ARCHETYPES = [
-  // Primary archetypes
-  { value: "infernal_dragons", label: "Infernal Dragons" },
-  { value: "abyssal_depths", label: "Abyssal Depths" },
-  { value: "iron_legion", label: "Iron Legion" },
-  { value: "necro_empire", label: "Necro Empire" },
-  // Legacy archetypes
-  { value: "abyssal_horrors", label: "Abyssal Horrors" },
-  { value: "nature_spirits", label: "Nature Spirits" },
-  { value: "storm_elementals", label: "Storm Elementals" },
-  // Future archetypes
-  { value: "shadow_assassins", label: "Shadow Assassins" },
-  { value: "celestial_guardians", label: "Celestial Guardians" },
-  { value: "undead_legion", label: "Undead Legion" },
-  { value: "divine_knights", label: "Divine Knights" },
-  { value: "arcane_mages", label: "Arcane Mages" },
-  { value: "mechanical_constructs", label: "Mechanical Constructs" },
-  { value: "neutral", label: "Neutral" },
+  { value: "dropout", label: "Dropout" },
+  { value: "prep", label: "Prep" },
+  { value: "geek", label: "Geek" },
+  { value: "freak", label: "Freak" },
+  { value: "nerd", label: "Nerd" },
+  { value: "goodie_two_shoes", label: "Goodie Two Shoes" },
 ];
 
 const CARD_TYPES = [
@@ -96,19 +84,6 @@ const ATTRIBUTES = [
   { value: "dark", label: "Dark" },
   { value: "divine", label: "Divine" },
   { value: "neutral", label: "Neutral" },
-];
-
-const MONSTER_TYPES = [
-  { value: "dragon", label: "Dragon" },
-  { value: "spellcaster", label: "Spellcaster" },
-  { value: "warrior", label: "Warrior" },
-  { value: "beast", label: "Beast" },
-  { value: "fiend", label: "Fiend" },
-  { value: "zombie", label: "Zombie" },
-  { value: "machine", label: "Machine" },
-  { value: "aqua", label: "Aqua" },
-  { value: "pyro", label: "Pyro" },
-  { value: "divine_beast", label: "Divine Beast" },
 ];
 
 const SPELL_TYPES = [
@@ -146,7 +121,6 @@ export default function CardEditorPage() {
   const [cost, setCost] = useState(1);
   const [level, setLevel] = useState<number | "">(1);
   const [attribute, setAttribute] = useState("neutral");
-  const [monsterType, setMonsterType] = useState("warrior");
   const [spellType, setSpellType] = useState("normal");
   const [trapType, setTrapType] = useState("normal");
   const [flavorText, setFlavorText] = useState("");
@@ -188,7 +162,6 @@ export default function CardEditorPage() {
       setCost(existingCard.cost);
       setLevel(existingCard.level ?? "");
       setAttribute(existingCard.attribute ?? "neutral");
-      setMonsterType(existingCard.monsterType ?? "warrior");
       setSpellType(existingCard.spellType ?? "normal");
       setTrapType(existingCard.trapType ?? "normal");
       setFlavorText(existingCard.flavorText ?? "");
@@ -235,7 +208,6 @@ export default function CardEditorPage() {
         cost,
         level: cardType === "stereotype" && level !== "" ? Number(level) : undefined,
         attribute: cardType === "stereotype" ? (attribute as CardAttribute) : undefined,
-        monsterType: cardType === "stereotype" ? (monsterType as MonsterType) : undefined,
         spellType: cardType === "spell" ? (spellType as SpellType) : undefined,
         trapType: cardType === "trap" ? (trapType as TrapType) : undefined,
         flavorText: flavorText.trim() || undefined,
@@ -496,22 +468,6 @@ export default function CardEditorPage() {
                       {ATTRIBUTES.map((a) => (
                         <SelectItem key={a.value} value={a.value}>
                           {a.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div className="space-y-2 md:col-span-2">
-                  <Label>Monster Type</Label>
-                  <Select value={monsterType} onValueChange={setMonsterType}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {MONSTER_TYPES.map((t) => (
-                        <SelectItem key={t.value} value={t.value}>
-                          {t.label}
                         </SelectItem>
                       ))}
                     </SelectContent>

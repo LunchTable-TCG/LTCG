@@ -1,6 +1,5 @@
 "use client";
 
-import { FantasyFrame } from "@/components/ui/FantasyFrame";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
@@ -150,9 +149,8 @@ export function DialogueDisplay({
         </div>
 
         {/* Dialogue box */}
-        <FantasyFrame
-          variant="gold"
-          className="relative overflow-hidden cursor-pointer"
+        <div
+          className="relative overflow-hidden cursor-pointer zine-border bg-card"
           onClick={handleAdvance}
         >
           <div className="flex gap-6 p-6">
@@ -247,7 +245,7 @@ export function DialogueDisplay({
               )}
             </motion.div>
           </div>
-        </FantasyFrame>
+        </div>
       </div>
     </div>
   );

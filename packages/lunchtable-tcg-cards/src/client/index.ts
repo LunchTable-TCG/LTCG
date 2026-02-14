@@ -98,7 +98,6 @@ export class CardsClient {
       cost: number;
       level?: number;
       attribute?: string;
-      monsterType?: string;
       spellType?: string;
       trapType?: string;
       ability?: any;
@@ -125,7 +124,6 @@ export class CardsClient {
       cost?: number;
       level?: number;
       attribute?: string;
-      monsterType?: string;
       spellType?: string;
       trapType?: string;
       ability?: any;

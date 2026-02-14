@@ -67,7 +67,7 @@ const REQUIREMENT_TYPES = [
   { value: "play_games", label: "Play Games" },
   { value: "play_cards", label: "Play Cards" },
   { value: "deal_damage", label: "Deal Damage" },
-  { value: "destroy_creatures", label: "Destroy Creatures" },
+  { value: "destroy_stereotypes", label: "Destroy Stereotypes" },
   { value: "win_ranked", label: "Win Ranked Games" },
   { value: "complete_story", label: "Complete Story Chapters" },
   { value: "collect_cards", label: "Collect Cards" },

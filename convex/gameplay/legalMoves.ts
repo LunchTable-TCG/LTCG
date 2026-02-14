@@ -161,10 +161,8 @@ export const getLegalMoves = query({
             const level = card.level || 0;
             let requiresTributes = 0;
 
-            // Determine tribute requirements
+            // Determine tribute requirements (LunchTable: L1-6=0, L7+=1)
             if (level >= 7) {
-              requiresTributes = 2;
-            } else if (level >= 5) {
               requiresTributes = 1;
             }
 
@@ -257,8 +255,8 @@ export const getLegalMoves = query({
 
     // Can set during Main Phase
     if (currentPhase === "main") {
-      // Check spell/trap zone space (max 5)
-      if (mySpellTrapZone.length < 5) {
+      // Check spell/trap zone space (max 3)
+      if (mySpellTrapZone.length < 3) {
         // Check each spell/trap card in hand
         for (const cardId of myHand) {
           const card = await ctx.db.get(cardId);

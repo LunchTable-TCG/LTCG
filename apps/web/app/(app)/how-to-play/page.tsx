@@ -109,7 +109,7 @@ function QuickStartSection() {
               2
             </span>
             <span>
-              <strong>Summon</strong> - Tap a creature in your hand to summon it
+              <strong>Summon</strong> - Tap a stereotype in your hand to summon it
             </span>
           </li>
           <li className="flex items-start gap-2">
@@ -117,7 +117,7 @@ function QuickStartSection() {
               3
             </span>
             <span>
-              <strong>Attack</strong> - Tap your creature, then tap the enemy to attack
+              <strong>Attack</strong> - Tap your stereotype, then tap the enemy to attack
             </span>
           </li>
           <li className="flex items-start gap-2">
@@ -234,7 +234,7 @@ function SummoningContent() {
       <div className="bg-slate-800/30 rounded-lg p-4">
         <h4 className="font-semibold text-amber-400 mb-2">Normal Summon</h4>
         <p className="text-slate-300 mb-3">
-          Once per turn, you can Normal Summon a creature from your hand. The level of the creature
+          Once per turn, you can Normal Summon a stereotype from your hand. The level of the stereotype
           determines if you need to tribute:
         </p>
         <div className="grid gap-2">
@@ -244,11 +244,11 @@ function SummoningContent() {
           </div>
           <div className="flex items-center gap-3 bg-slate-700/50 rounded p-2">
             <span className="text-amber-400 font-mono">Level 5-6</span>
-            <span className="text-slate-300">→ Tribute 1 creature you control</span>
+            <span className="text-slate-300">→ Tribute 1 stereotype you control</span>
           </div>
           <div className="flex items-center gap-3 bg-slate-700/50 rounded p-2">
             <span className="text-amber-400 font-mono">Level 7+</span>
-            <span className="text-slate-300">→ Tribute 2 creatures you control</span>
+            <span className="text-slate-300">→ Tribute 2 stereotypes you control</span>
           </div>
         </div>
       </div>
@@ -268,8 +268,8 @@ function SummoningContent() {
       <div className="bg-slate-800/30 rounded-lg p-4">
         <h4 className="font-semibold text-amber-400 mb-2">Flip Summon</h4>
         <p className="text-slate-300">
-          If you have a face-down creature in Defense Position, you can Flip Summon it to face-up
-          Attack Position during your Main Phase. This triggers any "Flip Effects" the creature has.
+          If you have a face-down stereotype in Defense Position, you can Flip Summon it to face-up
+          Attack Position during your Main Phase. This triggers any "Flip Effects" the stereotype has.
         </p>
       </div>
     </div>
@@ -280,8 +280,8 @@ function CombatContent() {
   return (
     <div className="space-y-4">
       <p className="text-slate-300">
-        During your Battle Phase, each creature in Attack Position can attack once. The outcome
-        depends on the positions and stats of the creatures involved.
+        During your Battle Phase, each stereotype in Attack Position can attack once. The outcome
+        depends on the positions and stats of the stereotypes involved.
       </p>
 
       <div className="grid gap-3">
@@ -528,7 +528,7 @@ function AdvancedRulesSection() {
       >
         <div className="space-y-4">
           <p className="text-slate-300">
-            Battle damage is calculated based on the positions of the creatures involved.
+            Battle damage is calculated based on the positions of the stereotypes involved.
           </p>
           <div className="bg-slate-800/30 rounded-lg p-4 font-mono text-sm">
             <p className="text-slate-400 mb-2">ATK vs ATK:</p>
@@ -536,7 +536,7 @@ function AdvancedRulesSection() {
             <p className="text-slate-400 mt-4 mb-2">ATK vs DEF:</p>
             <p className="text-amber-400">Damage = max(0, Defender DEF - Attacker ATK)</p>
             <p className="text-xs text-slate-500 mt-2">
-              * Damage goes to the controller of the weaker creature
+              * Damage goes to the controller of the weaker stereotype
             </p>
           </div>
         </div>

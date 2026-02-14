@@ -36,7 +36,7 @@ import { validateFlipSummon, validateNormalSummon, validateSetMonster } from "..
  * Game rules:
  * - Only one Normal Summon/Set per turn
  * - Must have required number of tributes on field
- * - Monster zone must have available space (max 5 monsters)
+ * - Monster zone must have available space (max 3 stereotypes)
  * - Can only summon during your Main Phase
  * - Face-up summons trigger "on_summon" effects
  *
@@ -114,11 +114,11 @@ export const normalSummon = mutation({
     const isHost = user.userId === gameState.hostId;
     const board = isHost ? gameState.hostBoard : gameState.opponentBoard;
 
-    // 5.5. Validate monster zone has space (max 5 monsters)
+    // 5.5. Validate monster zone has space (max 3 stereotypes)
     // Account for tributes that will free up space
     const tributeCount = args.tributeCardIds?.length || 0;
     const effectiveBoardSize = board.length - tributeCount;
-    if (effectiveBoardSize >= 5) {
+    if (effectiveBoardSize >= 3) {
       throw createError(ErrorCode.GAME_INVALID_MOVE, {
         reason: "Monster zone is full",
       });
@@ -408,7 +408,7 @@ export const normalSummon = mutation({
  * Game rules:
  * - Only one Normal Summon/Set per turn
  * - Must have required number of tributes on field
- * - Monster zone must have available space (max 5 monsters)
+ * - Monster zone must have available space (max 3 stereotypes)
  * - Can only set during your Main Phase
  * - Face-down monsters do not trigger "on_summon" effects
  * - Opponent cannot see which card was set
@@ -484,8 +484,8 @@ async function setMonsterHandler(
   const isHost = user.userId === gameState.hostId;
   const board = isHost ? gameState.hostBoard : gameState.opponentBoard;
 
-  // 5.5. Validate monster zone has space (max 5 monsters)
-  validateMonsterZone(board, 5);
+  // 5.5. Validate monster zone has space (max 3 stereotypes)
+  validateMonsterZone(board, 3);
 
   // 6. Get card details
   const card = await ctx.db.get(args.cardId);
@@ -949,7 +949,7 @@ export const normalSummonInternal = internalMutation({
     // 8. Validate tribute count matches card level requirements
     const tributeCardIds = args.tributeCardIds?.map((id) => id as Id<"cardDefinitions">) ?? [];
     const cardLevel = card.level ?? card.cost;
-    const requiredTributes = cardLevel >= 7 ? 2 : cardLevel >= 5 ? 1 : 0;
+    const requiredTributes = cardLevel >= 7 ? 1 : 0;
     if (tributeCardIds.length !== requiredTributes) {
       throw createError(ErrorCode.GAME_INVALID_MOVE, {
         reason: `This monster requires ${requiredTributes} tribute(s) but ${tributeCardIds.length} were provided`,
@@ -958,7 +958,7 @@ export const normalSummonInternal = internalMutation({
 
     // 8.5. Validate monster zone has space (account for tributes freeing space)
     const effectiveBoardSize = board.length - tributeCardIds.length;
-    if (effectiveBoardSize >= 5) {
+    if (effectiveBoardSize >= 3) {
       throw createError(ErrorCode.GAME_INVALID_MOVE, {
         reason: "Monster zone is full",
       });

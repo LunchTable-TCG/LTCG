@@ -235,7 +235,7 @@ export function GameBoard({
           damageDealt: opponentDamageReceived,
           damageReceived: playerDamageReceived,
           cardsPlayed: playerFieldCount,
-          creaturesDestroyed: 0,
+          stereotypesDestroyed: 0,
           spellsCast: 0,
           turnsPlayed: phase?.turnNumber ?? 0,
           matchDuration: 0,

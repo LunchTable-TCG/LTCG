@@ -27,19 +27,14 @@ interface WelcomeGuideDialogProps {
 
 type Step = "welcome" | "deck";
 
-/** Map archetype/element to a Lucide icon */
+/** Map archetype to a Lucide icon */
 const ARCHETYPE_ICONS: Record<string, typeof Flame> = {
-  fire: Flame,
-  water: Waves,
-  earth: Shield,
-  wind: Zap,
-  dark: Skull,
-  infernal_dragons: Flame,
-  abyssal_depths: Waves,
-  iron_legion: Shield,
-  storm_riders: Zap,
-  storm_elementals: Zap,
-  necro_empire: Skull,
+  dropout: Flame,
+  prep: Shield,
+  geek: Zap,
+  freak: Skull,
+  nerd: Waves,
+  goodie_two_shoes: Sparkles,
 };
 
 export function WelcomeGuideDialog({

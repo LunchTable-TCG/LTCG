@@ -20,33 +20,47 @@ interface JoinConfirmDialogProps {
 }
 
 const ARCHETYPE_CONFIG = {
-  fire: {
+  dropout: {
     icon: Flame,
     color: "text-red-500",
     bg: "bg-red-500/10",
     border: "border-red-500/30",
-    name: "Fire",
+    name: "Dropout",
   },
-  water: {
+  prep: {
     icon: Waves,
     color: "text-blue-500",
     bg: "bg-blue-500/10",
     border: "border-blue-500/30",
-    name: "Water",
+    name: "Prep",
   },
-  earth: {
+  geek: {
     icon: Shield,
-    color: "text-slate-400",
-    bg: "bg-slate-500/10",
-    border: "border-slate-400/30",
-    name: "Earth",
+    color: "text-green-500",
+    bg: "bg-green-500/10",
+    border: "border-green-500/30",
+    name: "Geek",
   },
-  wind: {
+  freak: {
+    icon: Sparkles,
+    color: "text-purple-500",
+    bg: "bg-purple-500/10",
+    border: "border-purple-500/30",
+    name: "Freak",
+  },
+  nerd: {
     icon: Zap,
     color: "text-yellow-500",
     bg: "bg-yellow-500/10",
     border: "border-yellow-500/30",
-    name: "Wind",
+    name: "Nerd",
+  },
+  goodie_two_shoes: {
+    icon: Star,
+    color: "text-slate-100",
+    bg: "bg-slate-500/10",
+    border: "border-slate-400/30",
+    name: "Goodie Two-Shoes",
   },
 };
 

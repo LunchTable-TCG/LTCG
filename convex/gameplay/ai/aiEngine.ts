@@ -59,7 +59,7 @@ export function evaluateBoard(gameState: Doc<"gameStates">, aiPlayerId: Id<"user
     myLP,
     oppLP,
     myHandSize: myHand.length,
-    hasMonsterZoneSpace: myBoard.length < 5,
+    hasMonsterZoneSpace: myBoard.length < 3,
     isWinning: myLP > oppLP,
     attackAdvantage: myBoard.some(
       (m) =>

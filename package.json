@@ -113,7 +113,6 @@
     "@lunchtable-tcg/seasons": "workspace:*",
     "@lunchtable-tcg/social": "workspace:*",
     "@lunchtable-tcg/story": "workspace:*",
-    "@lunchtable-tcg/streaming": "workspace:*",
     "@lunchtable-tcg/token": "workspace:*",
     "@lunchtable-tcg/treasury": "workspace:*",
     "@lunchtable-tcg/webhooks": "workspace:*",

@@ -43,7 +43,7 @@ function getChainEffect(card: CardWithAbility): ChainEffect {
  * Places a Spell or Trap card from hand face-down in the Spell/Trap Zone.
  *
  * Game rules:
- * - Spell/Trap Zone can hold maximum 5 cards
+ * - Spell/Trap Zone can hold maximum 3 cards
  * - Can only set during your Main Phase
  * - Trap cards must remain set for 1 full turn before activation
  * - Spell cards can be activated same turn when set
@@ -110,10 +110,10 @@ async function setSpellTrapHandler(
     });
   }
 
-  // 7. Validate Spell/Trap Zone space (max 5)
-  if (spellTrapZone.length >= 5) {
+  // 7. Validate Spell/Trap Zone space (max 3)
+  if (spellTrapZone.length >= 3) {
     throw createError(ErrorCode.GAME_ZONE_FULL, {
-      reason: "Spell/Trap Zone is full (max 5 cards)",
+      reason: "Spell/Trap Zone is full (max 3 cards)",
     });
   }
 

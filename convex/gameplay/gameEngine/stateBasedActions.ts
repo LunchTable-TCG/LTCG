@@ -1,23 +1,26 @@
 /**
  * State-Based Actions (SBA)
  *
- * Implements Yu-Gi-Oh state-based action checking that runs continuously
+ * Implements LunchTable TCG state-based action checking that runs continuously
  * until no more state changes occur. These actions happen automatically
  * and do NOT trigger response windows.
  *
  * State-Based Actions checked (in order):
- * 1. Monster destruction: Monsters with DEF <= 0 are destroyed
- * 2. Win condition - LP: If any player's LP <= 0, end the game
- * 3. Win condition - Deck out: If a player needs to draw with empty deck
- * 4. Monsters sent to graveyard: Move destroyed monsters and trigger on_destroy
- * 5. Field spell replacement: Only one field spell per player
- * 6. Hand size limit: At end of turn, discard down to 6 cards
+ * 1. Win condition - LP: If any player's LP <= 0, end the game
+ * 1b. Win condition - Breakdown: If any player caused 3+ Breakdowns, they win
+ * 2. Monster destruction: Monsters with stats reduced below 0 are destroyed
+ * 2b. Breakdown triggers: Stereotypes with Stability <= 0 or Vice >= 3 trigger Breakdown
+ * 3. Field spell replacement: Only one class card per player
+ * 4. Orphaned equip spells: Equip targets gone
+ * 5. Token zone violations: Tokens in non-field zones removed
+ * 6. Hand size limit: At end of turn, discard down to max hand size
  */
 
 // Workaround for TS2589 (excessively deep type instantiation)
 import * as generatedApi from "../../_generated/api";
 import type { Doc, Id } from "../../_generated/dataModel";
 import type { MutationCtx } from "../../_generated/server";
+import { GAME_CONFIG } from "@ltcg/core";
 import { getCardAbility } from "../../lib/abilityHelpers";
 import { logger } from "../../lib/debug";
 
@@ -28,6 +31,10 @@ import { updatePlayerStatsAfterGame } from "../games/stats";
 // biome-ignore lint/suspicious/noExplicitAny: Convex internal type workaround for TS2589
 const internalAny = (generatedApi as any).internal;
 
+// LunchTable Breakdown constants
+const BREAKDOWN_THRESHOLD = GAME_CONFIG.VICE.BREAKDOWN_THRESHOLD;
+const MAX_BREAKDOWNS_WIN = GAME_CONFIG.VICE.MAX_BREAKDOWNS_WIN;
+
 /** Result from a single SBA check cycle */
 export interface SBACheckResult {
   /** Whether any state-based action was taken */
@@ -37,7 +44,7 @@ export interface SBACheckResult {
   /** Winner ID if game ended */
   winnerId?: Id<"users">;
   /** Reason for game end */
-  endReason?: "lp_zero" | "deck_out";
+  endReason?: "lp_zero" | "deck_out" | "breakdown";
   /** Cards that were destroyed by SBA */
   destroyedCards: Id<"cardDefinitions">[];
   /** Debug log of actions taken */
@@ -53,7 +60,7 @@ export interface SBALoopResult {
   /** Winner ID if game ended */
   winnerId?: Id<"users">;
   /** Reason for game end */
-  endReason?: "lp_zero" | "deck_out";
+  endReason?: "lp_zero" | "deck_out" | "breakdown";
   /** Total cycles run */
   cycleCount: number;
   /** All destroyed cards across all cycles */
@@ -203,6 +210,17 @@ async function runSBACycle(
     return result;
   }
 
+  // 1b. Check Breakdown win condition (3 breakdowns caused = win)
+  const breakdownWinCheck = await checkBreakdownWinCondition(ctx, gameState, lobbyId, lobby.gameId, turnNumber);
+  if (breakdownWinCheck.gameEnded) {
+    result.gameEnded = true;
+    result.winnerId = breakdownWinCheck.winnerId;
+    result.endReason = "breakdown";
+    result.changed = true;
+    result.actionsTaken.push(breakdownWinCheck.action);
+    return result;
+  }
+
   // 2. Check for monsters with DEF <= 0 (destroyed by stat reduction)
   const monsterCheck = await checkMonsterDestruction(
     ctx,
@@ -216,6 +234,21 @@ async function runSBACycle(
     result.changed = true;
     result.destroyedCards.push(...monsterCheck.destroyedCards);
     result.actionsTaken.push(...monsterCheck.actions);
+  }
+
+  // 2b. Check for Breakdown triggers (Stability=0 or Vice counters >= threshold)
+  const breakdownCheck = await checkBreakdownTriggers(
+    ctx,
+    gameState,
+    lobbyId,
+    lobby.gameId,
+    turnNumber,
+    destroyTriggeredCards
+  );
+  if (breakdownCheck.changed) {
+    result.changed = true;
+    result.destroyedCards.push(...breakdownCheck.destroyedCards);
+    result.actionsTaken.push(...breakdownCheck.actions);
   }
 
   // 3. Check field spell replacement (only one per player)
@@ -1191,6 +1224,330 @@ async function checkTokenZoneViolations(
   await checkZone(gameState.opponentBanished, "banished", gameState.opponentId, "opponentBanished");
 
   return result;
+}
+
+/**
+ * Check if either player has caused enough Breakdowns to win
+ *
+ * Causing 3 Breakdowns is an alternate win condition.
+ */
+async function checkBreakdownWinCondition(
+  ctx: MutationCtx,
+  gameState: Doc<"gameStates">,
+  lobbyId: Id<"gameLobbies">,
+  gameId: string,
+  turnNumber: number
+): Promise<{ gameEnded: boolean; winnerId?: Id<"users">; action: string }> {
+  const lobby = await ctx.db.get(lobbyId);
+
+  const hostBreakdowns = (gameState as any).hostBreakdownsCaused ?? 0;
+  const opponentBreakdowns = (gameState as any).opponentBreakdownsCaused ?? 0;
+
+  // Check if host caused enough breakdowns to win
+  if (hostBreakdowns >= MAX_BREAKDOWNS_WIN) {
+    const winner = await ctx.db.get(gameState.hostId);
+    const loser = await ctx.db.get(gameState.opponentId);
+
+    await recordGameEndHelper(ctx, {
+      lobbyId,
+      gameId,
+      turnNumber,
+      winnerId: gameState.hostId,
+      winnerUsername: winner?.username || "Unknown",
+      loserId: gameState.opponentId,
+      loserUsername: loser?.username || "Unknown",
+    });
+
+    await ctx.db.patch(lobbyId, {
+      status: "completed",
+      winnerId: gameState.hostId,
+    });
+
+    const gameMode = (lobby?.mode || "casual") as "ranked" | "casual" | "story";
+    await updatePlayerStatsAfterGame(ctx, gameState.hostId, gameState.opponentId, gameMode);
+
+    if (lobby?.mode === "story" && lobby.stageId) {
+      await ctx.runMutation(internalAny.progression.storyStages.completeStageInternal, {
+        userId: gameState.hostId,
+        stageId: lobby.stageId,
+        won: true,
+        finalLP: gameState.hostLifePoints,
+      });
+    }
+
+    logger.info("Game ended by SBA: Breakdown win condition", {
+      lobbyId,
+      winnerId: gameState.hostId,
+      breakdownsCaused: hostBreakdowns,
+    });
+
+    return {
+      gameEnded: true,
+      winnerId: gameState.hostId,
+      action: `${winner?.username} wins by causing ${hostBreakdowns} Breakdowns!`,
+    };
+  }
+
+  // Check if opponent caused enough breakdowns to win
+  if (opponentBreakdowns >= MAX_BREAKDOWNS_WIN) {
+    const winner = await ctx.db.get(gameState.opponentId);
+    const loser = await ctx.db.get(gameState.hostId);
+
+    await recordGameEndHelper(ctx, {
+      lobbyId,
+      gameId,
+      turnNumber,
+      winnerId: gameState.opponentId,
+      winnerUsername: winner?.username || "Unknown",
+      loserId: gameState.hostId,
+      loserUsername: loser?.username || "Unknown",
+    });
+
+    await ctx.db.patch(lobbyId, {
+      status: "completed",
+      winnerId: gameState.opponentId,
+    });
+
+    const gameMode = (lobby?.mode || "casual") as "ranked" | "casual" | "story";
+    await updatePlayerStatsAfterGame(ctx, gameState.opponentId, gameState.hostId, gameMode);
+
+    if (lobby?.mode === "story" && lobby.stageId) {
+      await ctx.runMutation(internalAny.progression.storyStages.completeStageInternal, {
+        userId: gameState.hostId,
+        stageId: lobby.stageId,
+        won: false,
+        finalLP: gameState.hostLifePoints,
+      });
+    }
+
+    logger.info("Game ended by SBA: Breakdown win condition", {
+      lobbyId,
+      winnerId: gameState.opponentId,
+      breakdownsCaused: opponentBreakdowns,
+    });
+
+    return {
+      gameEnded: true,
+      winnerId: gameState.opponentId,
+      action: `${winner?.username} wins by causing ${opponentBreakdowns} Breakdowns!`,
+    };
+  }
+
+  return { gameEnded: false, action: "" };
+}
+
+/**
+ * Check for Breakdown triggers on Stereotypes
+ *
+ * Breakdown occurs when:
+ * 1. A Stereotype's Stability (defense) reaches 0
+ * 2. A Stereotype has accumulated 3+ Vice Counters
+ *
+ * On Breakdown: execute breakdown effect, send to Hallway (graveyard),
+ * increment opponent's breakdownsCaused counter.
+ */
+async function checkBreakdownTriggers(
+  ctx: MutationCtx,
+  gameState: Doc<"gameStates">,
+  lobbyId: Id<"gameLobbies">,
+  gameId: string,
+  turnNumber: number,
+  destroyTriggeredCards: Set<string>
+): Promise<{ changed: boolean; destroyedCards: Id<"cardDefinitions">[]; actions: string[] }> {
+  const result = {
+    changed: false,
+    destroyedCards: [] as Id<"cardDefinitions">[],
+    actions: [] as string[],
+  };
+
+  // Check host board for Breakdown triggers
+  const hostBreakdowns = gameState.hostBoard.filter((bc) => {
+    // Stability reached 0
+    if (bc.defense <= 0) return true;
+    // Vice counters exceeded threshold
+    if ((bc.viceCounters ?? 0) >= BREAKDOWN_THRESHOLD) return true;
+    return false;
+  });
+
+  // Check opponent board for Breakdown triggers
+  const opponentBreakdowns = gameState.opponentBoard.filter((bc) => {
+    if (bc.defense <= 0) return true;
+    if ((bc.viceCounters ?? 0) >= BREAKDOWN_THRESHOLD) return true;
+    return false;
+  });
+
+  // Process host Breakdowns (opponent caused them)
+  for (const card of hostBreakdowns) {
+    const destroyed = await processBreakdown(
+      ctx,
+      gameState,
+      lobbyId,
+      gameId,
+      turnNumber,
+      card.cardId,
+      gameState.hostId,
+      true,
+      destroyTriggeredCards
+    );
+    if (destroyed) {
+      result.changed = true;
+      result.destroyedCards.push(card.cardId);
+      const reason = (card.viceCounters ?? 0) >= BREAKDOWN_THRESHOLD
+        ? `Vice overload (${card.viceCounters} counters)`
+        : "Stability reached 0";
+      result.actions.push(`Host Stereotype Breakdown: ${reason}`);
+    }
+  }
+
+  // Process opponent Breakdowns (host caused them)
+  for (const card of opponentBreakdowns) {
+    const destroyed = await processBreakdown(
+      ctx,
+      gameState,
+      lobbyId,
+      gameId,
+      turnNumber,
+      card.cardId,
+      gameState.opponentId,
+      false,
+      destroyTriggeredCards
+    );
+    if (destroyed) {
+      result.changed = true;
+      result.destroyedCards.push(card.cardId);
+      const reason = (card.viceCounters ?? 0) >= BREAKDOWN_THRESHOLD
+        ? `Vice overload (${card.viceCounters} counters)`
+        : "Stability reached 0";
+      result.actions.push(`Opponent Stereotype Breakdown: ${reason}`);
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Process a Breakdown on a Stereotype
+ *
+ * Sends the card to Hallway (graveyard), triggers breakdown effect,
+ * and increments the opponent's breakdownsCaused counter.
+ */
+async function processBreakdown(
+  ctx: MutationCtx,
+  gameState: Doc<"gameStates">,
+  lobbyId: Id<"gameLobbies">,
+  gameId: string,
+  turnNumber: number,
+  cardId: Id<"cardDefinitions">,
+  ownerId: Id<"users">,
+  isHost: boolean,
+  destroyTriggeredCards: Set<string>
+): Promise<boolean> {
+  const board = isHost ? gameState.hostBoard : gameState.opponentBoard;
+  const cardOnBoard = board.find((bc) => bc.cardId === cardId);
+
+  if (!cardOnBoard) return false;
+
+  // Check protection (cannotBeDestroyedByEffects protects from Breakdown too)
+  if (cardOnBoard.cannotBeDestroyedByEffects) {
+    logger.debug("Stereotype protected from Breakdown", { cardId });
+    return false;
+  }
+
+  const card = await ctx.db.get(cardId);
+  const owner = await ctx.db.get(ownerId);
+
+  // Record the Breakdown event
+  await recordEventHelper(ctx, {
+    lobbyId,
+    gameId,
+    turnNumber,
+    eventType: "card_to_graveyard",
+    playerId: ownerId,
+    playerUsername: owner?.username || "Unknown",
+    description: `${card?.name || "Stereotype"} suffered a Breakdown!`,
+    metadata: {
+      cardId,
+      cardName: card?.name,
+      reason: "breakdown",
+      viceCounters: cardOnBoard.viceCounters ?? 0,
+      stability: cardOnBoard.defense,
+    },
+  });
+
+  // Remove from board and add to graveyard (Hallway)
+  const freshState = await ctx.db.get(gameState._id);
+  const currentGraveyard = freshState
+    ? isHost ? freshState.hostGraveyard : freshState.opponentGraveyard
+    : isHost ? gameState.hostGraveyard : gameState.opponentGraveyard;
+  const currentBoard = freshState
+    ? isHost ? freshState.hostBoard : freshState.opponentBoard
+    : board;
+  const newBoard = currentBoard.filter((bc) => bc.cardId !== cardId);
+
+  // Increment opponent's breakdownsCaused
+  // If host's stereotype broke down, opponent caused it (and vice versa)
+  const breakdownField = isHost ? "opponentBreakdownsCaused" : "hostBreakdownsCaused";
+  const currentBreakdowns = freshState
+    ? (freshState as any)[breakdownField] ?? 0
+    : (gameState as any)[breakdownField] ?? 0;
+
+  await ctx.db.patch(gameState._id, {
+    [isHost ? "hostBoard" : "opponentBoard"]: newBoard,
+    [isHost ? "hostGraveyard" : "opponentGraveyard"]: [...currentGraveyard, cardId],
+    [breakdownField]: currentBreakdowns + 1,
+  });
+
+  // Trigger breakdown effect if present
+  const cardKey = `${cardId}-${gameState._id}`;
+  if (card && !destroyTriggeredCards.has(cardKey)) {
+    destroyTriggeredCards.add(cardKey);
+
+    const parsedAbility = getCardAbility(card);
+
+    // Check for on_destroy trigger (breakdown acts as destruction)
+    const destroyEffect = parsedAbility?.effects.find((e) => e.trigger === "on_destroy");
+    if (destroyEffect) {
+      const refreshedState = await ctx.db
+        .query("gameStates")
+        .withIndex("by_lobby", (q) => q.eq("lobbyId", lobbyId))
+        .first();
+
+      if (refreshedState) {
+        const effectResult = await executeEffect(
+          ctx,
+          refreshedState,
+          lobbyId,
+          destroyEffect,
+          ownerId,
+          cardId,
+          []
+        );
+
+        if (effectResult.success) {
+          await recordEventHelper(ctx, {
+            lobbyId,
+            gameId,
+            turnNumber,
+            eventType: "effect_activated",
+            playerId: ownerId,
+            playerUsername: owner?.username || "Unknown",
+            description: `${card.name} Breakdown effect: ${effectResult.message}`,
+            metadata: { cardId, trigger: "breakdown", source: "sba" },
+          });
+        }
+      }
+    }
+  }
+
+  logger.info("Stereotype Breakdown", {
+    cardId,
+    cardName: card?.name,
+    ownerId,
+    viceCounters: cardOnBoard.viceCounters ?? 0,
+    stability: cardOnBoard.defense,
+  });
+
+  return true;
 }
 
 /**

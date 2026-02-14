@@ -28,144 +28,64 @@ export interface ArchetypeTheme {
  * from the archetype field returned by the database.
  */
 export const ARCHETYPE_THEMES: Record<string, ArchetypeTheme> = {
-  // Fire/Dragon archetypes
-  infernal_dragons: {
-    gradient: "from-red-600 via-orange-500 to-yellow-500",
+  // Dropout - Red aggro (rebellious, aggressive, fast)
+  dropout: {
+    gradient: "from-red-600 via-red-500 to-orange-500",
     icon: "🔥",
-    iconPath: "/brand/icons/archetypes/infernal_dragons.png",
+    iconPath: "/brand/icons/archetypes/dropout.png",
     color: "red",
     borderColor: "border-red-500/50",
     glowColor: "shadow-red-500/30",
   },
 
-  // Water/Ocean archetypes
-  abyssal_horrors: {
-    gradient: "from-blue-900 via-blue-600 to-cyan-500",
-    icon: "🌊",
-    iconPath: "/brand/icons/archetypes/abyssal_horrors.png",
+  // Prep - Blue midrange (popular, balanced, adaptable)
+  prep: {
+    gradient: "from-blue-600 via-blue-500 to-cyan-500",
+    icon: "🎉",
+    iconPath: "/brand/icons/archetypes/prep.png",
     color: "blue",
     borderColor: "border-blue-500/50",
     glowColor: "shadow-blue-500/30",
   },
 
-  // Nature/Forest archetypes
-  nature_spirits: {
-    gradient: "from-green-700 via-emerald-500 to-lime-400",
-    icon: "🌿",
-    iconPath: "/brand/icons/archetypes/nature_spirits.png",
-    color: "green",
-    borderColor: "border-green-500/50",
-    glowColor: "shadow-green-500/30",
-  },
-
-  // Storm/Lightning archetypes
-  storm_elementals: {
-    gradient: "from-purple-600 via-indigo-500 to-sky-400",
-    icon: "⚡",
-    iconPath: "/brand/icons/archetypes/storm_elementals.png",
-    color: "purple",
-    borderColor: "border-purple-500/50",
-    glowColor: "shadow-purple-500/30",
-  },
-
-  // Water archetypes (current)
-  abyssal_depths: {
-    gradient: "from-blue-700 via-cyan-600 to-teal-500",
-    icon: "🌊",
-    iconPath: "/brand/icons/archetypes/abyssal_horrors.png",
-    color: "blue",
-    borderColor: "border-blue-500/50",
-    glowColor: "shadow-blue-500/30",
-  },
-
-  // Earth archetypes (current)
-  iron_legion: {
-    gradient: "from-slate-600 via-zinc-500 to-stone-400",
-    icon: "🛡️",
-    iconPath: "/brand/icons/archetypes/nature_spirits.png",
-    color: "slate",
-    borderColor: "border-slate-400/50",
-    glowColor: "shadow-slate-400/30",
-  },
-
-  // Wind archetypes (current alias)
-  storm_riders: {
-    gradient: "from-yellow-500 via-amber-400 to-orange-400",
-    icon: "⚡",
-    iconPath: "/brand/icons/archetypes/storm_elementals.png",
+  // Geek - Yellow combo (tech-savvy, synergy-focused)
+  geek: {
+    gradient: "from-yellow-600 via-yellow-500 to-amber-400",
+    icon: "🧠",
+    iconPath: "/brand/icons/archetypes/geek.png",
     color: "yellow",
     borderColor: "border-yellow-500/50",
     glowColor: "shadow-yellow-500/30",
   },
 
-  // Dark archetypes (current)
-  necro_empire: {
-    gradient: "from-purple-800 via-violet-700 to-purple-500",
-    icon: "💀",
-    iconPath: "/brand/icons/archetypes/undead_legion.png",
+  // Freak - Purple chaos (unpredictable, random effects)
+  freak: {
+    gradient: "from-purple-600 via-purple-500 to-fuchsia-500",
+    icon: "🧪",
+    iconPath: "/brand/icons/archetypes/freak.png",
     color: "purple",
     borderColor: "border-purple-500/50",
     glowColor: "shadow-purple-500/30",
   },
 
-  // Shadow/Dark archetypes
-  shadow_assassins: {
-    gradient: "from-gray-900 via-slate-700 to-gray-600",
-    icon: "🗡️",
-    iconPath: "/brand/icons/archetypes/shadow_assassins.png",
+  // Nerd - Green control (studious, defensive, calculated)
+  nerd: {
+    gradient: "from-green-700 via-green-500 to-emerald-400",
+    icon: "📐",
+    iconPath: "/brand/icons/archetypes/nerd.png",
+    color: "green",
+    borderColor: "border-green-500/50",
+    glowColor: "shadow-green-500/30",
+  },
+
+  // Goodie Two-Shoes - White attrition (rule-following, grindy)
+  goodie_two_shoes: {
+    gradient: "from-gray-300 via-gray-200 to-white",
+    icon: "🙏",
+    iconPath: "/brand/icons/archetypes/goodie_two_shoes.png",
     color: "gray",
-    borderColor: "border-gray-500/50",
-    glowColor: "shadow-gray-500/30",
-  },
-
-  // Light/Holy archetypes
-  celestial_guardians: {
-    gradient: "from-yellow-400 via-amber-300 to-white",
-    icon: "✨",
-    iconPath: "/brand/icons/archetypes/celestial_guardians.png",
-    color: "yellow",
-    borderColor: "border-yellow-400/50",
-    glowColor: "shadow-yellow-400/30",
-  },
-
-  // Undead/Death archetypes
-  undead_legion: {
-    gradient: "from-gray-800 via-purple-900 to-green-800",
-    icon: "💀",
-    iconPath: "/brand/icons/archetypes/undead_legion.png",
-    color: "purple",
-    borderColor: "border-purple-700/50",
-    glowColor: "shadow-purple-700/30",
-  },
-
-  // Divine/Knight archetypes
-  divine_knights: {
-    gradient: "from-amber-500 via-yellow-400 to-orange-400",
-    icon: "⚔️",
-    iconPath: "/brand/icons/archetypes/divine_knights.png",
-    color: "amber",
-    borderColor: "border-amber-500/50",
-    glowColor: "shadow-amber-500/30",
-  },
-
-  // Arcane/Magic archetypes
-  arcane_mages: {
-    gradient: "from-violet-600 via-fuchsia-500 to-pink-500",
-    icon: "🔮",
-    iconPath: "/brand/icons/archetypes/arcane_mages.png",
-    color: "violet",
-    borderColor: "border-violet-500/50",
-    glowColor: "shadow-violet-500/30",
-  },
-
-  // Mechanical/Tech archetypes
-  mechanical_constructs: {
-    gradient: "from-slate-600 via-zinc-500 to-amber-600",
-    icon: "⚙️",
-    iconPath: "/brand/icons/archetypes/mechanical_constructs.png",
-    color: "zinc",
-    borderColor: "border-zinc-500/50",
-    glowColor: "shadow-zinc-500/30",
+    borderColor: "border-gray-400/50",
+    glowColor: "shadow-gray-400/30",
   },
 };
 
@@ -175,7 +95,7 @@ export const ARCHETYPE_THEMES: Record<string, ArchetypeTheme> = {
 export const DEFAULT_ARCHETYPE_THEME: ArchetypeTheme = {
   gradient: "from-purple-600 via-indigo-500 to-blue-500",
   icon: "🎴",
-  iconPath: "/brand/icons/archetypes/celestial_guardians.png",
+  iconPath: "/brand/icons/archetypes/freak.png",
   color: "purple",
   borderColor: "border-purple-500/50",
   glowColor: "shadow-purple-500/30",
@@ -184,7 +104,7 @@ export const DEFAULT_ARCHETYPE_THEME: ArchetypeTheme = {
 /**
  * Get the theme for a given archetype
  *
- * @param archetype - The archetype identifier (e.g., "infernal_dragons")
+ * @param archetype - The archetype identifier (e.g., "dropout", "prep", "geek")
  * @returns The theme object with gradient, icon, color, borderColor, and glowColor
  *
  * @example

@@ -123,12 +123,12 @@ export async function validateCardOwnership(
  * Validate monster zone has space for new monsters
  *
  * @param zone - Array of board cards (monster zone)
- * @param maxSize - Maximum zone size (default: 5)
+ * @param maxSize - Maximum zone size (default: 3)
  * @throws GAME_ZONE_FULL if zone is at capacity
  *
  * @example
- * validateMonsterZone(gameState.hostBoard) // Default max 5 monsters
- * validateMonsterZone(gameState.hostBoard, 3) // Custom max 3 monsters
+ * validateMonsterZone(gameState.hostBoard) // Default max 3 stereotypes
+ * validateMonsterZone(gameState.hostBoard, 3) // Custom max 3 stereotypes
  */
 export function validateMonsterZone(
   zone: Array<{
@@ -139,7 +139,7 @@ export function validateMonsterZone(
     hasAttacked: boolean;
     isFaceDown: boolean;
   }>,
-  maxSize = 5
+  maxSize = 3
 ) {
   if (zone.length >= maxSize) {
     throw createError(ErrorCode.GAME_ZONE_FULL, {

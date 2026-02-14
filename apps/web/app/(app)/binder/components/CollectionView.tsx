@@ -33,11 +33,12 @@ const RARITY_COLORS: Record<Rarity, { bg: string; text: string; border: string }
 };
 
 const ELEMENT_CONFIG: Record<Element, { icon: typeof Flame; color: string }> = {
-  fire: { icon: Flame, color: "text-red-500" },
-  water: { icon: Waves, color: "text-blue-500" },
-  earth: { icon: Shield, color: "text-slate-400" },
-  wind: { icon: Zap, color: "text-yellow-500" },
-  neutral: { icon: Star, color: "text-gray-400" },
+  red: { icon: Flame, color: "text-red-500" },
+  blue: { icon: Waves, color: "text-blue-500" },
+  yellow: { icon: Sparkles, color: "text-yellow-500" },
+  purple: { icon: Star, color: "text-purple-500" },
+  green: { icon: Shield, color: "text-green-500" },
+  white: { icon: Zap, color: "text-slate-100" },
 };
 
 interface CollectionStats {
@@ -279,7 +280,7 @@ export function CollectionView({
                 >
                   All
                 </button>
-                {(["fire", "water", "earth", "wind"] as Element[]).map((el) => {
+                {(["red", "blue", "yellow", "purple", "green", "white"] as Element[]).map((el) => {
                   const config = ELEMENT_CONFIG[el];
                   const Icon = config.icon;
                   const isActive = selectedElement === el;

@@ -12,7 +12,6 @@ export type CardRarity = Doc<"cardDefinitions">["rarity"];
 export type CardArchetype = Doc<"cardDefinitions">["archetype"];
 export type CardType = Doc<"cardDefinitions">["cardType"];
 export type CardAttribute = NonNullable<Doc<"cardDefinitions">["attribute"]>;
-export type MonsterType = NonNullable<Doc<"cardDefinitions">["monsterType"]>;
 export type SpellType = NonNullable<Doc<"cardDefinitions">["spellType"]>;
 export type TrapType = NonNullable<Doc<"cardDefinitions">["trapType"]>;
 

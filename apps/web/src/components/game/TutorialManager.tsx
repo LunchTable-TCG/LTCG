@@ -87,9 +87,9 @@ export function useTutorialRefs() {
     deck: deckRef,
     graveyard: graveyardRef,
     hand: handRef,
-    hand_creature: handCreatureRef,
+    hand_stereotype: handCreatureRef,
     hand_spell: handSpellRef,
-    field_creature: fieldCreatureRef,
+    field_stereotype: fieldCreatureRef,
     opponent_lp: opponentLpRef,
     phase_indicator: phaseBarRef,
   };

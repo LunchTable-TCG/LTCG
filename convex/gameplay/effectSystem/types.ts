@@ -73,7 +73,7 @@ export type TriggerCondition =
   | "on_battle_damage" // When this card inflicts battle damage
   | "on_battle_destroy" // When this card destroys a monster by battle
   | "on_battle_attacked" // When this card is attacked
-  | "on_battle_start" // At the start of the Battle Phase
+  | "on_combat_start" // At the start of the Combat Phase
   | "on_attack" // When this card declares an attack
   | "on_enter_combat_phase" // When Combat Phase begins
   | "on_draw" // During draw phase
@@ -81,7 +81,9 @@ export type TriggerCondition =
   | "on_opponent_attacks" // When opponent declares an attack
   | "on_opponent_activates" // When opponent activates a card
   | "on_main_start" // At start of Main Phase
-  | "on_battle_end" // At end of Battle Phase
+  | "on_combat_start" // At start of Combat Phase
+  | "on_combat_end" // At end of Combat Phase
+  | "on_breakdown_check" // During Breakdown Check Phase
   | "on_turn_start" // At start of turn
   | "on_turn_end" // At end of turn
   | "on_opponent_turn_start" // At start of opponent's turn

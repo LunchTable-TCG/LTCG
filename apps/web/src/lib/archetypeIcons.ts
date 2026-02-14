@@ -6,25 +6,12 @@
  */
 
 export type ArchetypeId =
-  | "infernal_dragons"
-  | "abyssal_horrors"
-  | "abyssal_depths"
-  | "arcane_mages"
-  | "celestial_guardians"
-  | "divine_knights"
-  | "mechanical_constructs"
-  | "nature_spirits"
-  | "shadow_assassins"
-  | "storm_elementals"
-  | "undead_legion"
-  | "iron_legion"
-  | "necro_empire"
-  // Legacy archetypes
-  | "fire"
-  | "water"
-  | "earth"
-  | "wind"
-  | "neutral";
+  | "dropout"
+  | "prep"
+  | "geek"
+  | "freak"
+  | "nerd"
+  | "goodie_two_shoes";
 
 /**
  * Get the icon path for a given archetype
@@ -35,37 +22,22 @@ export function getArchetypeIcon(archetype: string): string {
   // Normalize archetype name
   const normalizedArchetype = archetype.toLowerCase().replace(/\s+/g, "_");
 
-  // Map legacy element names to their archetype icons
-  const legacyMappings: Record<string, string> = {
-    fire: "infernal_dragons",
-    water: "abyssal_depths",
-    earth: "nature_spirits",
-    wind: "storm_elementals",
-    neutral: "celestial_guardians",
-  };
-
-  const archetypeKey = legacyMappings[normalizedArchetype] || normalizedArchetype;
-
   // Available archetype icons
   const availableIcons: Set<string> = new Set([
-    "infernal_dragons",
-    "abyssal_horrors",
-    "arcane_mages",
-    "celestial_guardians",
-    "divine_knights",
-    "mechanical_constructs",
-    "nature_spirits",
-    "shadow_assassins",
-    "storm_elementals",
-    "undead_legion",
+    "dropout",
+    "prep",
+    "geek",
+    "freak",
+    "nerd",
+    "goodie_two_shoes",
   ]);
 
-  if (availableIcons.has(archetypeKey)) {
-    return `/brand/icons/archetypes/${archetypeKey}.png`;
+  if (availableIcons.has(normalizedArchetype)) {
+    return `/brand/icons/archetypes/${normalizedArchetype}.png`;
   }
 
-  // Fallback to celestial_guardians for unknown archetypes
-  return "/brand/icons/archetypes/celestial_guardians.png";
+  // Fallback to freak for unknown archetypes (purple/chaos)
+  return "/brand/icons/archetypes/freak.png";
 }
 
 /**
@@ -74,16 +46,12 @@ export function getArchetypeIcon(archetype: string): string {
  */
 export function getAllArchetypeIcons(): Array<{ id: string; path: string; name: string }> {
   const archetypes = [
-    { id: "infernal_dragons", name: "Infernal Dragons" },
-    { id: "abyssal_horrors", name: "Abyssal Horrors" },
-    { id: "arcane_mages", name: "Arcane Mages" },
-    { id: "celestial_guardians", name: "Celestial Guardians" },
-    { id: "divine_knights", name: "Divine Knights" },
-    { id: "mechanical_constructs", name: "Mechanical Constructs" },
-    { id: "nature_spirits", name: "Nature Spirits" },
-    { id: "shadow_assassins", name: "Shadow Assassins" },
-    { id: "storm_elementals", name: "Storm Elementals" },
-    { id: "undead_legion", name: "Undead Legion" },
+    { id: "dropout", name: "Dropout" },
+    { id: "prep", name: "Prep" },
+    { id: "geek", name: "Geek" },
+    { id: "freak", name: "Freak" },
+    { id: "nerd", name: "Nerd" },
+    { id: "goodie_two_shoes", name: "Goodie Two-Shoes" },
   ];
 
   return archetypes.map((archetype) => ({

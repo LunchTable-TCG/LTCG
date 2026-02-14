@@ -168,8 +168,8 @@ export function DeckEditor({
             <p className="text-[9px] text-[#a89f94] uppercase tracking-wider">Avg Cost</p>
           </div>
           <div className="bg-black/30 rounded-lg p-3 text-center">
-            <p className="text-2xl font-black text-blue-400">{deckStats.creatureCount}</p>
-            <p className="text-[9px] text-[#a89f94] uppercase tracking-wider">Creatures</p>
+            <p className="text-2xl font-black text-blue-400">{deckStats.stereotypeCount}</p>
+            <p className="text-[9px] text-[#a89f94] uppercase tracking-wider">Stereotypes</p>
           </div>
           <div className="bg-black/30 rounded-lg p-3 text-center">
             <p className="text-2xl font-black text-purple-400">{deckStats.spellCount}</p>
