@@ -8,7 +8,6 @@
  * @module
  */
 
-import type * as admin_CRUD_EXAMPLES from "../admin/CRUD_EXAMPLES.js";
 import type * as admin_achievements from "../admin/achievements.js";
 import type * as admin_admin from "../admin/admin.js";
 import type * as admin_aiConfig from "../admin/aiConfig.js";
@@ -25,9 +24,7 @@ import type * as admin_cards from "../admin/cards.js";
 import type * as admin_chat from "../admin/chat.js";
 import type * as admin_cleanupAuth from "../admin/cleanupAuth.js";
 import type * as admin_config from "../admin/config.js";
-import type * as admin_crudGenerated from "../admin/crudGenerated.js";
 import type * as admin_features from "../admin/features.js";
-import type * as admin_freeformDesigns from "../admin/freeformDesigns.js";
 import type * as admin_marketplace from "../admin/marketplace.js";
 import type * as admin_moderation from "../admin/moderation.js";
 import type * as admin_mutations from "../admin/mutations.js";
@@ -44,7 +41,6 @@ import type * as admin_shop from "../admin/shop.js";
 import type * as admin_shopSetup from "../admin/shopSetup.js";
 import type * as admin_story from "../admin/story.js";
 import type * as admin_stripe from "../admin/stripe.js";
-import type * as admin_templates from "../admin/templates.js";
 import type * as admin_tournaments from "../admin/tournaments.js";
 import type * as agents_agents from "../agents/agents.js";
 import type * as agents_autonomy from "../agents/autonomy.js";
@@ -64,9 +60,6 @@ import type * as alerts_rules from "../alerts/rules.js";
 import type * as alerts_webhooks from "../alerts/webhooks.js";
 import type * as auth_auth from "../auth/auth.js";
 import type * as auth_syncUser from "../auth/syncUser.js";
-import type * as cardBackgrounds from "../cardBackgrounds.js";
-import type * as cardTypeTemplates from "../cardTypeTemplates.js";
-import type * as cards from "../cards.js";
 import type * as chainResolver from "../chainResolver.js";
 import type * as content_publishing from "../content/publishing.js";
 import type * as content_scheduledContent from "../content/scheduledContent.js";
@@ -77,8 +70,6 @@ import type * as core_tutorial from "../core/tutorial.js";
 import type * as core_userPreferences from "../core/userPreferences.js";
 import type * as core_users from "../core/users.js";
 import type * as crons from "../crons.js";
-import type * as decks from "../decks.js";
-import type * as economy from "../economy.js";
 import type * as economy_dailyRewards from "../economy/dailyRewards.js";
 import type * as economy_economy from "../economy/economy.js";
 import type * as economy_elizaOSMonitor from "../economy/elizaOSMonitor.js";
@@ -93,15 +84,11 @@ import type * as economy_tokenBalance from "../economy/tokenBalance.js";
 import type * as economy_tokenMaintenance from "../economy/tokenMaintenance.js";
 import type * as economy_tokenMarketplace from "../economy/tokenMarketplace.js";
 import type * as economy_zodShopPurchase from "../economy/zodShopPurchase.js";
-import type * as effectSystem from "../effectSystem.js";
 import type * as email_lists from "../email/lists.js";
 import type * as email_send from "../email/send.js";
 import type * as email_templates from "../email/templates.js";
 import type * as feedback_feedback from "../feedback/feedback.js";
-import type * as friends from "../friends.js";
 import type * as functions from "../functions.js";
-import type * as gameEngine from "../gameEngine.js";
-import type * as gameEvents from "../gameEvents.js";
 import type * as gameplay_ai_aiDifficulty from "../gameplay/ai/aiDifficulty.js";
 import type * as gameplay_ai_aiEngine from "../gameplay/ai/aiEngine.js";
 import type * as gameplay_ai_aiTurn from "../gameplay/ai/aiTurn.js";
@@ -166,8 +153,6 @@ import type * as gameplay_summonValidator from "../gameplay/summonValidator.js";
 import type * as gameplay_timeoutSystem from "../gameplay/timeoutSystem.js";
 import type * as gameplay_triggerSystem from "../gameplay/triggerSystem.js";
 import type * as gameplay_webhooks from "../gameplay/webhooks.js";
-import type * as games from "../games.js";
-import type * as globalChat from "../globalChat.js";
 import type * as http from "../http.js";
 import type * as http_agents from "../http/agents.js";
 import type * as http_chat from "../http/chat.js";
@@ -200,7 +185,6 @@ import type * as infrastructure_welcomeEmails from "../infrastructure/welcomeEma
 import type * as infrastructure_workflows from "../infrastructure/workflows.js";
 import type * as infrastructure_workpoolMonitoring from "../infrastructure/workpoolMonitoring.js";
 import type * as infrastructure_workpools from "../infrastructure/workpools.js";
-import type * as leaderboards from "../leaderboards.js";
 import type * as lib_abilityHelpers from "../lib/abilityHelpers.js";
 import type * as lib_adminAudit from "../lib/adminAudit.js";
 import type * as lib_cardPropertyHelpers from "../lib/cardPropertyHelpers.js";
@@ -251,13 +235,10 @@ import type * as livekit_internal_dedupe from "../livekit/internal/dedupe.js";
 import type * as livekit_internal_mutations from "../livekit/internal/mutations.js";
 import type * as livekit_public_queries from "../livekit/public/queries.js";
 import type * as livekit_public_tokens from "../livekit/public/tokens.js";
-import type * as marketplace from "../marketplace.js";
-import type * as matchmaking from "../matchmaking.js";
 import type * as migrations_addLeaderboardFields from "../migrations/addLeaderboardFields.js";
 import type * as migrations_index from "../migrations/index.js";
 import type * as migrations_loadAllCards from "../migrations/loadAllCards.js";
 import type * as migrations_manualAbilities from "../migrations/manualAbilities.js";
-import type * as migrations_mergeMarketplaceBids from "../migrations/mergeMarketplaceBids.js";
 import type * as migrations_migrateAdminRoles from "../migrations/migrateAdminRoles.js";
 import type * as migrations_updateArchetypes from "../migrations/updateArchetypes.js";
 import type * as migrations_updateShopProducts from "../migrations/updateShopProducts.js";
@@ -271,7 +252,6 @@ import type * as progression_notifications from "../progression/notifications.js
 import type * as progression_quests from "../progression/quests.js";
 import type * as progression_story from "../progression/story.js";
 import type * as progression_storyBattle from "../progression/storyBattle.js";
-import type * as progression_storyDiagnostic from "../progression/storyDiagnostic.js";
 import type * as progression_storyQueries from "../progression/storyQueries.js";
 import type * as progression_storyStages from "../progression/storyStages.js";
 import type * as router from "../router.js";
@@ -280,7 +260,6 @@ import type * as scripts_debugStoryData from "../scripts/debugStoryData.js";
 import type * as scripts_seedStarterCards from "../scripts/seedStarterCards.js";
 import type * as scripts_seedStoryChapters from "../scripts/seedStoryChapters.js";
 import type * as scripts_testStoryBattle from "../scripts/testStoryBattle.js";
-import type * as seedStarterCards from "../seedStarterCards.js";
 import type * as seeds_starterCards from "../seeds/starterCards.js";
 import type * as seeds_starterDecks from "../seeds/starterDecks.js";
 import type * as seeds_storyChapters from "../seeds/storyChapters.js";
@@ -288,7 +267,6 @@ import type * as seeds_storyStages from "../seeds/storyStages.js";
 import type * as seeds_types from "../seeds/types.js";
 import type * as setup from "../setup.js";
 import type * as setupSystem from "../setupSystem.js";
-import type * as shop from "../shop.js";
 import type * as social from "../social.js";
 import type * as social_aiChat from "../social/aiChat.js";
 import type * as social_challenges from "../social/challenges.js";
@@ -314,7 +292,6 @@ import type * as social_tournaments from "../social/tournaments.js";
 import type * as social_userTournaments from "../social/userTournaments.js";
 import type * as storage_cards from "../storage/cards.js";
 import type * as storage_images from "../storage/images.js";
-import type * as story from "../story.js";
 import type * as streaming_http from "../streaming/http.js";
 import type * as streaming_livekit from "../streaming/livekit.js";
 import type * as streaming_sessions from "../streaming/sessions.js";
@@ -333,7 +310,6 @@ import type * as tokenAnalytics_trades from "../tokenAnalytics/trades.js";
 import type * as treasury_policies from "../treasury/policies.js";
 import type * as treasury_transactions from "../treasury/transactions.js";
 import type * as treasury_wallets from "../treasury/wallets.js";
-import type * as tutorial from "../tutorial.js";
 import type * as wager_disconnectMonitor from "../wager/disconnectMonitor.js";
 import type * as wager_escrow from "../wager/escrow.js";
 import type * as wager_escrowMutations from "../wager/escrowMutations.js";
@@ -352,7 +328,6 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
-  "admin/CRUD_EXAMPLES": typeof admin_CRUD_EXAMPLES;
   "admin/achievements": typeof admin_achievements;
   "admin/admin": typeof admin_admin;
   "admin/aiConfig": typeof admin_aiConfig;
@@ -369,9 +344,7 @@ declare const fullApi: ApiFromModules<{
   "admin/chat": typeof admin_chat;
   "admin/cleanupAuth": typeof admin_cleanupAuth;
   "admin/config": typeof admin_config;
-  "admin/crudGenerated": typeof admin_crudGenerated;
   "admin/features": typeof admin_features;
-  "admin/freeformDesigns": typeof admin_freeformDesigns;
   "admin/marketplace": typeof admin_marketplace;
   "admin/moderation": typeof admin_moderation;
   "admin/mutations": typeof admin_mutations;
@@ -388,7 +361,6 @@ declare const fullApi: ApiFromModules<{
   "admin/shopSetup": typeof admin_shopSetup;
   "admin/story": typeof admin_story;
   "admin/stripe": typeof admin_stripe;
-  "admin/templates": typeof admin_templates;
   "admin/tournaments": typeof admin_tournaments;
   "agents/agents": typeof agents_agents;
   "agents/autonomy": typeof agents_autonomy;
@@ -408,9 +380,6 @@ declare const fullApi: ApiFromModules<{
   "alerts/webhooks": typeof alerts_webhooks;
   "auth/auth": typeof auth_auth;
   "auth/syncUser": typeof auth_syncUser;
-  cardBackgrounds: typeof cardBackgrounds;
-  cardTypeTemplates: typeof cardTypeTemplates;
-  cards: typeof cards;
   chainResolver: typeof chainResolver;
   "content/publishing": typeof content_publishing;
   "content/scheduledContent": typeof content_scheduledContent;
@@ -421,8 +390,6 @@ declare const fullApi: ApiFromModules<{
   "core/userPreferences": typeof core_userPreferences;
   "core/users": typeof core_users;
   crons: typeof crons;
-  decks: typeof decks;
-  economy: typeof economy;
   "economy/dailyRewards": typeof economy_dailyRewards;
   "economy/economy": typeof economy_economy;
   "economy/elizaOSMonitor": typeof economy_elizaOSMonitor;
@@ -437,15 +404,11 @@ declare const fullApi: ApiFromModules<{
   "economy/tokenMaintenance": typeof economy_tokenMaintenance;
   "economy/tokenMarketplace": typeof economy_tokenMarketplace;
   "economy/zodShopPurchase": typeof economy_zodShopPurchase;
-  effectSystem: typeof effectSystem;
   "email/lists": typeof email_lists;
   "email/send": typeof email_send;
   "email/templates": typeof email_templates;
   "feedback/feedback": typeof feedback_feedback;
-  friends: typeof friends;
   functions: typeof functions;
-  gameEngine: typeof gameEngine;
-  gameEvents: typeof gameEvents;
   "gameplay/ai/aiDifficulty": typeof gameplay_ai_aiDifficulty;
   "gameplay/ai/aiEngine": typeof gameplay_ai_aiEngine;
   "gameplay/ai/aiTurn": typeof gameplay_ai_aiTurn;
@@ -510,8 +473,6 @@ declare const fullApi: ApiFromModules<{
   "gameplay/timeoutSystem": typeof gameplay_timeoutSystem;
   "gameplay/triggerSystem": typeof gameplay_triggerSystem;
   "gameplay/webhooks": typeof gameplay_webhooks;
-  games: typeof games;
-  globalChat: typeof globalChat;
   http: typeof http;
   "http/agents": typeof http_agents;
   "http/chat": typeof http_chat;
@@ -544,7 +505,6 @@ declare const fullApi: ApiFromModules<{
   "infrastructure/workflows": typeof infrastructure_workflows;
   "infrastructure/workpoolMonitoring": typeof infrastructure_workpoolMonitoring;
   "infrastructure/workpools": typeof infrastructure_workpools;
-  leaderboards: typeof leaderboards;
   "lib/abilityHelpers": typeof lib_abilityHelpers;
   "lib/adminAudit": typeof lib_adminAudit;
   "lib/cardPropertyHelpers": typeof lib_cardPropertyHelpers;
@@ -595,13 +555,10 @@ declare const fullApi: ApiFromModules<{
   "livekit/internal/mutations": typeof livekit_internal_mutations;
   "livekit/public/queries": typeof livekit_public_queries;
   "livekit/public/tokens": typeof livekit_public_tokens;
-  marketplace: typeof marketplace;
-  matchmaking: typeof matchmaking;
   "migrations/addLeaderboardFields": typeof migrations_addLeaderboardFields;
   "migrations/index": typeof migrations_index;
   "migrations/loadAllCards": typeof migrations_loadAllCards;
   "migrations/manualAbilities": typeof migrations_manualAbilities;
-  "migrations/mergeMarketplaceBids": typeof migrations_mergeMarketplaceBids;
   "migrations/migrateAdminRoles": typeof migrations_migrateAdminRoles;
   "migrations/updateArchetypes": typeof migrations_updateArchetypes;
   "migrations/updateShopProducts": typeof migrations_updateShopProducts;
@@ -615,7 +572,6 @@ declare const fullApi: ApiFromModules<{
   "progression/quests": typeof progression_quests;
   "progression/story": typeof progression_story;
   "progression/storyBattle": typeof progression_storyBattle;
-  "progression/storyDiagnostic": typeof progression_storyDiagnostic;
   "progression/storyQueries": typeof progression_storyQueries;
   "progression/storyStages": typeof progression_storyStages;
   router: typeof router;
@@ -624,7 +580,6 @@ declare const fullApi: ApiFromModules<{
   "scripts/seedStarterCards": typeof scripts_seedStarterCards;
   "scripts/seedStoryChapters": typeof scripts_seedStoryChapters;
   "scripts/testStoryBattle": typeof scripts_testStoryBattle;
-  seedStarterCards: typeof seedStarterCards;
   "seeds/starterCards": typeof seeds_starterCards;
   "seeds/starterDecks": typeof seeds_starterDecks;
   "seeds/storyChapters": typeof seeds_storyChapters;
@@ -632,7 +587,6 @@ declare const fullApi: ApiFromModules<{
   "seeds/types": typeof seeds_types;
   setup: typeof setup;
   setupSystem: typeof setupSystem;
-  shop: typeof shop;
   social: typeof social;
   "social/aiChat": typeof social_aiChat;
   "social/challenges": typeof social_challenges;
@@ -658,7 +612,6 @@ declare const fullApi: ApiFromModules<{
   "social/userTournaments": typeof social_userTournaments;
   "storage/cards": typeof storage_cards;
   "storage/images": typeof storage_images;
-  story: typeof story;
   "streaming/http": typeof streaming_http;
   "streaming/livekit": typeof streaming_livekit;
   "streaming/sessions": typeof streaming_sessions;
@@ -677,7 +630,6 @@ declare const fullApi: ApiFromModules<{
   "treasury/policies": typeof treasury_policies;
   "treasury/transactions": typeof treasury_transactions;
   "treasury/wallets": typeof treasury_wallets;
-  tutorial: typeof tutorial;
   "wager/disconnectMonitor": typeof wager_disconnectMonitor;
   "wager/escrow": typeof wager_escrow;
   "wager/escrowMutations": typeof wager_escrowMutations;
@@ -5432,6 +5384,5243 @@ export declare const components: {
         "internal",
         { apiKey: string; quantity: number; stripeSubscriptionId: string },
         null
+      >;
+    };
+  };
+  lunchtable_tcg_admin: {
+    alerts: {
+      acknowledgeAlert: FunctionReference<
+        "mutation",
+        "internal",
+        { acknowledgedBy: string; alertHistoryId: string },
+        null
+      >;
+      createAlertChannel: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          config: {
+            email?: string;
+            minSeverity: "info" | "warning" | "critical";
+            webhookUrl?: string;
+          };
+          createdBy: string;
+          isEnabled: boolean;
+          name: string;
+          type: "in_app" | "push" | "slack" | "discord" | "email";
+        },
+        string
+      >;
+      createAlertRule: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          conditions: {
+            direction?: "above" | "below" | "change";
+            percentChange?: number;
+            threshold?: number;
+            timeframeMinutes?: number;
+          };
+          cooldownMinutes: number;
+          createdBy: string;
+          description?: string;
+          isEnabled: boolean;
+          name: string;
+          severity: "info" | "warning" | "critical";
+          triggerType:
+            | "price_change"
+            | "price_threshold"
+            | "volume_spike"
+            | "whale_activity"
+            | "holder_milestone"
+            | "bonding_progress"
+            | "treasury_balance"
+            | "transaction_failed"
+            | "graduation"
+            | "integrity_violation";
+        },
+        string
+      >;
+      getAlertHistory: FunctionReference<
+        "query",
+        "internal",
+        { limit?: number; ruleId?: string },
+        any
+      >;
+      listAlertChannels: FunctionReference<"query", "internal", {}, any>;
+      listAlertRules: FunctionReference<
+        "query",
+        "internal",
+        { enabled?: boolean },
+        any
+      >;
+      triggerAlert: FunctionReference<
+        "mutation",
+        "internal",
+        { data?: any; message: string; ruleId: string; title: string },
+        string | null
+      >;
+    };
+    analytics: {
+      captureSnapshot: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          metrics: {
+            activeMarketplaceListings: number;
+            dailyActiveUsers: number;
+            gamesPlayedLast24h: number;
+            playersInMatchmakingQueue: number;
+            totalGemsInCirculation: number;
+            totalGoldInCirculation: number;
+            totalUsers: number;
+          };
+          period: "hourly" | "daily" | "weekly";
+        },
+        string
+      >;
+      cleanupOldSnapshots: FunctionReference<
+        "mutation",
+        "internal",
+        { olderThan: number },
+        number
+      >;
+      getSnapshots: FunctionReference<
+        "query",
+        "internal",
+        { period: "hourly" | "daily" | "weekly"; since?: number },
+        any
+      >;
+    };
+    apiKeys: {
+      create: FunctionReference<
+        "mutation",
+        "internal",
+        { agentId: string; keyHash: string; keyPrefix: string; userId: string },
+        string
+      >;
+      deactivate: FunctionReference<
+        "mutation",
+        "internal",
+        { keyHash: string },
+        null
+      >;
+      getByAgent: FunctionReference<
+        "query",
+        "internal",
+        { agentId: string },
+        any
+      >;
+      getByHash: FunctionReference<
+        "query",
+        "internal",
+        { keyHash: string },
+        any
+      >;
+      getByUser: FunctionReference<
+        "query",
+        "internal",
+        { userId: string },
+        any
+      >;
+      getUsage: FunctionReference<
+        "query",
+        "internal",
+        { apiKeyId: string; limit?: number; since?: number },
+        any
+      >;
+      recordUsage: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          apiKeyId: string;
+          durationMs?: number;
+          endpoint?: string;
+          responseStatus?: number;
+        },
+        string
+      >;
+    };
+    audit: {
+      getAdminAuditLog: FunctionReference<
+        "query",
+        "internal",
+        { action?: string; adminId?: string; limit?: number },
+        any
+      >;
+      getDataAuditLog: FunctionReference<
+        "query",
+        "internal",
+        {
+          documentId?: string;
+          limit?: number;
+          table?: string;
+          userId?: string;
+        },
+        any
+      >;
+      logAdminAction: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          action: string;
+          adminId: string;
+          errorMessage?: string;
+          ipAddress?: string;
+          metadata?: any;
+          success: boolean;
+          targetEmail?: string;
+          targetUserId?: string;
+        },
+        string
+      >;
+      logDataChange: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          changedFields?: Array<string>;
+          documentId: string;
+          newValue?: any;
+          oldValue?: any;
+          operation: "insert" | "patch" | "delete";
+          table: string;
+          userId?: string;
+        },
+        string
+      >;
+    };
+    config: {
+      bulkUpdateConfigs: FunctionReference<
+        "mutation",
+        "internal",
+        { configs: Array<{ key: string; value: any }>; updatedBy: string },
+        { notFound: Array<string>; updated: number }
+      >;
+      getConfig: FunctionReference<"query", "internal", { key: string }, any>;
+      getConfigsByCategory: FunctionReference<
+        "query",
+        "internal",
+        { category: string },
+        any
+      >;
+      seedDefaultConfigs: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          configs: Array<{
+            category: string;
+            description: string;
+            displayName: string;
+            key: string;
+            maxValue?: number;
+            minValue?: number;
+            value: any;
+            valueType: "number" | "string" | "boolean" | "json" | "secret";
+          }>;
+          updatedBy: string;
+        },
+        { inserted: number; skipped: number }
+      >;
+      updateConfig: FunctionReference<
+        "mutation",
+        "internal",
+        { key: string; updatedBy: string; value: any },
+        null
+      >;
+    };
+    features: {
+      checkFeatureFlag: FunctionReference<
+        "query",
+        "internal",
+        { name: string; userId?: string },
+        boolean
+      >;
+      createFeatureFlag: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          category: string;
+          description: string;
+          displayName: string;
+          enabled: boolean;
+          name: string;
+          rolloutPercentage?: number;
+          targetRoles?: Array<string>;
+          targetUserIds?: Array<string>;
+          updatedBy: string;
+        },
+        string
+      >;
+      listFeatureFlags: FunctionReference<
+        "query",
+        "internal",
+        { category?: string },
+        any
+      >;
+      toggleFeatureFlag: FunctionReference<
+        "mutation",
+        "internal",
+        { enabled: boolean; name: string; updatedBy: string },
+        null
+      >;
+      updateFeatureFlag: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          name: string;
+          updatedBy: string;
+          updates: {
+            category?: string;
+            description?: string;
+            displayName?: string;
+            enabled?: boolean;
+            rolloutPercentage?: number;
+            targetRoles?: Array<string>;
+            targetUserIds?: Array<string>;
+          };
+        },
+        null
+      >;
+    };
+    files: {
+      createFileMetadata: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          blobPathname?: string;
+          blobUrl?: string;
+          category:
+            | "profile_picture"
+            | "card_image"
+            | "document"
+            | "other"
+            | "background"
+            | "texture"
+            | "ui_element"
+            | "shop_asset"
+            | "story_asset"
+            | "logo";
+          contentType: string;
+          description?: string;
+          fileName: string;
+          size: number;
+          storageId: string;
+          userId: string;
+        },
+        string
+      >;
+      deleteFileMetadata: FunctionReference<
+        "mutation",
+        "internal",
+        { fileId: string },
+        null
+      >;
+      getByCategory: FunctionReference<
+        "query",
+        "internal",
+        {
+          category:
+            | "profile_picture"
+            | "card_image"
+            | "document"
+            | "other"
+            | "background"
+            | "texture"
+            | "ui_element"
+            | "shop_asset"
+            | "story_asset"
+            | "logo";
+          limit?: number;
+        },
+        any
+      >;
+      getByStorageId: FunctionReference<
+        "query",
+        "internal",
+        { storageId: string },
+        any
+      >;
+      getByUser: FunctionReference<
+        "query",
+        "internal",
+        { limit?: number; userId: string },
+        any
+      >;
+      getByUserCategory: FunctionReference<
+        "query",
+        "internal",
+        {
+          category:
+            | "profile_picture"
+            | "card_image"
+            | "document"
+            | "other"
+            | "background"
+            | "texture"
+            | "ui_element"
+            | "shop_asset"
+            | "story_asset"
+            | "logo";
+          userId: string;
+        },
+        any
+      >;
+    };
+    moderation: {
+      createModerationAction: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          actionType:
+            | "mute"
+            | "unmute"
+            | "warn"
+            | "suspend"
+            | "unsuspend"
+            | "ban"
+            | "unban";
+          adminId: string;
+          duration?: number;
+          expiresAt?: number;
+          reason?: string;
+          userId: string;
+        },
+        string
+      >;
+      getActiveModerations: FunctionReference<
+        "query",
+        "internal",
+        { userId: string },
+        any
+      >;
+      getModerationHistory: FunctionReference<
+        "query",
+        "internal",
+        { limit?: number; userId: string },
+        any
+      >;
+    };
+    notifications: {
+      createNotification: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          adminId: string;
+          alertHistoryId?: string;
+          message: string;
+          title: string;
+          type: "alert" | "system" | "action_required";
+        },
+        string
+      >;
+      getNotifications: FunctionReference<
+        "query",
+        "internal",
+        { adminId: string; unreadOnly?: boolean },
+        any
+      >;
+      markAllAsRead: FunctionReference<
+        "mutation",
+        "internal",
+        { adminId: string },
+        number
+      >;
+      markAsRead: FunctionReference<
+        "mutation",
+        "internal",
+        { notificationId: string },
+        null
+      >;
+    };
+    reports: {
+      getByReportedUser: FunctionReference<
+        "query",
+        "internal",
+        { reportedUserId: string },
+        any
+      >;
+      getByReporter: FunctionReference<
+        "query",
+        "internal",
+        { reporterId: string },
+        any
+      >;
+      getByStatus: FunctionReference<
+        "query",
+        "internal",
+        {
+          limit?: number;
+          status: "pending" | "reviewed" | "resolved" | "dismissed";
+        },
+        any
+      >;
+      submitReport: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          reason: string;
+          reportedUserId: string;
+          reportedUsername: string;
+          reporterId: string;
+          reporterUsername: string;
+        },
+        string
+      >;
+      updateReportStatus: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          notes?: string;
+          reportId: string;
+          reviewedBy: string;
+          status: "pending" | "reviewed" | "resolved" | "dismissed";
+        },
+        null
+      >;
+    };
+    roles: {
+      cleanupExpiredRoles: FunctionReference<
+        "mutation",
+        "internal",
+        {},
+        number
+      >;
+      getRole: FunctionReference<"query", "internal", { userId: string }, any>;
+      grantRole: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          expiresAt?: number;
+          grantNote?: string;
+          grantedBy: string;
+          role: "moderator" | "admin" | "superadmin";
+          userId: string;
+        },
+        string
+      >;
+      hasRole: FunctionReference<
+        "query",
+        "internal",
+        { requiredRole: "moderator" | "admin" | "superadmin"; userId: string },
+        boolean
+      >;
+      listAdmins: FunctionReference<
+        "query",
+        "internal",
+        { role?: "moderator" | "admin" | "superadmin" },
+        any
+      >;
+      revokeRole: FunctionReference<
+        "mutation",
+        "internal",
+        { revokedBy: string; userId: string },
+        null
+      >;
+    };
+  };
+  lunchtable_tcg_ai: {
+    agents: {
+      createAgent: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          callbackUrl?: string;
+          isActive?: boolean;
+          lastStreamAt?: number;
+          lastWebhookAt?: number;
+          name: string;
+          privyUserId?: string;
+          profilePictureUrl?: string;
+          socialLink?: string;
+          starterDeckCode: string;
+          streamingAutoStart?: boolean;
+          streamingEnabled?: boolean;
+          streamingKeyHash?: string;
+          streamingPersistent?: boolean;
+          streamingPlatform?:
+            | "twitch"
+            | "youtube"
+            | "kick"
+            | "custom"
+            | "retake"
+            | "x"
+            | "pumpfun";
+          streamingProfilePictureUrl?: string;
+          streamingRtmpUrl?: string;
+          streamingVisualMode?: "webcam" | "profile-picture";
+          streamingVoiceLoop?: boolean;
+          streamingVoiceTrackUrl?: string;
+          streamingVoiceVolume?: number;
+          userId: string;
+          walletAddress?: string;
+          walletChainType?: string;
+          walletCreatedAt?: number;
+          walletErrorMessage?: string;
+          walletId?: string;
+          walletIndex?: number;
+          walletStatus?: "pending" | "created" | "failed";
+          webhookEnabled?: boolean;
+          webhookFailCount?: number;
+          webhookSecret?: string;
+        },
+        string
+      >;
+      getAgent: FunctionReference<
+        "query",
+        "internal",
+        { agentId: string },
+        any
+      >;
+      getAgentByName: FunctionReference<
+        "query",
+        "internal",
+        { name: string },
+        any
+      >;
+      getAgentByWallet: FunctionReference<
+        "query",
+        "internal",
+        { walletAddress: string },
+        any
+      >;
+      getAgentsByUser: FunctionReference<
+        "query",
+        "internal",
+        { userId: string },
+        any
+      >;
+      listAgents: FunctionReference<
+        "query",
+        "internal",
+        { limit?: number },
+        any
+      >;
+      updateAgent: FunctionReference<
+        "mutation",
+        "internal",
+        { agentId: string; updates: any },
+        null
+      >;
+    };
+    chat: {
+      addChatMessage: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          message: string;
+          role: "user" | "agent";
+          sessionId: string;
+          userId: string;
+        },
+        string
+      >;
+      createChatSession: FunctionReference<
+        "mutation",
+        "internal",
+        { sessionId: string; userId: string },
+        string
+      >;
+      endChatSession: FunctionReference<
+        "mutation",
+        "internal",
+        { sessionId: string },
+        null
+      >;
+      getChatMessages: FunctionReference<
+        "query",
+        "internal",
+        { limit?: number; sessionId: string },
+        any
+      >;
+      getChatSession: FunctionReference<
+        "query",
+        "internal",
+        { sessionId: string },
+        any
+      >;
+      getChatSessions: FunctionReference<
+        "query",
+        "internal",
+        { activeOnly?: boolean; userId: string },
+        any
+      >;
+    };
+    decisions: {
+      getDecisions: FunctionReference<
+        "query",
+        "internal",
+        { agentId?: string; gameId?: string; limit?: number },
+        any
+      >;
+      getDecisionsByGame: FunctionReference<
+        "query",
+        "internal",
+        { gameId: string },
+        any
+      >;
+      recordDecision: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          action: string;
+          agentId: string;
+          executionTimeMs?: number;
+          gameId: string;
+          parameters?: any;
+          phase: string;
+          reasoning: string;
+          result?: string;
+          turnNumber: number;
+        },
+        string
+      >;
+    };
+    usage: {
+      getDailyStats: FunctionReference<
+        "query",
+        "internal",
+        {
+          endDate?: string;
+          provider?: "openrouter" | "vercel";
+          startDate?: string;
+        },
+        any
+      >;
+      getUsage: FunctionReference<
+        "query",
+        "internal",
+        {
+          feature?: string;
+          limit?: number;
+          provider?: "openrouter" | "vercel";
+        },
+        any
+      >;
+      recordUsage: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          errorMessage?: string;
+          estimatedCost: number;
+          feature: string;
+          inputTokens: number;
+          latencyMs: number;
+          modelId: string;
+          modelType: "language" | "embedding" | "image";
+          outputTokens: number;
+          provider: "openrouter" | "vercel";
+          success: boolean;
+          totalTokens: number;
+          userId?: string;
+        },
+        string
+      >;
+      upsertDailyStats: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          avgLatencyMs: number;
+          date: string;
+          embeddingRequests: number;
+          failedRequests: number;
+          imageRequests: number;
+          languageRequests: number;
+          provider: "openrouter" | "vercel";
+          successfulRequests: number;
+          topModels: Array<{
+            cost: number;
+            modelId: string;
+            requests: number;
+            tokens: number;
+          }>;
+          totalCost: number;
+          totalInputTokens: number;
+          totalOutputTokens: number;
+          totalRequests: number;
+          totalTokens: number;
+        },
+        null
+      >;
+    };
+  };
+  lunchtable_tcg_branding: {
+    assets: {
+      createAsset: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          aiDescription: string;
+          fileMetadataId: string;
+          fileSpecs?: {
+            custom?: any;
+            format?: string;
+            maxHeight?: number;
+            maxWidth?: number;
+            minHeight?: number;
+            minWidth?: number;
+            transparent?: boolean;
+          };
+          folderId: string;
+          name: string;
+          sortOrder: number;
+          tags: Array<string>;
+          usageContext: Array<string>;
+          variants?: {
+            custom?: any;
+            orientation?: string;
+            size?: string;
+            theme?: string;
+          };
+        },
+        string
+      >;
+      deleteAsset: FunctionReference<
+        "mutation",
+        "internal",
+        { assetId: string },
+        null
+      >;
+      getAsset: FunctionReference<
+        "query",
+        "internal",
+        { assetId: string },
+        any
+      >;
+      getAssets: FunctionReference<
+        "query",
+        "internal",
+        { folderId: string },
+        any
+      >;
+      searchAssets: FunctionReference<
+        "query",
+        "internal",
+        { query: string },
+        any
+      >;
+      updateAsset: FunctionReference<
+        "mutation",
+        "internal",
+        { assetId: string; updates: any },
+        null
+      >;
+    };
+    folders: {
+      createFolder: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          createdBy: string;
+          description?: string;
+          name: string;
+          parentId?: string;
+          path: string;
+          section: string;
+          sortOrder: number;
+        },
+        string
+      >;
+      deleteFolder: FunctionReference<
+        "mutation",
+        "internal",
+        { folderId: string },
+        null
+      >;
+      getFolder: FunctionReference<
+        "query",
+        "internal",
+        { folderId: string },
+        any
+      >;
+      getFolders: FunctionReference<
+        "query",
+        "internal",
+        { parentId?: string; section?: string },
+        any
+      >;
+      updateFolder: FunctionReference<
+        "mutation",
+        "internal",
+        { folderId: string; updates: any },
+        null
+      >;
+    };
+    guidelines: {
+      getAllGuidelines: FunctionReference<"query", "internal", {}, any>;
+      getGuidelines: FunctionReference<
+        "query",
+        "internal",
+        { section: string },
+        any
+      >;
+      updateGuidelines: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          richTextContent: string;
+          section: string;
+          structuredData: {
+            brandVoice?: {
+              avoid?: Array<string>;
+              formality: number;
+              keywords?: Array<string>;
+              tone: string;
+            };
+            colors?: Array<{ hex: string; name: string; usage?: string }>;
+            customFields?: any;
+            fonts?: Array<{
+              name: string;
+              usage?: string;
+              weights: Array<number>;
+            }>;
+          };
+          updatedBy: string;
+        },
+        null
+      >;
+    };
+  };
+  lunchtable_tcg_cards: {
+    cards: {
+      addCardsToInventory: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          cardDefinitionId: string;
+          quantity: number;
+          serialNumber?: number;
+          source?: string;
+          userId: string;
+          variant?: "standard" | "foil" | "alt_art" | "full_art" | "numbered";
+        },
+        { newQuantity: number; success: boolean }
+      >;
+      createCardDefinition: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          ability?: any;
+          archetype: string;
+          attack?: number;
+          attribute?: string;
+          cardType: string;
+          cost: number;
+          defense?: number;
+          flavorText?: string;
+          imageUrl?: string;
+          isActive?: boolean;
+          level?: number;
+          monsterType?: string;
+          name: string;
+          rarity: string;
+          spellType?: string;
+          trapType?: string;
+        },
+        string
+      >;
+      getAllCards: FunctionReference<"query", "internal", {}, any>;
+      getCard: FunctionReference<"query", "internal", { cardId: string }, any>;
+      getCardsBatch: FunctionReference<
+        "query",
+        "internal",
+        { cardIds: Array<string> },
+        any
+      >;
+      getCollectionStats: FunctionReference<
+        "query",
+        "internal",
+        { userId: string },
+        { favoriteCount: number; totalCards: number; uniqueCards: number }
+      >;
+      getUserCards: FunctionReference<
+        "query",
+        "internal",
+        { userId: string },
+        any
+      >;
+      getUserFavoriteCards: FunctionReference<
+        "query",
+        "internal",
+        { userId: string },
+        any
+      >;
+      removeCardsFromInventory: FunctionReference<
+        "mutation",
+        "internal",
+        { cardDefinitionId: string; quantity: number; userId: string },
+        { remainingQuantity: number; success: boolean }
+      >;
+      toggleCardActive: FunctionReference<
+        "mutation",
+        "internal",
+        { cardId: string },
+        { isActive: boolean }
+      >;
+      toggleFavorite: FunctionReference<
+        "mutation",
+        "internal",
+        { playerCardId: string; userId: string },
+        { isFavorite: boolean }
+      >;
+      updateCardDefinition: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          ability?: any;
+          archetype?: string;
+          attack?: number;
+          attribute?: string;
+          cardId: string;
+          cardType?: string;
+          cost?: number;
+          defense?: number;
+          flavorText?: string;
+          imageUrl?: string;
+          isActive?: boolean;
+          level?: number;
+          monsterType?: string;
+          name?: string;
+          rarity?: string;
+          spellType?: string;
+          trapType?: string;
+        },
+        { success: boolean }
+      >;
+    };
+    decks: {
+      createDeck: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          deckArchetype?: string;
+          description?: string;
+          maxDecks?: number;
+          name: string;
+          userId: string;
+        },
+        string
+      >;
+      deleteDeck: FunctionReference<
+        "mutation",
+        "internal",
+        { deckId: string },
+        any
+      >;
+      duplicateDeck: FunctionReference<
+        "mutation",
+        "internal",
+        { deckId: string; maxDecks?: number; name: string },
+        string
+      >;
+      getDeckStats: FunctionReference<
+        "query",
+        "internal",
+        { deckId: string },
+        {
+          averageCost: number;
+          cardsByRarity: {
+            common: number;
+            epic: number;
+            legendary: number;
+            rare: number;
+            uncommon: number;
+          };
+          cardsByType: {
+            creature: number;
+            equipment: number;
+            spell: number;
+            trap: number;
+          };
+          totalCards: number;
+        }
+      >;
+      getDeckWithCards: FunctionReference<
+        "query",
+        "internal",
+        { deckId: string },
+        any
+      >;
+      getUserDecks: FunctionReference<
+        "query",
+        "internal",
+        { userId: string },
+        Array<{
+          cardCount: number;
+          createdAt: number;
+          deckArchetype?: string;
+          deckId: string;
+          description?: string;
+          name: string;
+          updatedAt: number;
+        }>
+      >;
+      renameDeck: FunctionReference<
+        "mutation",
+        "internal",
+        { deckId: string; name: string },
+        any
+      >;
+      saveDeck: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          cards: Array<{ cardDefinitionId: string; quantity: number }>;
+          deckId: string;
+          maxCopies?: number;
+          maxLegendaryCopies?: number;
+          maxSize?: number;
+          minSize?: number;
+        },
+        any
+      >;
+      selectStarterDeck: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          deckCode: string;
+          starterCards: Array<{
+            ability?: any;
+            archetype: string;
+            attack?: number;
+            attribute?: string;
+            cardType: string;
+            cost: number;
+            defense?: number;
+            flavorText?: string;
+            imageUrl?: string;
+            level?: number;
+            monsterType?: string;
+            name: string;
+            rarity: string;
+            spellType?: string;
+            trapType?: string;
+          }>;
+          userId: string;
+        },
+        { cardsReceived: number; deckId: string; deckSize: number }
+      >;
+      setActiveDeck: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          deckId: string;
+          maxCopies?: number;
+          maxLegendaryCopies?: number;
+          maxSize?: number;
+          minSize?: number;
+          userId: string;
+        },
+        string
+      >;
+      validateDeck: FunctionReference<
+        "query",
+        "internal",
+        {
+          deckId: string;
+          maxCopies?: number;
+          maxLegendaryCopies?: number;
+          maxSize?: number;
+          minSize?: number;
+        },
+        {
+          errors: Array<string>;
+          isValid: boolean;
+          totalCards: number;
+          warnings: Array<string>;
+        }
+      >;
+    };
+    seeds: {
+      seedCardDefinitions: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          cards: Array<{
+            ability?: any;
+            archetype: string;
+            attack?: number;
+            attribute?: string;
+            cardType: string;
+            cost: number;
+            defense?: number;
+            flavorText?: string;
+            imageUrl?: string;
+            level?: number;
+            monsterType?: string;
+            name: string;
+            rarity: string;
+            spellType?: string;
+            trapType?: string;
+          }>;
+        },
+        { created: number; skipped: number }
+      >;
+      seedStarterDecks: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          decks: Array<{
+            archetype: string;
+            cardCount: number;
+            deckCode: string;
+            description: string;
+            name: string;
+            playstyle: string;
+          }>;
+        },
+        { created: number; skipped: number }
+      >;
+    };
+  };
+  lunchtable_tcg_competitive: {
+    brackets: {
+      advanceBracket: FunctionReference<
+        "mutation",
+        "internal",
+        { matchId: string; nextMatchId: string },
+        null
+      >;
+      createMatch: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          bracketPosition: number;
+          matchNumber: number;
+          player1Id?: string;
+          player1ParticipantId?: string;
+          player1SourceMatchId?: string;
+          player1Username?: string;
+          player2Id?: string;
+          player2ParticipantId?: string;
+          player2SourceMatchId?: string;
+          player2Username?: string;
+          round: number;
+          scheduledAt?: number;
+          tournamentId: string;
+        },
+        string
+      >;
+      getMatchById: FunctionReference<
+        "query",
+        "internal",
+        { id: string },
+        {
+          _creationTime: number;
+          _id: string;
+          bracketPosition: number;
+          completedAt?: number;
+          createdAt: number;
+          gameId?: string;
+          lobbyId?: string;
+          loserId?: string;
+          loserUsername?: string;
+          matchNumber: number;
+          player1Id?: string;
+          player1ParticipantId?: string;
+          player1SourceMatchId?: string;
+          player1Username?: string;
+          player2Id?: string;
+          player2ParticipantId?: string;
+          player2SourceMatchId?: string;
+          player2Username?: string;
+          round: number;
+          scheduledAt?: number;
+          startedAt?: number;
+          status: "pending" | "ready" | "active" | "completed" | "forfeit";
+          tournamentId: string;
+          updatedAt: number;
+          winReason?:
+            | "game_win"
+            | "opponent_forfeit"
+            | "opponent_no_show"
+            | "bye";
+          winnerId?: string;
+          winnerUsername?: string;
+        } | null
+      >;
+      getMatches: FunctionReference<
+        "query",
+        "internal",
+        { tournamentId: string },
+        Array<{
+          _creationTime: number;
+          _id: string;
+          bracketPosition: number;
+          completedAt?: number;
+          createdAt: number;
+          gameId?: string;
+          lobbyId?: string;
+          loserId?: string;
+          loserUsername?: string;
+          matchNumber: number;
+          player1Id?: string;
+          player1ParticipantId?: string;
+          player1SourceMatchId?: string;
+          player1Username?: string;
+          player2Id?: string;
+          player2ParticipantId?: string;
+          player2SourceMatchId?: string;
+          player2Username?: string;
+          round: number;
+          scheduledAt?: number;
+          startedAt?: number;
+          status: "pending" | "ready" | "active" | "completed" | "forfeit";
+          tournamentId: string;
+          updatedAt: number;
+          winReason?:
+            | "game_win"
+            | "opponent_forfeit"
+            | "opponent_no_show"
+            | "bye";
+          winnerId?: string;
+          winnerUsername?: string;
+        }>
+      >;
+      getRoundMatches: FunctionReference<
+        "query",
+        "internal",
+        { round: number; tournamentId: string },
+        Array<{
+          _creationTime: number;
+          _id: string;
+          bracketPosition: number;
+          completedAt?: number;
+          createdAt: number;
+          gameId?: string;
+          lobbyId?: string;
+          loserId?: string;
+          loserUsername?: string;
+          matchNumber: number;
+          player1Id?: string;
+          player1ParticipantId?: string;
+          player1SourceMatchId?: string;
+          player1Username?: string;
+          player2Id?: string;
+          player2ParticipantId?: string;
+          player2SourceMatchId?: string;
+          player2Username?: string;
+          round: number;
+          scheduledAt?: number;
+          startedAt?: number;
+          status: "pending" | "ready" | "active" | "completed" | "forfeit";
+          tournamentId: string;
+          updatedAt: number;
+          winReason?:
+            | "game_win"
+            | "opponent_forfeit"
+            | "opponent_no_show"
+            | "bye";
+          winnerId?: string;
+          winnerUsername?: string;
+        }>
+      >;
+      reportResult: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          gameId?: string;
+          id: string;
+          loserId?: string;
+          loserUsername?: string;
+          winReason?:
+            | "game_win"
+            | "opponent_forfeit"
+            | "opponent_no_show"
+            | "bye";
+          winnerId: string;
+          winnerUsername: string;
+        },
+        null
+      >;
+      updateMatchStatus: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          id: string;
+          status: "pending" | "ready" | "active" | "completed" | "forfeit";
+        },
+        null
+      >;
+    };
+    history: {
+      getRecentHistory: FunctionReference<
+        "query",
+        "internal",
+        { limit?: number },
+        Array<{
+          _creationTime: number;
+          _id: string;
+          completedAt: number;
+          matchesPlayed: number;
+          matchesWon: number;
+          maxPlayers: number;
+          placement: number;
+          prizeWon: number;
+          tournamentId: string;
+          tournamentName: string;
+          userId: string;
+        }>
+      >;
+      getTournamentHistory: FunctionReference<
+        "query",
+        "internal",
+        { tournamentId: string },
+        Array<{
+          _creationTime: number;
+          _id: string;
+          completedAt: number;
+          matchesPlayed: number;
+          matchesWon: number;
+          maxPlayers: number;
+          placement: number;
+          prizeWon: number;
+          tournamentId: string;
+          tournamentName: string;
+          userId: string;
+        }>
+      >;
+      getUserHistory: FunctionReference<
+        "query",
+        "internal",
+        { userId: string },
+        Array<{
+          _creationTime: number;
+          _id: string;
+          completedAt: number;
+          matchesPlayed: number;
+          matchesWon: number;
+          maxPlayers: number;
+          placement: number;
+          prizeWon: number;
+          tournamentId: string;
+          tournamentName: string;
+          userId: string;
+        }>
+      >;
+      getUserStats: FunctionReference<
+        "query",
+        "internal",
+        { userId: string },
+        {
+          averagePlacement: number;
+          bestPlacement: number;
+          totalMatchesPlayed: number;
+          totalMatchesWon: number;
+          totalPrizesWon: number;
+          totalTournaments: number;
+        }
+      >;
+      recordHistory: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          matchesPlayed: number;
+          matchesWon: number;
+          maxPlayers: number;
+          placement: number;
+          prizeWon: number;
+          tournamentId: string;
+          tournamentName: string;
+          userId: string;
+        },
+        string
+      >;
+    };
+    matches: {
+      getHeadToHead: FunctionReference<
+        "query",
+        "internal",
+        {
+          gameType?: "ranked" | "casual" | "story";
+          opponentId: string;
+          playerId: string;
+        },
+        {
+          losses: number;
+          matches: Array<{
+            _creationTime: number;
+            _id: string;
+            completedAt: number;
+            gameType: "ranked" | "casual" | "story";
+            loserId: string;
+            loserRatingAfter: number;
+            loserRatingBefore: number;
+            winnerId: string;
+            winnerRatingAfter: number;
+            winnerRatingBefore: number;
+            xpAwarded?: number;
+          }>;
+          wins: number;
+        }
+      >;
+      getPlayerMatches: FunctionReference<
+        "query",
+        "internal",
+        {
+          gameType?: "ranked" | "casual" | "story";
+          limit?: number;
+          playerId: string;
+        },
+        Array<{
+          _creationTime: number;
+          _id: string;
+          completedAt: number;
+          gameType: "ranked" | "casual" | "story";
+          loserId: string;
+          loserRatingAfter: number;
+          loserRatingBefore: number;
+          winnerId: string;
+          winnerRatingAfter: number;
+          winnerRatingBefore: number;
+          xpAwarded?: number;
+        }>
+      >;
+      getRecentMatches: FunctionReference<
+        "query",
+        "internal",
+        { gameType?: "ranked" | "casual" | "story"; limit?: number },
+        Array<{
+          _creationTime: number;
+          _id: string;
+          completedAt: number;
+          gameType: "ranked" | "casual" | "story";
+          loserId: string;
+          loserRatingAfter: number;
+          loserRatingBefore: number;
+          winnerId: string;
+          winnerRatingAfter: number;
+          winnerRatingBefore: number;
+          xpAwarded?: number;
+        }>
+      >;
+      recordMatch: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          gameType: "ranked" | "casual" | "story";
+          loserId: string;
+          loserRatingAfter: number;
+          loserRatingBefore: number;
+          winnerId: string;
+          winnerRatingAfter: number;
+          winnerRatingBefore: number;
+          xpAwarded?: number;
+        },
+        string
+      >;
+    };
+    participants: {
+      awardPrize: FunctionReference<
+        "mutation",
+        "internal",
+        { prizeAmount: number; tournamentId: string; userId: string },
+        null
+      >;
+      checkIn: FunctionReference<
+        "mutation",
+        "internal",
+        { tournamentId: string; userId: string },
+        null
+      >;
+      eliminate: FunctionReference<
+        "mutation",
+        "internal",
+        { eliminatedInRound: number; tournamentId: string; userId: string },
+        null
+      >;
+      getParticipants: FunctionReference<
+        "query",
+        "internal",
+        { tournamentId: string },
+        Array<{
+          _creationTime: number;
+          _id: string;
+          bracket?: number;
+          checkedInAt?: number;
+          currentRound?: number;
+          eliminatedInRound?: number;
+          finalPlacement?: number;
+          prizeAwarded?: number;
+          prizeAwardedAt?: number;
+          registeredAt: number;
+          seedRating: number;
+          status:
+            | "registered"
+            | "checked_in"
+            | "active"
+            | "eliminated"
+            | "winner"
+            | "forfeit"
+            | "refunded";
+          tournamentId: string;
+          userId: string;
+          username: string;
+        }>
+      >;
+      getUserTournaments: FunctionReference<
+        "query",
+        "internal",
+        { userId: string },
+        Array<{
+          _creationTime: number;
+          _id: string;
+          bracket?: number;
+          checkedInAt?: number;
+          currentRound?: number;
+          eliminatedInRound?: number;
+          finalPlacement?: number;
+          prizeAwarded?: number;
+          prizeAwardedAt?: number;
+          registeredAt: number;
+          seedRating: number;
+          status:
+            | "registered"
+            | "checked_in"
+            | "active"
+            | "eliminated"
+            | "winner"
+            | "forfeit"
+            | "refunded";
+          tournamentId: string;
+          userId: string;
+          username: string;
+        }>
+      >;
+      register: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          seedRating: number;
+          tournamentId: string;
+          userId: string;
+          username: string;
+        },
+        string
+      >;
+      unregister: FunctionReference<
+        "mutation",
+        "internal",
+        { tournamentId: string; userId: string },
+        null
+      >;
+      updateStatus: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          currentRound?: number;
+          eliminatedInRound?: number;
+          finalPlacement?: number;
+          status:
+            | "registered"
+            | "checked_in"
+            | "active"
+            | "eliminated"
+            | "winner"
+            | "forfeit"
+            | "refunded";
+          tournamentId: string;
+          userId: string;
+        },
+        null
+      >;
+    };
+    rankings: {
+      getAroundPlayer: FunctionReference<
+        "query",
+        "internal",
+        {
+          leaderboardType: "ranked" | "casual" | "story";
+          playerId: string;
+          playerSegment?: "all" | "humans" | "ai";
+          range?: number;
+        },
+        {
+          above: Array<{
+            isAiAgent: boolean;
+            level?: number;
+            losses: number;
+            rank: number;
+            rating: number;
+            userId: string;
+            username: string;
+            winRate: number;
+            wins: number;
+          }>;
+          below: Array<{
+            isAiAgent: boolean;
+            level?: number;
+            losses: number;
+            rank: number;
+            rating: number;
+            userId: string;
+            username: string;
+            winRate: number;
+            wins: number;
+          }>;
+          player: {
+            isAiAgent: boolean;
+            level?: number;
+            losses: number;
+            rank: number;
+            rating: number;
+            userId: string;
+            username: string;
+            winRate: number;
+            wins: number;
+          } | null;
+        }
+      >;
+      getLeaderboard: FunctionReference<
+        "query",
+        "internal",
+        {
+          leaderboardType: "ranked" | "casual" | "story";
+          playerSegment?: "all" | "humans" | "ai";
+        },
+        {
+          _creationTime: number;
+          _id: string;
+          lastUpdated: number;
+          leaderboardType: "ranked" | "casual" | "story";
+          playerSegment: "all" | "humans" | "ai";
+          rankings: Array<{
+            isAiAgent: boolean;
+            level?: number;
+            losses: number;
+            rank: number;
+            rating: number;
+            userId: string;
+            username: string;
+            winRate: number;
+            wins: number;
+          }>;
+        } | null
+      >;
+      getPlayerRank: FunctionReference<
+        "query",
+        "internal",
+        {
+          leaderboardType: "ranked" | "casual" | "story";
+          playerId: string;
+          playerSegment?: "all" | "humans" | "ai";
+        },
+        {
+          isAiAgent: boolean;
+          level?: number;
+          losses: number;
+          rank: number;
+          rating: number;
+          userId: string;
+          username: string;
+          winRate: number;
+          wins: number;
+        } | null
+      >;
+      getTopPlayers: FunctionReference<
+        "query",
+        "internal",
+        {
+          leaderboardType: "ranked" | "casual" | "story";
+          limit?: number;
+          playerSegment?: "all" | "humans" | "ai";
+        },
+        Array<{
+          isAiAgent: boolean;
+          level?: number;
+          losses: number;
+          rank: number;
+          rating: number;
+          userId: string;
+          username: string;
+          winRate: number;
+          wins: number;
+        }>
+      >;
+    };
+    snapshots: {
+      createSnapshot: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          leaderboardType: "ranked" | "casual" | "story";
+          playerSegment: "all" | "humans" | "ai";
+          rankings: Array<{
+            isAiAgent: boolean;
+            level?: number;
+            losses: number;
+            rank: number;
+            rating: number;
+            userId: string;
+            username: string;
+            winRate: number;
+            wins: number;
+          }>;
+        },
+        string
+      >;
+      getSnapshot: FunctionReference<
+        "query",
+        "internal",
+        {
+          leaderboardType: "ranked" | "casual" | "story";
+          playerSegment: "all" | "humans" | "ai";
+        },
+        {
+          _creationTime: number;
+          _id: string;
+          lastUpdated: number;
+          leaderboardType: "ranked" | "casual" | "story";
+          playerSegment: "all" | "humans" | "ai";
+          rankings: Array<{
+            isAiAgent: boolean;
+            level?: number;
+            losses: number;
+            rank: number;
+            rating: number;
+            userId: string;
+            username: string;
+            winRate: number;
+            wins: number;
+          }>;
+        } | null
+      >;
+      getSnapshotById: FunctionReference<
+        "query",
+        "internal",
+        { id: string },
+        {
+          _creationTime: number;
+          _id: string;
+          lastUpdated: number;
+          leaderboardType: "ranked" | "casual" | "story";
+          playerSegment: "all" | "humans" | "ai";
+          rankings: Array<{
+            isAiAgent: boolean;
+            level?: number;
+            losses: number;
+            rank: number;
+            rating: number;
+            userId: string;
+            username: string;
+            winRate: number;
+            wins: number;
+          }>;
+        } | null
+      >;
+      getSnapshots: FunctionReference<
+        "query",
+        "internal",
+        {
+          leaderboardType?: "ranked" | "casual" | "story";
+          playerSegment?: "all" | "humans" | "ai";
+        },
+        Array<{
+          _creationTime: number;
+          _id: string;
+          lastUpdated: number;
+          leaderboardType: "ranked" | "casual" | "story";
+          playerSegment: "all" | "humans" | "ai";
+          rankings: Array<{
+            isAiAgent: boolean;
+            level?: number;
+            losses: number;
+            rank: number;
+            rating: number;
+            userId: string;
+            username: string;
+            winRate: number;
+            wins: number;
+          }>;
+        }>
+      >;
+    };
+    tournaments: {
+      advanceRound: FunctionReference<
+        "mutation",
+        "internal",
+        { id: string },
+        null
+      >;
+      create: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          autoStartOnFull?: boolean;
+          checkInEndsAt: number;
+          checkInStartsAt: number;
+          createdBy: string;
+          creatorType?: "admin" | "user";
+          description?: string;
+          entryFee: number;
+          expiresAt?: number;
+          format: "single_elimination";
+          joinCode?: string;
+          maxPlayers: 4 | 8 | 16 | 32;
+          mode: "ranked" | "casual";
+          name: string;
+          prizePool: { first: number; second: number; thirdFourth: number };
+          registrationEndsAt: number;
+          registrationStartsAt: number;
+          scheduledStartAt: number;
+          visibility?: "public" | "private";
+        },
+        string
+      >;
+      getActive: FunctionReference<
+        "query",
+        "internal",
+        {},
+        Array<{
+          _creationTime: number;
+          _id: string;
+          actualStartedAt?: number;
+          autoStartOnFull?: boolean;
+          checkInEndsAt: number;
+          checkInStartsAt: number;
+          checkedInCount: number;
+          completedAt?: number;
+          createdAt: number;
+          createdBy: string;
+          creatorType?: "admin" | "user";
+          currentRound: number;
+          description?: string;
+          entryFee: number;
+          expiresAt?: number;
+          format: "single_elimination";
+          joinCode?: string;
+          maxPlayers: 4 | 8 | 16 | 32;
+          mode: "ranked" | "casual";
+          name: string;
+          prizePool: { first: number; second: number; thirdFourth: number };
+          registeredCount: number;
+          registrationEndsAt: number;
+          registrationStartsAt: number;
+          scheduledStartAt: number;
+          secondPlaceId?: string;
+          secondPlaceUsername?: string;
+          status:
+            | "registration"
+            | "checkin"
+            | "active"
+            | "completed"
+            | "cancelled";
+          totalRounds?: number;
+          updatedAt: number;
+          visibility?: "public" | "private";
+          winnerId?: string;
+          winnerUsername?: string;
+        }>
+      >;
+      getByCreator: FunctionReference<
+        "query",
+        "internal",
+        {
+          createdBy: string;
+          status?:
+            | "registration"
+            | "checkin"
+            | "active"
+            | "completed"
+            | "cancelled";
+        },
+        Array<{
+          _creationTime: number;
+          _id: string;
+          actualStartedAt?: number;
+          autoStartOnFull?: boolean;
+          checkInEndsAt: number;
+          checkInStartsAt: number;
+          checkedInCount: number;
+          completedAt?: number;
+          createdAt: number;
+          createdBy: string;
+          creatorType?: "admin" | "user";
+          currentRound: number;
+          description?: string;
+          entryFee: number;
+          expiresAt?: number;
+          format: "single_elimination";
+          joinCode?: string;
+          maxPlayers: 4 | 8 | 16 | 32;
+          mode: "ranked" | "casual";
+          name: string;
+          prizePool: { first: number; second: number; thirdFourth: number };
+          registeredCount: number;
+          registrationEndsAt: number;
+          registrationStartsAt: number;
+          scheduledStartAt: number;
+          secondPlaceId?: string;
+          secondPlaceUsername?: string;
+          status:
+            | "registration"
+            | "checkin"
+            | "active"
+            | "completed"
+            | "cancelled";
+          totalRounds?: number;
+          updatedAt: number;
+          visibility?: "public" | "private";
+          winnerId?: string;
+          winnerUsername?: string;
+        }>
+      >;
+      getById: FunctionReference<
+        "query",
+        "internal",
+        { id: string },
+        {
+          _creationTime: number;
+          _id: string;
+          actualStartedAt?: number;
+          autoStartOnFull?: boolean;
+          checkInEndsAt: number;
+          checkInStartsAt: number;
+          checkedInCount: number;
+          completedAt?: number;
+          createdAt: number;
+          createdBy: string;
+          creatorType?: "admin" | "user";
+          currentRound: number;
+          description?: string;
+          entryFee: number;
+          expiresAt?: number;
+          format: "single_elimination";
+          joinCode?: string;
+          maxPlayers: 4 | 8 | 16 | 32;
+          mode: "ranked" | "casual";
+          name: string;
+          prizePool: { first: number; second: number; thirdFourth: number };
+          registeredCount: number;
+          registrationEndsAt: number;
+          registrationStartsAt: number;
+          scheduledStartAt: number;
+          secondPlaceId?: string;
+          secondPlaceUsername?: string;
+          status:
+            | "registration"
+            | "checkin"
+            | "active"
+            | "completed"
+            | "cancelled";
+          totalRounds?: number;
+          updatedAt: number;
+          visibility?: "public" | "private";
+          winnerId?: string;
+          winnerUsername?: string;
+        } | null
+      >;
+      updateSettings: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          id: string;
+          settings: {
+            autoStartOnFull?: boolean;
+            checkInEndsAt?: number;
+            checkInStartsAt?: number;
+            description?: string;
+            expiresAt?: number;
+            name?: string;
+            registrationEndsAt?: number;
+            registrationStartsAt?: number;
+            scheduledStartAt?: number;
+            visibility?: "public" | "private";
+          };
+        },
+        null
+      >;
+      updateStatus: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          id: string;
+          status:
+            | "registration"
+            | "checkin"
+            | "active"
+            | "completed"
+            | "cancelled";
+        },
+        null
+      >;
+    };
+  };
+  lunchtable_tcg_content: {
+    feedback: {
+      getFeedback: FunctionReference<
+        "query",
+        "internal",
+        {
+          limit?: number;
+          status?: "new" | "triaged" | "in_progress" | "resolved" | "closed";
+          type?: "bug" | "feature";
+          userId?: string;
+        },
+        any
+      >;
+      getFeedbackById: FunctionReference<
+        "query",
+        "internal",
+        { feedbackId: string },
+        any
+      >;
+      submitFeedback: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          description: string;
+          pageUrl: string;
+          priority?: "low" | "medium" | "high" | "critical";
+          recordingUrl?: string;
+          screenshotUrl?: string;
+          status?: "new" | "triaged" | "in_progress" | "resolved" | "closed";
+          title: string;
+          type: "bug" | "feature";
+          userAgent: string;
+          userId: string;
+          username: string;
+          viewport: { height: number; width: number };
+        },
+        string
+      >;
+      updateFeedbackStatus: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          adminNotes?: string;
+          assignedTo?: string;
+          feedbackId: string;
+          priority?: "low" | "medium" | "high" | "critical";
+          resolvedAt?: number;
+          resolvedBy?: string;
+          status: "new" | "triaged" | "in_progress" | "resolved" | "closed";
+        },
+        null
+      >;
+    };
+    news: {
+      createNewsArticle: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          authorId: string;
+          category:
+            | "update"
+            | "event"
+            | "patch"
+            | "announcement"
+            | "maintenance";
+          content: string;
+          excerpt: string;
+          imageUrl?: string;
+          isPinned: boolean;
+          isPublished: boolean;
+          publishedAt?: number;
+          slug: string;
+          title: string;
+        },
+        string
+      >;
+      deleteNewsArticle: FunctionReference<
+        "mutation",
+        "internal",
+        { articleId: string },
+        null
+      >;
+      getNewsArticle: FunctionReference<
+        "query",
+        "internal",
+        { articleId: string },
+        any
+      >;
+      getNewsArticleBySlug: FunctionReference<
+        "query",
+        "internal",
+        { slug: string },
+        any
+      >;
+      getNewsArticles: FunctionReference<
+        "query",
+        "internal",
+        {
+          category?:
+            | "update"
+            | "event"
+            | "patch"
+            | "announcement"
+            | "maintenance";
+          isPublished?: boolean;
+          limit?: number;
+        },
+        any
+      >;
+      updateNewsArticle: FunctionReference<
+        "mutation",
+        "internal",
+        { articleId: string; updates: any },
+        null
+      >;
+    };
+    scheduledContent: {
+      createScheduledContent: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          authorId: string;
+          content: string;
+          metadata: {
+            altText?: string;
+            caption?: string;
+            excerpt?: string;
+            expiresAt?: number;
+            featuredImage?: string;
+            imageUrl?: string;
+            newsArticleId?: string;
+            priority?: "normal" | "important" | "urgent";
+            recipientListId?: string;
+            recipientType?: "players" | "subscribers" | "both" | "custom";
+            redditPostId?: string;
+            slug?: string;
+            subject?: string;
+            subreddit?: string;
+            templateId?: string;
+            tweetId?: string;
+          };
+          publishError?: string;
+          publishedAt?: number;
+          scheduledFor: number;
+          status: "draft" | "scheduled" | "published" | "failed";
+          title: string;
+          type:
+            | "blog"
+            | "x_post"
+            | "reddit"
+            | "email"
+            | "announcement"
+            | "news"
+            | "image";
+        },
+        string
+      >;
+      deleteScheduledContent: FunctionReference<
+        "mutation",
+        "internal",
+        { contentId: string },
+        null
+      >;
+      getScheduledContent: FunctionReference<
+        "query",
+        "internal",
+        {
+          status?: "draft" | "scheduled" | "published" | "failed";
+          type?:
+            | "blog"
+            | "x_post"
+            | "reddit"
+            | "email"
+            | "announcement"
+            | "news"
+            | "image";
+        },
+        any
+      >;
+      getScheduledContentById: FunctionReference<
+        "query",
+        "internal",
+        { contentId: string },
+        any
+      >;
+      updateScheduledContent: FunctionReference<
+        "mutation",
+        "internal",
+        { contentId: string; updates: any },
+        null
+      >;
+    };
+  };
+  lunchtable_tcg_economy: {
+    currency: {
+      adjustPlayerCurrency: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          amount: number;
+          currencyType: "gold" | "gems";
+          description: string;
+          metadata?: any;
+          referenceId?: string;
+          transactionType:
+            | "purchase"
+            | "reward"
+            | "sale"
+            | "gift"
+            | "refund"
+            | "admin_refund"
+            | "conversion"
+            | "marketplace_fee"
+            | "auction_bid"
+            | "auction_refund"
+            | "wager"
+            | "wager_payout"
+            | "wager_refund"
+            | "tournament_entry"
+            | "tournament_refund"
+            | "tournament_prize";
+          userId: string;
+        },
+        { gems: number; gold: number }
+      >;
+      getPlayerBalance: FunctionReference<
+        "query",
+        "internal",
+        { userId: string },
+        {
+          gems: number;
+          gold: number;
+          lastUpdatedAt: number;
+          lifetimeGemsEarned: number;
+          lifetimeGemsSpent: number;
+          lifetimeGoldEarned: number;
+          lifetimeGoldSpent: number;
+        }
+      >;
+      getTransactionHistory: FunctionReference<
+        "query",
+        "internal",
+        { limit?: number; userId: string },
+        Array<any>
+      >;
+      getTransactionHistoryPaginated: FunctionReference<
+        "query",
+        "internal",
+        {
+          paginationOpts: {
+            cursor: string | null;
+            endCursor?: string | null;
+            id?: number;
+            maximumBytesRead?: number;
+            maximumRowsRead?: number;
+            numItems: number;
+          };
+          userId: string;
+        },
+        any
+      >;
+      initializePlayerCurrency: FunctionReference<
+        "mutation",
+        "internal",
+        { userId: string; welcomeBonus: { gems: number; gold: number } },
+        null
+      >;
+    };
+    promoCodes: {
+      createPromoCode: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          code: string;
+          description: string;
+          expiresAt?: number;
+          isActive: boolean;
+          maxRedemptions?: number;
+          rewardAmount: number;
+          rewardPackId?: string;
+          rewardType: "gold" | "gems" | "pack";
+        },
+        string
+      >;
+      getPromoCode: FunctionReference<
+        "query",
+        "internal",
+        { code: string },
+        any
+      >;
+      getUserRedemptions: FunctionReference<
+        "query",
+        "internal",
+        { userId: string },
+        any
+      >;
+      redeemPromoCode: FunctionReference<
+        "mutation",
+        "internal",
+        { code: string; userId: string },
+        {
+          rewardAmount: number;
+          rewardPackId?: string;
+          rewardType: "gold" | "gems" | "pack";
+        }
+      >;
+    };
+    rewards: {
+      getDailyRewardStatus: FunctionReference<
+        "query",
+        "internal",
+        { userId: string },
+        any
+      >;
+      getRewardHistory: FunctionReference<
+        "query",
+        "internal",
+        { limit?: number; userId: string },
+        any
+      >;
+      recordRewardClaim: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          jackpotResult?: {
+            prizeType?: string;
+            rollValue?: number;
+            won: boolean;
+          };
+          reward: {
+            amount?: number;
+            cardId?: string;
+            packId?: string;
+            serialNumber?: number;
+            type: "pack" | "gold" | "gems" | "card" | "lottery_ticket";
+            variant?: string;
+          };
+          rewardType:
+            | "daily_pack"
+            | "weekly_jackpot"
+            | "login_streak"
+            | "season_end"
+            | "event";
+          userId: string;
+        },
+        string
+      >;
+    };
+    sales: {
+      createSale: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          applicableProductTypes?: Array<
+            "pack" | "box" | "currency" | "gem_package"
+          >;
+          applicableProducts: Array<string>;
+          bonusCards?: number;
+          bonusGems?: number;
+          conditions?: {
+            maxUsesPerUser?: number;
+            maxUsesTotal?: number;
+            minPlayerLevel?: number;
+            minPurchaseAmount?: number;
+            newPlayerOnly?: boolean;
+            returningPlayerOnly?: boolean;
+          };
+          createdBy: string;
+          description: string;
+          discountPercent?: number;
+          endsAt: number;
+          isActive: boolean;
+          name: string;
+          priority: number;
+          saleId: string;
+          saleType:
+            | "flash"
+            | "weekend"
+            | "launch"
+            | "holiday"
+            | "anniversary"
+            | "returning";
+          startsAt: number;
+        },
+        string
+      >;
+      getActiveSales: FunctionReference<"query", "internal", {}, any>;
+      getDiscountedPrice: FunctionReference<
+        "query",
+        "internal",
+        { productId: string; userId: string },
+        any
+      >;
+      getSalesForProduct: FunctionReference<
+        "query",
+        "internal",
+        { productId: string },
+        any
+      >;
+      recordSaleUsage: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          discountedPrice: number;
+          originalPrice: number;
+          productId: string;
+          saleId: string;
+          userId: string;
+        },
+        null
+      >;
+    };
+    seeds: {
+      seedShopProducts: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          products: Array<{
+            boxConfig?: {
+              bonusCards?: number;
+              packCount: number;
+              packProductId: string;
+            };
+            currencyConfig?: { amount: number; currencyType: "gold" | "gems" };
+            description: string;
+            gemPrice?: number;
+            goldPrice?: number;
+            isActive: boolean;
+            name: string;
+            packConfig?: {
+              allRareOrBetter?: boolean;
+              archetype?: string;
+              cardCount: number;
+              guaranteedCount?: number;
+              guaranteedRarity?: string;
+              variantMultipliers?: {
+                altArt: number;
+                foil: number;
+                fullArt: number;
+              };
+            };
+            productId: string;
+            productType: "pack" | "box" | "currency";
+            sortOrder: number;
+          }>;
+        },
+        { inserted: number; skipped: number }
+      >;
+    };
+    shop: {
+      createProduct: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          boxConfig?: {
+            bonusCards?: number;
+            packCount: number;
+            packProductId: string;
+          };
+          currencyConfig?: { amount: number; currencyType: "gold" | "gems" };
+          description: string;
+          gemPrice?: number;
+          goldPrice?: number;
+          isActive: boolean;
+          name: string;
+          packConfig?: {
+            allRareOrBetter?: boolean;
+            archetype?: string;
+            cardCount: number;
+            guaranteedCount?: number;
+            guaranteedRarity?: string;
+            variantMultipliers?: {
+              altArt: number;
+              foil: number;
+              fullArt: number;
+            };
+          };
+          productId: string;
+          productType: "pack" | "box" | "currency";
+          sortOrder: number;
+        },
+        string
+      >;
+      getPackOpeningHistory: FunctionReference<
+        "query",
+        "internal",
+        { limit?: number; userId: string },
+        any
+      >;
+      getPackOpeningHistoryPaginated: FunctionReference<
+        "query",
+        "internal",
+        {
+          paginationOpts: {
+            cursor: string | null;
+            endCursor?: string | null;
+            id?: number;
+            maximumBytesRead?: number;
+            maximumRowsRead?: number;
+            numItems: number;
+          };
+          userId: string;
+        },
+        any
+      >;
+      getPityState: FunctionReference<
+        "query",
+        "internal",
+        { userId: string },
+        null | {
+          _creationTime: number;
+          _id: any;
+          lastLegendaryAt?: number;
+          packsSinceLastLegendary: number;
+          userId: string;
+        }
+      >;
+      getProduct: FunctionReference<
+        "query",
+        "internal",
+        { productId: string },
+        any
+      >;
+      getShopProducts: FunctionReference<"query", "internal", {}, any>;
+      recordPackOpening: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          amountPaid: number;
+          cardsReceived: Array<{
+            cardDefinitionId: string;
+            name: string;
+            rarity: string;
+            serialNumber?: number;
+            variant?: string;
+          }>;
+          currencyUsed: "gold" | "gems" | "token" | "free";
+          packType: string;
+          pityTriggered?: {
+            epic?: boolean;
+            fullArt?: boolean;
+            legendary?: boolean;
+          };
+          productId: string;
+          userId: string;
+        },
+        string
+      >;
+      updatePityState: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          lastLegendaryAt?: number;
+          packsSinceLastLegendary: number;
+          userId: string;
+        },
+        null
+      >;
+      updateProduct: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          productId: string;
+          updates: {
+            description?: string;
+            gemPrice?: number;
+            goldPrice?: number;
+            isActive?: boolean;
+            name?: string;
+            packConfig?: {
+              allRareOrBetter?: boolean;
+              archetype?: string;
+              cardCount: number;
+              guaranteedCount?: number;
+              guaranteedRarity?: string;
+              variantMultipliers?: {
+                altArt: number;
+                foil: number;
+                fullArt: number;
+              };
+            };
+            sortOrder?: number;
+          };
+        },
+        null
+      >;
+    };
+    wager: {
+      getPlayerBalance: FunctionReference<
+        "query",
+        "internal",
+        { currency?: "sol" | "usdc"; userId: string },
+        any
+      >;
+      getPlayerTransactions: FunctionReference<
+        "query",
+        "internal",
+        { limit?: number; userId: string },
+        any
+      >;
+      getTransactionById: FunctionReference<
+        "query",
+        "internal",
+        { id: string },
+        any
+      >;
+      getTransactionsByLobby: FunctionReference<
+        "query",
+        "internal",
+        { lobbyId: string },
+        any
+      >;
+      recordTransaction: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          amount: number;
+          amountAtomic: string;
+          currency: "sol" | "usdc";
+          escrowPda: string;
+          lobbyId: string;
+          status?: "pending" | "confirmed" | "failed";
+          txSignature?: string;
+          type: "deposit" | "payout" | "treasury_fee";
+          userId: string;
+          walletAddress: string;
+        },
+        string
+      >;
+      updateTransactionStatus: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          id: string;
+          status: "pending" | "confirmed" | "failed";
+          txSignature?: string;
+        },
+        null
+      >;
+    };
+  };
+  lunchtable_tcg_email: {
+    history: {
+      getEmailHistory: FunctionReference<
+        "query",
+        "internal",
+        { limit?: number },
+        any
+      >;
+      getHistoryByContent: FunctionReference<
+        "query",
+        "internal",
+        { scheduledContentId: string },
+        any
+      >;
+      recordEmailSend: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          recipientCount: number;
+          resendBatchId?: string;
+          scheduledContentId?: string;
+          sentBy: string;
+          subject: string;
+          templateId?: string;
+        },
+        string
+      >;
+      updateEmailHistory: FunctionReference<
+        "mutation",
+        "internal",
+        { historyId: string; updates: any },
+        null
+      >;
+    };
+    lists: {
+      addSubscriber: FunctionReference<
+        "mutation",
+        "internal",
+        { email: string; listId: string; name?: string; tags?: Array<string> },
+        string
+      >;
+      createList: FunctionReference<
+        "mutation",
+        "internal",
+        { createdBy: string; description?: string; name: string },
+        string
+      >;
+      getList: FunctionReference<"query", "internal", { listId: string }, any>;
+      getLists: FunctionReference<"query", "internal", {}, any>;
+      getSubscribers: FunctionReference<
+        "query",
+        "internal",
+        { activeOnly?: boolean; listId: string },
+        any
+      >;
+      removeSubscriber: FunctionReference<
+        "mutation",
+        "internal",
+        { subscriberId: string },
+        null
+      >;
+      updateList: FunctionReference<
+        "mutation",
+        "internal",
+        { listId: string; updates: any },
+        null
+      >;
+    };
+    templates: {
+      createTemplate: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          body: string;
+          category:
+            | "newsletter"
+            | "announcement"
+            | "promotional"
+            | "transactional"
+            | "custom";
+          createdBy: string;
+          isActive: boolean;
+          name: string;
+          subject: string;
+          variables: Array<string>;
+        },
+        string
+      >;
+      deleteTemplate: FunctionReference<
+        "mutation",
+        "internal",
+        { templateId: string },
+        null
+      >;
+      getTemplate: FunctionReference<
+        "query",
+        "internal",
+        { templateId: string },
+        any
+      >;
+      getTemplates: FunctionReference<
+        "query",
+        "internal",
+        {
+          category?:
+            | "newsletter"
+            | "announcement"
+            | "promotional"
+            | "transactional"
+            | "custom";
+          isActive?: boolean;
+        },
+        any
+      >;
+      updateTemplate: FunctionReference<
+        "mutation",
+        "internal",
+        { templateId: string; updates: any },
+        null
+      >;
+    };
+  };
+  lunchtable_tcg_game: {
+    events: {
+      getEventsForGame: FunctionReference<
+        "query",
+        "internal",
+        { gameId: string; limit?: number },
+        Array<any>
+      >;
+      getEventsForLobby: FunctionReference<
+        "query",
+        "internal",
+        { limit?: number; lobbyId: string },
+        Array<any>
+      >;
+      recordEvent: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          description: string;
+          eventType: string;
+          gameId: string;
+          lobbyId: string;
+          metadata?: any;
+          playerId: string;
+          playerUsername: string;
+          timestamp: number;
+          turnNumber: number;
+        },
+        string
+      >;
+    };
+    lobbies: {
+      createLobby: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          allowSpectators?: boolean;
+          cryptoEscrowPda?: string;
+          cryptoHostWallet?: string;
+          cryptoWagerCurrency?: string;
+          cryptoWagerTier?: number;
+          deckArchetype: string;
+          hostId: string;
+          hostRank: string;
+          hostRating: number;
+          hostUsername: string;
+          isPrivate: boolean;
+          joinCode?: string;
+          maxRatingDiff?: number;
+          maxSpectators?: number;
+          mode: string;
+          stageId?: string;
+          wagerAmount?: number;
+        },
+        string
+      >;
+      getActiveLobbies: FunctionReference<
+        "query",
+        "internal",
+        { limit?: number; mode?: string; status?: string },
+        Array<any>
+      >;
+      getLobbiesByHost: FunctionReference<
+        "query",
+        "internal",
+        { hostId: string; limit?: number },
+        Array<any>
+      >;
+      getLobby: FunctionReference<
+        "query",
+        "internal",
+        { lobbyId: string },
+        any
+      >;
+      getLobbyByJoinCode: FunctionReference<
+        "query",
+        "internal",
+        { joinCode: string },
+        any
+      >;
+      updateLobby: FunctionReference<
+        "mutation",
+        "internal",
+        { lobbyId: string; updates: any },
+        null
+      >;
+    };
+    matchmaking: {
+      getQueueEntries: FunctionReference<
+        "query",
+        "internal",
+        { limit?: number; mode?: string },
+        Array<any>
+      >;
+      getQueueEntry: FunctionReference<
+        "query",
+        "internal",
+        { userId: string },
+        any
+      >;
+      joinQueue: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          deckArchetype: string;
+          mode: string;
+          rating: number;
+          userId: string;
+          username: string;
+        },
+        string
+      >;
+      leaveQueue: FunctionReference<
+        "mutation",
+        "internal",
+        { userId: string },
+        null
+      >;
+    };
+    states: {
+      createGameState: FunctionReference<
+        "mutation",
+        "internal",
+        { state: any },
+        string
+      >;
+      getGameState: FunctionReference<
+        "query",
+        "internal",
+        { stateId: string },
+        any
+      >;
+      getGameStateByLobby: FunctionReference<
+        "query",
+        "internal",
+        { lobbyId: string },
+        any
+      >;
+      updateGameState: FunctionReference<
+        "mutation",
+        "internal",
+        { stateId: string; updates: any },
+        null
+      >;
+    };
+  };
+  lunchtable_tcg_guilds: {
+    chat: {
+      deleteMessage: FunctionReference<
+        "mutation",
+        "internal",
+        { deletedBy: string; messageId: string },
+        null
+      >;
+      getMessages: FunctionReference<
+        "query",
+        "internal",
+        { before?: number; guildId: string; limit?: number },
+        Array<{
+          _creationTime: number;
+          _id: string;
+          createdAt: number;
+          guildId: string;
+          isSystem: boolean;
+          message: string;
+          userId: string;
+          username: string;
+        }>
+      >;
+      getRecentMessages: FunctionReference<
+        "query",
+        "internal",
+        { count?: number; guildId: string },
+        Array<{
+          _creationTime: number;
+          _id: string;
+          createdAt: number;
+          guildId: string;
+          isSystem: boolean;
+          message: string;
+          userId: string;
+          username: string;
+        }>
+      >;
+      sendMessage: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          guildId: string;
+          isSystem?: boolean;
+          message: string;
+          userId: string;
+          username: string;
+        },
+        string
+      >;
+    };
+    discovery: {
+      approveJoinRequest: FunctionReference<
+        "mutation",
+        "internal",
+        { approvedBy: string; requestId: string },
+        null
+      >;
+      getJoinRequests: FunctionReference<
+        "query",
+        "internal",
+        { guildId: string },
+        Array<{
+          _creationTime: number;
+          _id: string;
+          createdAt: number;
+          guildId: string;
+          message?: string;
+          respondedAt?: number;
+          respondedBy?: string;
+          status: "pending" | "approved" | "rejected" | "cancelled";
+          userId: string;
+        }>
+      >;
+      getPlayerRequests: FunctionReference<
+        "query",
+        "internal",
+        { userId: string },
+        Array<{
+          _creationTime: number;
+          _id: string;
+          createdAt: number;
+          guildId: string;
+          message?: string;
+          respondedAt?: number;
+          respondedBy?: string;
+          status: "pending" | "approved" | "rejected" | "cancelled";
+          userId: string;
+        }>
+      >;
+      rejectJoinRequest: FunctionReference<
+        "mutation",
+        "internal",
+        { rejectedBy: string; requestId: string },
+        null
+      >;
+      searchGuilds: FunctionReference<
+        "query",
+        "internal",
+        { limit?: number; searchTerm: string },
+        Array<{
+          _creationTime: number;
+          _id: string;
+          bannerImageId?: string;
+          createdAt: number;
+          description?: string;
+          memberCount: number;
+          name: string;
+          ownerId: string;
+          profileImageId?: string;
+          updatedAt: number;
+          visibility: "public" | "private";
+        }>
+      >;
+      submitJoinRequest: FunctionReference<
+        "mutation",
+        "internal",
+        { guildId: string; message?: string; userId: string },
+        string
+      >;
+    };
+    guilds: {
+      create: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          bannerImageId?: string;
+          description?: string;
+          name: string;
+          ownerId: string;
+          profileImageId?: string;
+          visibility?: "public" | "private";
+        },
+        string
+      >;
+      disband: FunctionReference<
+        "mutation",
+        "internal",
+        { id: string; ownerId: string },
+        null
+      >;
+      getById: FunctionReference<
+        "query",
+        "internal",
+        { id: string },
+        {
+          _creationTime: number;
+          _id: string;
+          bannerImageId?: string;
+          createdAt: number;
+          description?: string;
+          memberCount: number;
+          name: string;
+          ownerId: string;
+          profileImageId?: string;
+          updatedAt: number;
+          visibility: "public" | "private";
+        } | null
+      >;
+      getByOwner: FunctionReference<
+        "query",
+        "internal",
+        { ownerId: string },
+        Array<{
+          _creationTime: number;
+          _id: string;
+          bannerImageId?: string;
+          createdAt: number;
+          description?: string;
+          memberCount: number;
+          name: string;
+          ownerId: string;
+          profileImageId?: string;
+          updatedAt: number;
+          visibility: "public" | "private";
+        }>
+      >;
+      getPublicGuilds: FunctionReference<
+        "query",
+        "internal",
+        { limit?: number },
+        Array<{
+          _creationTime: number;
+          _id: string;
+          bannerImageId?: string;
+          createdAt: number;
+          description?: string;
+          memberCount: number;
+          name: string;
+          ownerId: string;
+          profileImageId?: string;
+          updatedAt: number;
+          visibility: "public" | "private";
+        }>
+      >;
+      update: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          bannerImageId?: string;
+          description?: string;
+          id: string;
+          name?: string;
+          ownerId: string;
+          profileImageId?: string;
+          visibility?: "public" | "private";
+        },
+        null
+      >;
+    };
+    invites: {
+      acceptInvite: FunctionReference<
+        "mutation",
+        "internal",
+        { inviteId: string; userId: string },
+        string
+      >;
+      cancelInvite: FunctionReference<
+        "mutation",
+        "internal",
+        { cancelledBy: string; inviteId: string },
+        null
+      >;
+      createInvite: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          expiresIn?: number;
+          guildId: string;
+          invitedBy: string;
+          invitedUserId: string;
+        },
+        string
+      >;
+      createInviteLink: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          createdBy: string;
+          expiresIn?: number;
+          guildId: string;
+          maxUses?: number;
+        },
+        string
+      >;
+      declineInvite: FunctionReference<
+        "mutation",
+        "internal",
+        { inviteId: string; userId: string },
+        null
+      >;
+      deleteInviteLink: FunctionReference<
+        "mutation",
+        "internal",
+        { deletedBy: string; linkId: string },
+        null
+      >;
+      getGuildInviteLinks: FunctionReference<
+        "query",
+        "internal",
+        { activeOnly?: boolean; guildId: string },
+        Array<{
+          _creationTime: number;
+          _id: string;
+          code: string;
+          createdAt: number;
+          createdBy: string;
+          expiresAt: number;
+          guildId: string;
+          isActive: boolean;
+          maxUses?: number;
+          uses: number;
+        }>
+      >;
+      getGuildInvites: FunctionReference<
+        "query",
+        "internal",
+        {
+          guildId: string;
+          status?: "pending" | "accepted" | "declined" | "expired";
+        },
+        Array<{
+          _creationTime: number;
+          _id: string;
+          createdAt: number;
+          expiresAt: number;
+          guildId: string;
+          invitedBy: string;
+          invitedUserId: string;
+          respondedAt?: number;
+          status: "pending" | "accepted" | "declined" | "expired";
+        }>
+      >;
+      getPendingInvites: FunctionReference<
+        "query",
+        "internal",
+        { userId: string },
+        Array<{
+          _creationTime: number;
+          _id: string;
+          createdAt: number;
+          expiresAt: number;
+          guildId: string;
+          invitedBy: string;
+          invitedUserId: string;
+          respondedAt?: number;
+          status: "pending" | "accepted" | "declined" | "expired";
+        }>
+      >;
+      useInviteLink: FunctionReference<
+        "mutation",
+        "internal",
+        { code: string; userId: string },
+        string
+      >;
+    };
+    members: {
+      getMemberCount: FunctionReference<
+        "query",
+        "internal",
+        { guildId: string },
+        number
+      >;
+      getMembers: FunctionReference<
+        "query",
+        "internal",
+        { guildId: string },
+        Array<{
+          _creationTime: number;
+          _id: string;
+          guildId: string;
+          joinedAt: number;
+          lastActiveAt?: number;
+          role: "owner" | "member";
+          userId: string;
+        }>
+      >;
+      getPlayerGuild: FunctionReference<
+        "query",
+        "internal",
+        { userId: string },
+        {
+          guild: {
+            _creationTime: number;
+            _id: string;
+            bannerImageId?: string;
+            createdAt: number;
+            description?: string;
+            memberCount: number;
+            name: string;
+            ownerId: string;
+            profileImageId?: string;
+            updatedAt: number;
+            visibility: "public" | "private";
+          };
+          membership: {
+            _creationTime: number;
+            _id: string;
+            guildId: string;
+            joinedAt: number;
+            lastActiveAt?: number;
+            role: "owner" | "member";
+            userId: string;
+          };
+        } | null
+      >;
+      join: FunctionReference<
+        "mutation",
+        "internal",
+        { guildId: string; userId: string },
+        string
+      >;
+      kick: FunctionReference<
+        "mutation",
+        "internal",
+        { guildId: string; kickedBy: string; targetUserId: string },
+        null
+      >;
+      leave: FunctionReference<
+        "mutation",
+        "internal",
+        { guildId: string; userId: string },
+        null
+      >;
+      transferOwnership: FunctionReference<
+        "mutation",
+        "internal",
+        { currentOwnerId: string; guildId: string; newOwnerId: string },
+        null
+      >;
+      updateRole: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          guildId: string;
+          newRole: "owner" | "member";
+          targetUserId: string;
+          updatedBy: string;
+        },
+        null
+      >;
+    };
+  };
+  lunchtable_tcg_marketplace: {
+    analytics: {
+      getPriceHistory: FunctionReference<
+        "query",
+        "internal",
+        { cardDefinitionId: string; limit?: number },
+        Array<{
+          _creationTime: number;
+          _id: string;
+          cardDefinitionId: string;
+          currencyType: "gold" | "token";
+          listingType: "fixed" | "auction";
+          sellerId: string;
+          soldAt: number;
+          soldFor: number;
+          soldTo: string;
+        }>
+      >;
+      getRecentTransactions: FunctionReference<
+        "query",
+        "internal",
+        { limit?: number },
+        Array<{
+          _creationTime: number;
+          _id: string;
+          cardDefinitionId: string;
+          currencyType: "gold" | "token";
+          listingType: "fixed" | "auction";
+          sellerId: string;
+          soldAt: number;
+          soldFor: number;
+          soldTo: string;
+        }>
+      >;
+      getTransactionHistory: FunctionReference<
+        "query",
+        "internal",
+        { limit?: number; role?: "buyer" | "seller"; userId: string },
+        Array<{
+          _creationTime: number;
+          _id: string;
+          cardDefinitionId: string;
+          currencyType: "gold" | "token";
+          listingType: "fixed" | "auction";
+          sellerId: string;
+          soldAt: number;
+          soldFor: number;
+          soldTo: string;
+        }>
+      >;
+    };
+    bids: {
+      getBidsForListing: FunctionReference<
+        "query",
+        "internal",
+        { listingId: string },
+        Array<{
+          _creationTime: number;
+          _id: string;
+          bidAmount: number;
+          bidStatus: "active" | "outbid" | "won" | "refunded" | "cancelled";
+          bidderId: string;
+          bidderUsername: string;
+          createdAt: number;
+          listingId: string;
+          refunded?: boolean;
+          refundedAt?: number;
+        }>
+      >;
+      getPlayerBids: FunctionReference<
+        "query",
+        "internal",
+        {
+          bidStatus?: "active" | "outbid" | "won" | "refunded" | "cancelled";
+          bidderId: string;
+        },
+        Array<{
+          _creationTime: number;
+          _id: string;
+          bidAmount: number;
+          bidStatus: "active" | "outbid" | "won" | "refunded" | "cancelled";
+          bidderId: string;
+          bidderUsername: string;
+          createdAt: number;
+          listingId: string;
+          refunded?: boolean;
+          refundedAt?: number;
+        }>
+      >;
+      placeBid: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          bidAmount: number;
+          bidderId: string;
+          bidderUsername: string;
+          listingId: string;
+        },
+        string
+      >;
+      resolveAuction: FunctionReference<
+        "mutation",
+        "internal",
+        { listingId: string },
+        { winAmount: number; winnerId: string } | null
+      >;
+    };
+    listings: {
+      cancelListing: FunctionReference<
+        "mutation",
+        "internal",
+        { listingId: string; sellerId: string },
+        null
+      >;
+      createListing: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          cardDefinitionId: string;
+          currencyType?: "gold" | "token";
+          endsAt?: number;
+          listingType: "fixed" | "auction";
+          price: number;
+          quantity: number;
+          sellerId: string;
+          sellerUsername: string;
+          tokenPrice?: number;
+        },
+        string
+      >;
+      expireListings: FunctionReference<"mutation", "internal", {}, number>;
+      getActive: FunctionReference<
+        "query",
+        "internal",
+        { currencyType?: "gold" | "token"; listingType?: "fixed" | "auction" },
+        Array<{
+          _creationTime: number;
+          _id: string;
+          bidCount: number;
+          cardDefinitionId: string;
+          claimed?: boolean;
+          createdAt: number;
+          currencyType?: "gold" | "token";
+          currentBid?: number;
+          endsAt?: number;
+          highestBidderId?: string;
+          highestBidderUsername?: string;
+          listingType: "fixed" | "auction";
+          platformFee?: number;
+          price: number;
+          quantity: number;
+          sellerId: string;
+          sellerUsername: string;
+          soldAt?: number;
+          soldFor?: number;
+          soldTo?: string;
+          status: "active" | "sold" | "cancelled" | "expired" | "suspended";
+          tokenPrice?: number;
+          updatedAt: number;
+        }>
+      >;
+      getById: FunctionReference<
+        "query",
+        "internal",
+        { id: string },
+        {
+          _creationTime: number;
+          _id: string;
+          bidCount: number;
+          cardDefinitionId: string;
+          claimed?: boolean;
+          createdAt: number;
+          currencyType?: "gold" | "token";
+          currentBid?: number;
+          endsAt?: number;
+          highestBidderId?: string;
+          highestBidderUsername?: string;
+          listingType: "fixed" | "auction";
+          platformFee?: number;
+          price: number;
+          quantity: number;
+          sellerId: string;
+          sellerUsername: string;
+          soldAt?: number;
+          soldFor?: number;
+          soldTo?: string;
+          status: "active" | "sold" | "cancelled" | "expired" | "suspended";
+          tokenPrice?: number;
+          updatedAt: number;
+        } | null
+      >;
+      getBySeller: FunctionReference<
+        "query",
+        "internal",
+        {
+          sellerId: string;
+          status?: "active" | "sold" | "cancelled" | "expired" | "suspended";
+        },
+        Array<{
+          _creationTime: number;
+          _id: string;
+          bidCount: number;
+          cardDefinitionId: string;
+          claimed?: boolean;
+          createdAt: number;
+          currencyType?: "gold" | "token";
+          currentBid?: number;
+          endsAt?: number;
+          highestBidderId?: string;
+          highestBidderUsername?: string;
+          listingType: "fixed" | "auction";
+          platformFee?: number;
+          price: number;
+          quantity: number;
+          sellerId: string;
+          sellerUsername: string;
+          soldAt?: number;
+          soldFor?: number;
+          soldTo?: string;
+          status: "active" | "sold" | "cancelled" | "expired" | "suspended";
+          tokenPrice?: number;
+          updatedAt: number;
+        }>
+      >;
+      purchaseListing: FunctionReference<
+        "mutation",
+        "internal",
+        { buyerId: string; buyerUsername: string; listingId: string },
+        null
+      >;
+    };
+    shop: {
+      getPriceCaps: FunctionReference<
+        "query",
+        "internal",
+        { cardDefinitionId?: string; isActive?: boolean },
+        Array<{
+          _creationTime: number;
+          _id: string;
+          cardDefinitionId: string;
+          createdAt: number;
+          isActive: boolean;
+          maxPrice: number;
+          reason: string;
+          setBy: string;
+          setByUsername: string;
+          updatedAt: number;
+        }>
+      >;
+    };
+  };
+  lunchtable_tcg_payments: {};
+  lunchtable_tcg_progression: {
+    achievements: {
+      checkAndGrant: FunctionReference<
+        "mutation",
+        "internal",
+        { achievementId: string; currentValue: number; userId: string },
+        string | null
+      >;
+      defineAchievement: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          achievementId: string;
+          category:
+            | "wins"
+            | "games_played"
+            | "collection"
+            | "social"
+            | "story"
+            | "ranked"
+            | "special";
+          createdAt: number;
+          description: string;
+          icon: string;
+          isActive: boolean;
+          isSecret: boolean;
+          name: string;
+          rarity: "common" | "rare" | "epic" | "legendary";
+          requirementType: string;
+          rewards?: {
+            badge?: string;
+            cardDefinitionId?: string;
+            gems?: number;
+            gold?: number;
+            xp?: number;
+          };
+          targetValue: number;
+        },
+        string
+      >;
+      getDefinitionById: FunctionReference<
+        "query",
+        "internal",
+        { id: string },
+        {
+          _creationTime: number;
+          _id: string;
+          achievementId: string;
+          category:
+            | "wins"
+            | "games_played"
+            | "collection"
+            | "social"
+            | "story"
+            | "ranked"
+            | "special";
+          createdAt: number;
+          description: string;
+          icon: string;
+          isActive: boolean;
+          isSecret: boolean;
+          name: string;
+          rarity: "common" | "rare" | "epic" | "legendary";
+          requirementType: string;
+          rewards?: {
+            badge?: string;
+            cardDefinitionId?: string;
+            gems?: number;
+            gold?: number;
+            xp?: number;
+          };
+          targetValue: number;
+        } | null
+      >;
+      getDefinitions: FunctionReference<
+        "query",
+        "internal",
+        {
+          category?:
+            | "wins"
+            | "games_played"
+            | "collection"
+            | "social"
+            | "story"
+            | "ranked"
+            | "special";
+        },
+        Array<{
+          _creationTime: number;
+          _id: string;
+          achievementId: string;
+          category:
+            | "wins"
+            | "games_played"
+            | "collection"
+            | "social"
+            | "story"
+            | "ranked"
+            | "special";
+          createdAt: number;
+          description: string;
+          icon: string;
+          isActive: boolean;
+          isSecret: boolean;
+          name: string;
+          rarity: "common" | "rare" | "epic" | "legendary";
+          requirementType: string;
+          rewards?: {
+            badge?: string;
+            cardDefinitionId?: string;
+            gems?: number;
+            gold?: number;
+            xp?: number;
+          };
+          targetValue: number;
+        }>
+      >;
+      getPlayerAchievements: FunctionReference<
+        "query",
+        "internal",
+        { userId: string },
+        Array<{
+          _creationTime: number;
+          _id: string;
+          achievementId: string;
+          currentProgress: number;
+          isUnlocked: boolean;
+          unlockedAt?: number;
+          userId: string;
+        }>
+      >;
+      grantAchievement: FunctionReference<
+        "mutation",
+        "internal",
+        { achievementId: string; currentProgress?: number; userId: string },
+        string
+      >;
+      updateProgress: FunctionReference<
+        "mutation",
+        "internal",
+        { achievementId: string; delta: number; userId: string },
+        { currentProgress: number; isUnlocked: boolean }
+      >;
+    };
+    badges: {
+      awardBadge: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          archetype?: string;
+          badgeId: string;
+          badgeType:
+            | "archetype_complete"
+            | "act_complete"
+            | "difficulty_complete"
+            | "perfect_chapter"
+            | "speed_run"
+            | "milestone";
+          description: string;
+          displayName: string;
+          iconUrl?: string;
+          userId: string;
+        },
+        string
+      >;
+      getByBadgeId: FunctionReference<
+        "query",
+        "internal",
+        { badgeId: string },
+        any
+      >;
+      getUserBadges: FunctionReference<
+        "query",
+        "internal",
+        {
+          badgeType?:
+            | "archetype_complete"
+            | "act_complete"
+            | "difficulty_complete"
+            | "perfect_chapter"
+            | "speed_run"
+            | "milestone";
+          userId: string;
+        },
+        any
+      >;
+      hasBadge: FunctionReference<
+        "query",
+        "internal",
+        { badgeId: string; userId: string },
+        boolean
+      >;
+    };
+    battlepass: {
+      addXP: FunctionReference<
+        "mutation",
+        "internal",
+        { amount: number; battlePassId?: string; userId: string },
+        { currentTier: number; currentXP: number; tierUps: number }
+      >;
+      claimTier: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          battlePassId?: string;
+          isPremium: boolean;
+          tier: number;
+          userId: string;
+        },
+        {
+          freeReward?: {
+            amount?: number;
+            avatarUrl?: string;
+            cardId?: string;
+            packProductId?: string;
+            titleName?: string;
+            type: "gold" | "gems" | "xp" | "card" | "pack" | "title" | "avatar";
+          };
+          premiumReward?: {
+            amount?: number;
+            avatarUrl?: string;
+            cardId?: string;
+            packProductId?: string;
+            titleName?: string;
+            type: "gold" | "gems" | "xp" | "card" | "pack" | "title" | "avatar";
+          };
+          success: boolean;
+        } | null
+      >;
+      createSeason: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          createdBy: string;
+          description?: string;
+          endDate: number;
+          name: string;
+          seasonId: string;
+          startDate: number;
+          totalTiers: number;
+          xpPerTier: number;
+        },
+        string
+      >;
+      defineTier: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          battlePassId: string;
+          freeReward?: {
+            amount?: number;
+            avatarUrl?: string;
+            cardId?: string;
+            packProductId?: string;
+            titleName?: string;
+            type: "gold" | "gems" | "xp" | "card" | "pack" | "title" | "avatar";
+          };
+          isMilestone: boolean;
+          premiumReward?: {
+            amount?: number;
+            avatarUrl?: string;
+            cardId?: string;
+            packProductId?: string;
+            titleName?: string;
+            type: "gold" | "gems" | "xp" | "card" | "pack" | "title" | "avatar";
+          };
+          tier: number;
+        },
+        string
+      >;
+      getCurrentSeason: FunctionReference<
+        "query",
+        "internal",
+        {},
+        {
+          _creationTime: number;
+          _id: string;
+          createdAt: number;
+          createdBy: string;
+          description?: string;
+          endDate: number;
+          name: string;
+          seasonId: string;
+          startDate: number;
+          status: "upcoming" | "active" | "ended";
+          totalTiers: number;
+          updatedAt: number;
+          xpPerTier: number;
+        } | null
+      >;
+      getPlayerProgress: FunctionReference<
+        "query",
+        "internal",
+        { battlePassId?: string; userId: string },
+        {
+          _creationTime: number;
+          _id: string;
+          battlePassId: string;
+          claimedFreeTiers: Array<number>;
+          claimedPremiumTiers: Array<number>;
+          createdAt: number;
+          currentTier: number;
+          currentXP: number;
+          isPremium: boolean;
+          lastXPGainAt?: number;
+          premiumPurchasedAt?: number;
+          updatedAt: number;
+          userId: string;
+        } | null
+      >;
+      getTiers: FunctionReference<
+        "query",
+        "internal",
+        { battlePassId: string },
+        Array<{
+          _creationTime: number;
+          _id: string;
+          battlePassId: string;
+          freeReward?: {
+            amount?: number;
+            avatarUrl?: string;
+            cardId?: string;
+            packProductId?: string;
+            titleName?: string;
+            type: "gold" | "gems" | "xp" | "card" | "pack" | "title" | "avatar";
+          };
+          isMilestone: boolean;
+          premiumReward?: {
+            amount?: number;
+            avatarUrl?: string;
+            cardId?: string;
+            packProductId?: string;
+            titleName?: string;
+            type: "gold" | "gems" | "xp" | "card" | "pack" | "title" | "avatar";
+          };
+          tier: number;
+        }>
+      >;
+      upgradeToPremium: FunctionReference<
+        "mutation",
+        "internal",
+        { battlePassId?: string; userId: string },
+        null
+      >;
+    };
+    quests: {
+      abandonQuest: FunctionReference<
+        "mutation",
+        "internal",
+        { questId: string; userId: string },
+        null
+      >;
+      claimQuest: FunctionReference<
+        "mutation",
+        "internal",
+        { questId: string; userId: string },
+        {
+          rewards: { gems?: number; gold: number; xp: number };
+          success: boolean;
+        } | null
+      >;
+      defineQuest: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          createdAt: number;
+          description: string;
+          filters?: {
+            archetype?: string;
+            cardType?: string;
+            gameMode?: "ranked" | "casual" | "story";
+          };
+          isActive: boolean;
+          name: string;
+          questId: string;
+          questType: "daily" | "weekly" | "achievement";
+          requirementType: string;
+          rewards: { gems?: number; gold: number; xp: number };
+          targetValue: number;
+        },
+        string
+      >;
+      getActiveQuests: FunctionReference<
+        "query",
+        "internal",
+        { questType?: "daily" | "weekly" | "achievement" },
+        Array<{
+          _creationTime: number;
+          _id: string;
+          createdAt: number;
+          description: string;
+          filters?: {
+            archetype?: string;
+            cardType?: string;
+            gameMode?: "ranked" | "casual" | "story";
+          };
+          isActive: boolean;
+          name: string;
+          questId: string;
+          questType: "daily" | "weekly" | "achievement";
+          requirementType: string;
+          rewards: { gems?: number; gold: number; xp: number };
+          targetValue: number;
+        }>
+      >;
+      getPlayerQuests: FunctionReference<
+        "query",
+        "internal",
+        { includeClaimed?: boolean; userId: string },
+        Array<{
+          _creationTime: number;
+          _id: string;
+          claimedAt?: number;
+          completedAt?: number;
+          currentProgress: number;
+          expiresAt?: number;
+          questId: string;
+          startedAt: number;
+          status: "active" | "completed" | "claimed";
+          userId: string;
+        }>
+      >;
+      startQuest: FunctionReference<
+        "mutation",
+        "internal",
+        { expiresAt?: number; questId: string; userId: string },
+        string
+      >;
+      updateQuestProgress: FunctionReference<
+        "mutation",
+        "internal",
+        { delta: number; questId: string; userId: string },
+        { currentProgress: number; status: "active" | "completed" | "claimed" }
+      >;
+    };
+    xp: {
+      addXP: FunctionReference<
+        "mutation",
+        "internal",
+        { amount: number; userId: string },
+        { currentLevel: number; levelUps: number; lifetimeXP: number }
+      >;
+      getLeaderboard: FunctionReference<
+        "query",
+        "internal",
+        { limit?: number },
+        Array<{
+          _creationTime: number;
+          _id: string;
+          currentLevel: number;
+          currentXP: number;
+          lastUpdatedAt: number;
+          lifetimeXP: number;
+          userId: string;
+        }>
+      >;
+      getPlayerXP: FunctionReference<
+        "query",
+        "internal",
+        { userId: string },
+        {
+          _creationTime: number;
+          _id: string;
+          currentLevel: number;
+          currentXP: number;
+          lastUpdatedAt: number;
+          lifetimeXP: number;
+          userId: string;
+        } | null
+      >;
+    };
+  };
+  lunchtable_tcg_referrals: {
+    referrals: {
+      createReferralLink: FunctionReference<
+        "mutation",
+        "internal",
+        { code: string; userId: string },
+        string
+      >;
+      deactivateUserLinks: FunctionReference<
+        "mutation",
+        "internal",
+        { userId: string },
+        null
+      >;
+      getReferralCount: FunctionReference<
+        "query",
+        "internal",
+        { referrerId: string },
+        number
+      >;
+      getReferralLink: FunctionReference<
+        "query",
+        "internal",
+        { userId: string },
+        null | { _id: string; code: string; createdAt: number; uses: number }
+      >;
+      getReferralLinkByCode: FunctionReference<
+        "query",
+        "internal",
+        { code: string },
+        null | {
+          _id: string;
+          code: string;
+          createdAt: number;
+          isActive: boolean;
+          userId: string;
+          uses: number;
+        }
+      >;
+      getReferralsByReferrer: FunctionReference<
+        "query",
+        "internal",
+        { referrerId: string },
+        Array<{
+          createdAt: number;
+          referralCode: string;
+          referredUserId: string;
+        }>
+      >;
+      incrementLinkUses: FunctionReference<
+        "mutation",
+        "internal",
+        { linkId: string },
+        null
+      >;
+      recordReferral: FunctionReference<
+        "mutation",
+        "internal",
+        { referralCode: string; referredUserId: string; referrerId: string },
+        string
+      >;
+    };
+  };
+  lunchtable_tcg_seasons: {
+    seasons: {
+      createSeason: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          createdBy: string;
+          description?: string;
+          endDate: number;
+          name: string;
+          number: number;
+          rankResetType: "full" | "soft" | "none";
+          rewards?: Array<{
+            cardPackReward?: number;
+            exclusiveCardId?: string;
+            gemsReward: number;
+            goldReward: number;
+            minElo: number;
+            tier: string;
+            titleReward?: string;
+          }>;
+          softResetPercentage?: number;
+          startDate: number;
+        },
+        string
+      >;
+      createSnapshot: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          finalElo: number;
+          gamesPlayed: number;
+          losses: number;
+          rank: number;
+          seasonId: string;
+          seasonNumber: number;
+          tier: string;
+          userId: string;
+          username: string;
+          wins: number;
+        },
+        string
+      >;
+      deleteSeason: FunctionReference<
+        "mutation",
+        "internal",
+        { seasonId: string },
+        null
+      >;
+      getActiveSeason: FunctionReference<"query", "internal", {}, any>;
+      getSeason: FunctionReference<
+        "query",
+        "internal",
+        { seasonId: string },
+        any
+      >;
+      getSeasonByNumber: FunctionReference<
+        "query",
+        "internal",
+        { number: number },
+        any
+      >;
+      getSeasons: FunctionReference<
+        "query",
+        "internal",
+        { status?: "upcoming" | "active" | "ended" },
+        any
+      >;
+      getSeasonSnapshots: FunctionReference<
+        "query",
+        "internal",
+        { limit?: number; seasonId: string },
+        any
+      >;
+      getUserSnapshots: FunctionReference<
+        "query",
+        "internal",
+        { userId: string },
+        any
+      >;
+      markRewardsDistributed: FunctionReference<
+        "mutation",
+        "internal",
+        { snapshotId: string },
+        null
+      >;
+      updateSeason: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          description?: string;
+          endDate?: number;
+          name?: string;
+          rankResetType?: "full" | "soft" | "none";
+          rewards?: Array<{
+            cardPackReward?: number;
+            exclusiveCardId?: string;
+            gemsReward: number;
+            goldReward: number;
+            minElo: number;
+            tier: string;
+            titleReward?: string;
+          }>;
+          seasonId: string;
+          softResetPercentage?: number;
+          startDate?: number;
+          status?: "upcoming" | "active" | "ended";
+        },
+        null
+      >;
+    };
+  };
+  lunchtable_tcg_social: {
+    friends: {
+      acceptRequest: FunctionReference<
+        "mutation",
+        "internal",
+        { requestId: string; userId: string },
+        null
+      >;
+      blockUser: FunctionReference<
+        "mutation",
+        "internal",
+        { blockedUserId: string; userId: string },
+        string
+      >;
+      declineRequest: FunctionReference<
+        "mutation",
+        "internal",
+        { requestId: string; userId: string },
+        null
+      >;
+      getFriends: FunctionReference<
+        "query",
+        "internal",
+        { userId: string },
+        Array<{
+          _creationTime: number;
+          _id: string;
+          createdAt: number;
+          friendId: string;
+          lastInteraction?: number;
+          requestedBy: string;
+          respondedAt?: number;
+          status: string;
+          userId: string;
+        }>
+      >;
+      getFriendshipStatus: FunctionReference<
+        "query",
+        "internal",
+        { otherUserId: string; userId: string },
+        {
+          friendship: {
+            _creationTime: number;
+            _id: string;
+            createdAt: number;
+            friendId: string;
+            lastInteraction?: number;
+            requestedBy: string;
+            respondedAt?: number;
+            status: string;
+            userId: string;
+          };
+          status: string;
+        } | null
+      >;
+      getPendingRequests: FunctionReference<
+        "query",
+        "internal",
+        { userId: string },
+        Array<{
+          _creationTime: number;
+          _id: string;
+          createdAt: number;
+          friendId: string;
+          lastInteraction?: number;
+          requestedBy: string;
+          respondedAt?: number;
+          status: string;
+          userId: string;
+        }>
+      >;
+      removeFriend: FunctionReference<
+        "mutation",
+        "internal",
+        { friendId: string; userId: string },
+        null
+      >;
+      sendRequest: FunctionReference<
+        "mutation",
+        "internal",
+        { fromUserId: string; toUserId: string },
+        string
+      >;
+      unblockUser: FunctionReference<
+        "mutation",
+        "internal",
+        { blockedUserId: string; userId: string },
+        null
+      >;
+    };
+    globalChat: {
+      getByUser: FunctionReference<
+        "query",
+        "internal",
+        { limit?: number; userId: string },
+        any
+      >;
+      getRecentMessages: FunctionReference<
+        "query",
+        "internal",
+        { before?: number; limit?: number },
+        any
+      >;
+      sendMessage: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          isSystem?: boolean;
+          message: string;
+          userId: string;
+          username: string;
+        },
+        string
+      >;
+    };
+    inbox: {
+      claimReward: FunctionReference<
+        "mutation",
+        "internal",
+        { inboxItemId: string; userId: string },
+        any
+      >;
+      deleteItem: FunctionReference<
+        "mutation",
+        "internal",
+        { inboxItemId: string; userId: string },
+        null
+      >;
+      getInbox: FunctionReference<
+        "query",
+        "internal",
+        {
+          limit?: number;
+          type?:
+            | "reward"
+            | "announcement"
+            | "challenge"
+            | "friend_request"
+            | "guild_invite"
+            | "guild_request"
+            | "system"
+            | "achievement";
+          unreadOnly?: boolean;
+          userId: string;
+        },
+        any
+      >;
+      getUnreadCount: FunctionReference<
+        "query",
+        "internal",
+        { userId: string },
+        number
+      >;
+      markRead: FunctionReference<
+        "mutation",
+        "internal",
+        { inboxItemId: string; userId: string },
+        null
+      >;
+      send: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          data?: any;
+          expiresAt?: number;
+          message: string;
+          senderId?: string;
+          senderUsername?: string;
+          title: string;
+          type:
+            | "reward"
+            | "announcement"
+            | "challenge"
+            | "friend_request"
+            | "guild_invite"
+            | "guild_request"
+            | "system"
+            | "achievement";
+          userId: string;
+        },
+        string
+      >;
+    };
+    messages: {
+      getConversation: FunctionReference<
+        "query",
+        "internal",
+        { userId1: string; userId2: string },
+        {
+          _creationTime: number;
+          _id: string;
+          createdAt: number;
+          lastMessageAt: number;
+          messageCount: number;
+          participant1Archived?: boolean;
+          participant1Id: string;
+          participant1LastRead?: number;
+          participant2Archived?: boolean;
+          participant2Id: string;
+          participant2LastRead?: number;
+        } | null
+      >;
+      getConversations: FunctionReference<
+        "query",
+        "internal",
+        { userId: string },
+        Array<{
+          _creationTime: number;
+          _id: string;
+          createdAt: number;
+          lastMessageAt: number;
+          messageCount: number;
+          participant1Archived?: boolean;
+          participant1Id: string;
+          participant1LastRead?: number;
+          participant2Archived?: boolean;
+          participant2Id: string;
+          participant2LastRead?: number;
+        }>
+      >;
+      getMessages: FunctionReference<
+        "query",
+        "internal",
+        { before?: number; conversationId: string; limit?: number },
+        Array<{
+          _creationTime: number;
+          _id: string;
+          conversationId: string;
+          createdAt: number;
+          isSystem?: boolean;
+          message: string;
+          senderId: string;
+          senderUsername: string;
+        }>
+      >;
+      markRead: FunctionReference<
+        "mutation",
+        "internal",
+        { conversationId: string; userId: string },
+        null
+      >;
+      sendMessage: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          isSystem?: boolean;
+          message: string;
+          recipientId: string;
+          senderId: string;
+          senderUsername: string;
+        },
+        string
+      >;
+    };
+    presence: {
+      clearNotifications: FunctionReference<
+        "mutation",
+        "internal",
+        { userId: string },
+        null
+      >;
+      createNotification: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          data?: any;
+          message: string;
+          title: string;
+          type:
+            | "achievement_unlocked"
+            | "level_up"
+            | "quest_completed"
+            | "badge_earned";
+          userId: string;
+        },
+        string
+      >;
+      getNotifications: FunctionReference<
+        "query",
+        "internal",
+        { limit?: number; unreadOnly?: boolean; userId: string },
+        Array<{
+          _creationTime: number;
+          _id: string;
+          createdAt: number;
+          data?: any;
+          isRead: boolean;
+          message: string;
+          readAt?: number;
+          title: string;
+          type:
+            | "achievement_unlocked"
+            | "level_up"
+            | "quest_completed"
+            | "badge_earned";
+          userId: string;
+        }>
+      >;
+      getOnlineUsers: FunctionReference<
+        "query",
+        "internal",
+        { limit?: number; sinceMinutes?: number },
+        any
+      >;
+      getPresence: FunctionReference<
+        "query",
+        "internal",
+        { userId: string },
+        any
+      >;
+      markNotificationRead: FunctionReference<
+        "mutation",
+        "internal",
+        { notificationId: string; userId: string },
+        null
+      >;
+      updatePresence: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          status: "online" | "in_game" | "idle";
+          userId: string;
+          username: string;
+        },
+        string
+      >;
+    };
+  };
+  lunchtable_tcg_story: {
+    chapters: {
+      createChapter: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          actNumber?: number;
+          aiDifficulty?:
+            | "easy"
+            | "medium"
+            | "hard"
+            | "boss"
+            | { hard: number; legendary: number; normal: number };
+          aiOpponentDeckCode?: string;
+          archetype?: string;
+          archetypeImageUrl?: string;
+          baseRewards?: { gems?: number; gold: number; xp: number };
+          battleCount?: number;
+          chapterNumber?: number;
+          description: string;
+          imageUrl?: string;
+          isActive?: boolean;
+          loreText?: string;
+          number?: number;
+          status?: "draft" | "published";
+          storyText?: string;
+          title: string;
+          unlockCondition?: {
+            requiredChapterId?: string;
+            requiredLevel?: number;
+            type: "chapter_complete" | "player_level" | "none";
+          };
+          unlockRequirements?: {
+            minimumLevel?: number;
+            previousChapter?: boolean;
+          };
+        },
+        string
+      >;
+      getChapter: FunctionReference<
+        "query",
+        "internal",
+        { chapterId: string },
+        any
+      >;
+      getChapterByNumber: FunctionReference<
+        "query",
+        "internal",
+        { actNumber: number; chapterNumber: number },
+        any
+      >;
+      getChapters: FunctionReference<
+        "query",
+        "internal",
+        { actNumber?: number; status?: "draft" | "published" },
+        any
+      >;
+      updateChapter: FunctionReference<
+        "mutation",
+        "internal",
+        { chapterId: string; updates: any },
+        null
+      >;
+    };
+    progress: {
+      getBattleAttempts: FunctionReference<
+        "query",
+        "internal",
+        { limit?: number; userId: string },
+        any
+      >;
+      getChapterProgress: FunctionReference<
+        "query",
+        "internal",
+        { actNumber: number; chapterNumber: number; userId: string },
+        any
+      >;
+      getProgress: FunctionReference<
+        "query",
+        "internal",
+        { userId: string },
+        any
+      >;
+      getStageProgress: FunctionReference<
+        "query",
+        "internal",
+        { stageId?: string; userId: string },
+        any
+      >;
+      recordBattleAttempt: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          actNumber: number;
+          chapterNumber: number;
+          difficulty: "normal" | "hard" | "legendary";
+          finalLP: number;
+          outcome: "won" | "lost" | "abandoned";
+          progressId: string;
+          rewardsEarned: { cards?: Array<string>; gold: number; xp: number };
+          starsEarned: number;
+          userId: string;
+        },
+        string
+      >;
+      upsertProgress: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          actNumber: number;
+          bestScore?: number;
+          chapterNumber: number;
+          difficulty: "normal" | "hard" | "legendary";
+          firstCompletedAt?: number;
+          lastAttemptedAt?: number;
+          starsEarned: number;
+          status: "locked" | "available" | "in_progress" | "completed";
+          timesAttempted: number;
+          timesCompleted: number;
+          userId: string;
+        },
+        string
+      >;
+      upsertStageProgress: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          bestScore?: number;
+          chapterId: string;
+          firstClearClaimed: boolean;
+          lastCompletedAt?: number;
+          stageId: string;
+          stageNumber: number;
+          starsEarned: number;
+          status: "locked" | "available" | "completed" | "starred";
+          timesCompleted: number;
+          userId: string;
+        },
+        string
+      >;
+    };
+    seeds: {
+      seedChapters: FunctionReference<
+        "mutation",
+        "internal",
+        { chapters: Array<any> },
+        number
+      >;
+      seedStages: FunctionReference<
+        "mutation",
+        "internal",
+        { stages: Array<any> },
+        number
+      >;
+    };
+    stages: {
+      createStage: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          aiDifficulty?: "easy" | "medium" | "hard" | "boss";
+          cardRewardId?: string;
+          chapterId: string;
+          description: string;
+          difficulty?: "easy" | "medium" | "hard" | "boss";
+          firstClearBonus?:
+            | { gems?: number; gold?: number; xp?: number }
+            | number;
+          firstClearGems?: number;
+          firstClearGold?: number;
+          name?: string;
+          opponentDeckArchetype?: string;
+          opponentDeckId?: string;
+          opponentName?: string;
+          postMatchLoseDialogue?: Array<{ speaker: string; text: string }>;
+          postMatchWinDialogue?: Array<{ speaker: string; text: string }>;
+          preMatchDialogue?: Array<{
+            imageUrl?: string;
+            speaker: string;
+            text: string;
+          }>;
+          repeatGold?: number;
+          rewardGold?: number;
+          rewardXp?: number;
+          stageNumber: number;
+          status?: "draft" | "published";
+          title?: string;
+        },
+        string
+      >;
+      getStage: FunctionReference<
+        "query",
+        "internal",
+        { stageId: string },
+        any
+      >;
+      getStages: FunctionReference<
+        "query",
+        "internal",
+        { chapterId: string },
+        any
+      >;
+      updateStage: FunctionReference<
+        "mutation",
+        "internal",
+        { stageId: string; updates: any },
+        null
+      >;
+    };
+  };
+  lunchtable_tcg_streaming: {
+    destinations: {
+      addDestination: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          errorMessage?: string;
+          platform:
+            | "twitch"
+            | "youtube"
+            | "kick"
+            | "custom"
+            | "retake"
+            | "x"
+            | "pumpfun";
+          rtmpUrl: string;
+          sessionId: string;
+          status?: "active" | "failed" | "removed";
+          streamKeyHash: string;
+        },
+        string
+      >;
+      getActiveDestinations: FunctionReference<
+        "query",
+        "internal",
+        { sessionId: string },
+        any
+      >;
+      getDestinations: FunctionReference<
+        "query",
+        "internal",
+        { sessionId: string },
+        any
+      >;
+      removeDestination: FunctionReference<
+        "mutation",
+        "internal",
+        { destinationId: string },
+        null
+      >;
+    };
+    sessions: {
+      createSession: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          agentId?: string;
+          currentLobbyId?: string;
+          egressId?: string;
+          overlayConfig: {
+            matchOverHoldMs?: number;
+            playerVisualMode?: "webcam" | "profile-picture";
+            profilePictureUrl?: string;
+            sceneTransitions?: boolean;
+            showAgentInfo: boolean;
+            showDecisions: boolean;
+            showEventFeed: boolean;
+            showPlayerCam: boolean;
+            showSceneLabel?: boolean;
+            theme: "dark" | "light";
+            voiceLoop?: boolean;
+            voiceTrackUrl?: string;
+            voiceVolume?: number;
+            webcamPosition?:
+              | "top-left"
+              | "top-right"
+              | "bottom-left"
+              | "bottom-right";
+            webcamSize?: "small" | "medium" | "large";
+          };
+          overlayUrl?: string;
+          platform:
+            | "twitch"
+            | "youtube"
+            | "kick"
+            | "custom"
+            | "retake"
+            | "x"
+            | "pumpfun";
+          pumpfunMintAddress?: string;
+          retakeAccessToken?: string;
+          retakeUserDbId?: string;
+          streamKeyHash?: string;
+          streamTitle: string;
+          streamType: "user" | "agent";
+          userId?: string;
+        },
+        string
+      >;
+      endSession: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          endReason?: string;
+          sessionId: string;
+          stats?: {
+            decisionsLogged: number;
+            duration: number;
+            eventsRecorded: number;
+          };
+        },
+        null
+      >;
+      getActiveSessions: FunctionReference<"query", "internal", {}, any>;
+      getSession: FunctionReference<
+        "query",
+        "internal",
+        { sessionId: string },
+        any
+      >;
+      getSessionByEgress: FunctionReference<
+        "query",
+        "internal",
+        { egressId: string },
+        any
+      >;
+      getSessionsByAgent: FunctionReference<
+        "query",
+        "internal",
+        { agentId: string; limit?: number },
+        any
+      >;
+      getSessionsByUser: FunctionReference<
+        "query",
+        "internal",
+        { limit?: number; userId: string },
+        any
+      >;
+      updateSession: FunctionReference<
+        "mutation",
+        "internal",
+        { sessionId: string; updates: any },
+        null
+      >;
+    };
+  };
+  lunchtable_tcg_token: {};
+  lunchtable_tcg_treasury: {
+    policies: {
+      createPolicy: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          createdBy: string;
+          description?: string;
+          isActive: boolean;
+          name: string;
+          privyPolicyId?: string;
+          rules: {
+            allowedRecipients?: Array<string>;
+            dailyLimit?: number;
+            maxTransactionAmount?: number;
+            minApprovers?: number;
+            requiresApproval: boolean;
+          };
+        },
+        string
+      >;
+      getPolicies: FunctionReference<
+        "query",
+        "internal",
+        { activeOnly?: boolean },
+        any
+      >;
+      getPolicy: FunctionReference<
+        "query",
+        "internal",
+        { policyId: string },
+        any
+      >;
+      updatePolicy: FunctionReference<
+        "mutation",
+        "internal",
+        { policyId: string; updates: any },
+        null
+      >;
+    };
+    transactions: {
+      confirmTransaction: FunctionReference<
+        "mutation",
+        "internal",
+        { signature: string; transactionId: string },
+        null
+      >;
+      failTransaction: FunctionReference<
+        "mutation",
+        "internal",
+        { errorMessage: string; transactionId: string },
+        null
+      >;
+      getTransactionBySignature: FunctionReference<
+        "query",
+        "internal",
+        { signature: string },
+        any
+      >;
+      getTransactions: FunctionReference<
+        "query",
+        "internal",
+        {
+          limit?: number;
+          status?: "pending" | "submitted" | "confirmed" | "failed";
+          type?:
+            | "fee_received"
+            | "distribution"
+            | "liquidity_add"
+            | "liquidity_remove"
+            | "transfer_internal"
+            | "transfer_external";
+          walletId?: string;
+        },
+        any
+      >;
+      recordTransaction: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          amount: number;
+          approvedBy?: Array<string>;
+          initiatedBy?: string;
+          metadata?: any;
+          signature?: string;
+          status?: "pending" | "submitted" | "confirmed" | "failed";
+          tokenMint: string;
+          type:
+            | "fee_received"
+            | "distribution"
+            | "liquidity_add"
+            | "liquidity_remove"
+            | "transfer_internal"
+            | "transfer_external";
+          walletId: string;
+        },
+        string
+      >;
+    };
+    wallets: {
+      createWallet: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          address: string;
+          balance?: number;
+          createdBy?: string;
+          creationStatus?: "pending" | "creating" | "active" | "failed";
+          name: string;
+          policyId?: string;
+          privyWalletId: string;
+          purpose: "fee_collection" | "distribution" | "liquidity" | "reserves";
+          status?: "active" | "frozen" | "archived";
+          tokenBalance?: number;
+        },
+        string
+      >;
+      getWallet: FunctionReference<
+        "query",
+        "internal",
+        { walletId: string },
+        any
+      >;
+      getWalletByAddress: FunctionReference<
+        "query",
+        "internal",
+        { address: string },
+        any
+      >;
+      getWallets: FunctionReference<
+        "query",
+        "internal",
+        {
+          purpose?:
+            | "fee_collection"
+            | "distribution"
+            | "liquidity"
+            | "reserves";
+          status?: "active" | "frozen" | "archived";
+        },
+        any
+      >;
+      updateWallet: FunctionReference<
+        "mutation",
+        "internal",
+        { updates: any; walletId: string },
+        null
+      >;
+    };
+  };
+  lunchtable_tcg_webhooks: {
+    agentWebhooks: {
+      createWebhook: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          agentId: string;
+          events: Array<string>;
+          secret?: string;
+          url: string;
+        },
+        string
+      >;
+      deleteWebhook: FunctionReference<
+        "mutation",
+        "internal",
+        { webhookId: string },
+        null
+      >;
+      getAgentWebhooks: FunctionReference<
+        "query",
+        "internal",
+        { agentId: string },
+        Array<{
+          _creationTime: number;
+          _id: string;
+          agentId: string;
+          events: Array<string>;
+          failureCount: number;
+          isActive: boolean;
+          lastTriggered?: number;
+          secret?: string;
+          url: string;
+        }>
+      >;
+      recordFailure: FunctionReference<
+        "mutation",
+        "internal",
+        { webhookId: string },
+        null
+      >;
+      recordTrigger: FunctionReference<
+        "mutation",
+        "internal",
+        { webhookId: string },
+        null
+      >;
+      updateWebhook: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          updates: {
+            events?: Array<string>;
+            isActive?: boolean;
+            secret?: string;
+            url?: string;
+          };
+          webhookId: string;
+        },
+        null
+      >;
+    };
+    webhookConfig: {
+      getAllConfigs: FunctionReference<
+        "query",
+        "internal",
+        {},
+        Array<{
+          _creationTime: number;
+          _id: string;
+          createdAt: number;
+          errorCount?: number;
+          isActive: boolean;
+          lastEventAt?: number;
+          provider: "helius" | "shyft" | "bitquery";
+          tokenMint?: string;
+          updatedAt: number;
+          webhookId?: string;
+          webhookSecret?: string;
+          webhookUrl: string;
+        }>
+      >;
+      getWebhookConfig: FunctionReference<
+        "query",
+        "internal",
+        { provider?: "helius" | "shyft" | "bitquery" },
+        null | {
+          _creationTime: number;
+          _id: string;
+          createdAt: number;
+          errorCount?: number;
+          isActive: boolean;
+          lastEventAt?: number;
+          provider: "helius" | "shyft" | "bitquery";
+          tokenMint?: string;
+          updatedAt: number;
+          webhookId?: string;
+          webhookSecret?: string;
+          webhookUrl: string;
+        }
+      >;
+      recordError: FunctionReference<
+        "mutation",
+        "internal",
+        { configId: string },
+        null
+      >;
+      recordEvent: FunctionReference<
+        "mutation",
+        "internal",
+        { configId: string },
+        null
+      >;
+      updateWebhookConfig: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          configId: string;
+          updates: {
+            isActive?: boolean;
+            tokenMint?: string;
+            webhookId?: string;
+            webhookSecret?: string;
+            webhookUrl?: string;
+          };
+        },
+        null
+      >;
+      upsertWebhookConfig: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          isActive: boolean;
+          provider: "helius" | "shyft" | "bitquery";
+          tokenMint?: string;
+          webhookId?: string;
+          webhookSecret?: string;
+          webhookUrl: string;
+        },
+        string
       >;
     };
   };

@@ -1,3 +1,3 @@
 import { defineComponent } from "convex/server";
 
-export default defineComponent("lunchtable-tcg-cards");
+export default defineComponent("lunchtable_tcg_cards");
