@@ -8,6 +8,7 @@ import { nextPhase, opponentSeat } from "./rules/phases.js";
 import { decideSummon, decideSetMonster, decideFlipSummon, evolveSummon } from "./rules/summoning.js";
 import { decideSetSpellTrap, decideActivateSpell, decideActivateTrap, evolveSpellTrap } from "./rules/spellsTraps.js";
 import { decideDeclareAttack, evolveCombat } from "./rules/combat.js";
+import { evolveVice } from "./rules/vice.js";
 
 export interface EngineOptions {
   config?: Partial<EngineConfig>;
@@ -327,6 +328,12 @@ function evolve(state: GameState, events: EngineEvent[]): GameState {
       case "CARD_DESTROYED":
       case "BATTLE_RESOLVED":
         newState = evolveCombat(newState, event);
+        break;
+
+      case "VICE_COUNTER_ADDED":
+      case "VICE_COUNTER_REMOVED":
+      case "BREAKDOWN_TRIGGERED":
+        newState = evolveVice(newState, event);
         break;
 
       // TODO: Handle other events (CARD_DRAWN, etc.)
