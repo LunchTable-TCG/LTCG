@@ -11,6 +11,7 @@ export default defineConfig({
       "apps/web",
       "apps/admin",
       "convex",
+      "packages/engine",
     ],
     globals: true,
     coverage: {

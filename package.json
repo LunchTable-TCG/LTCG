@@ -104,6 +104,7 @@
     "@lunchtable-tcg/content": "workspace:*",
     "@lunchtable-tcg/economy": "workspace:*",
     "@lunchtable-tcg/email": "workspace:*",
+    "@lunchtable-tcg/engine": "workspace:*",
     "@lunchtable-tcg/game": "workspace:*",
     "@lunchtable-tcg/guilds": "workspace:*",
     "@lunchtable-tcg/marketplace": "workspace:*",

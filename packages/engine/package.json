@@ -1,0 +1,37 @@
+{
+  "name": "@lunchtable-tcg/engine",
+  "version": "0.1.0",
+  "description": "Pure TypeScript trading card game engine — zero dependencies, runs anywhere",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./types": {
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/types/index.js"
+    },
+    "./rules": {
+      "types": "./dist/rules/index.d.ts",
+      "import": "./dist/rules/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc --project tsconfig.build.json",
+    "dev": "tsc --project tsconfig.build.json --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "clean": "rm -rf dist",
+    "type-check": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3",
+    "vitest": "^3.0.0"
+  },
+  "files": ["dist", "src"],
+  "types": "./dist/index.d.ts",
+  "module": "./dist/index.js",
+  "keywords": ["tcg", "card-game", "game-engine", "typescript", "ai-agents"],
+  "license": "MIT"
+}

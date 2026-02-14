@@ -1,0 +1,68 @@
+import { describe, it, expect } from "vitest";
+import { defineCards, validateDeck } from "../cards.js";
+import type { CardDefinition } from "../types/index.js";
+
+const sampleCards: CardDefinition[] = [
+  {
+    id: "warrior-1",
+    name: "Test Warrior",
+    type: "stereotype",
+    description: "A test warrior",
+    rarity: "common",
+    attack: 1500,
+    defense: 1200,
+    level: 4,
+  },
+  {
+    id: "spell-1",
+    name: "Test Spell",
+    type: "spell",
+    description: "A test spell",
+    rarity: "common",
+    spellType: "normal",
+  },
+];
+
+describe("defineCards", () => {
+  it("returns a card lookup map", () => {
+    const lookup = defineCards(sampleCards);
+    expect(lookup["warrior-1"]).toBeDefined();
+    expect(lookup["warrior-1"].name).toBe("Test Warrior");
+  });
+
+  it("throws on duplicate card IDs", () => {
+    const dupes = [sampleCards[0], { ...sampleCards[0] }];
+    expect(() => defineCards(dupes)).toThrow("Duplicate card ID");
+  });
+
+  it("throws on stereotype without attack/defense", () => {
+    const bad: CardDefinition[] = [
+      { id: "bad", name: "Bad", type: "stereotype", description: "", rarity: "common" },
+    ];
+    expect(() => defineCards(bad)).toThrow("attack");
+  });
+});
+
+describe("validateDeck", () => {
+  const lookup = defineCards(sampleCards);
+
+  it("validates a legal deck", () => {
+    const deck = Array(40).fill("warrior-1");
+    const result = validateDeck(deck, lookup, { min: 40, max: 60 });
+    expect(result.valid).toBe(true);
+  });
+
+  it("rejects a deck that is too small", () => {
+    const deck = Array(10).fill("warrior-1");
+    const result = validateDeck(deck, lookup, { min: 40, max: 60 });
+    expect(result.valid).toBe(false);
+    expect(result.errors[0]).toContain("too few");
+  });
+
+  it("rejects unknown card IDs", () => {
+    const deck = Array(40).fill("nonexistent");
+    const result = validateDeck(deck, lookup, { min: 40, max: 60 });
+    expect(result.valid).toBe(false);
+    expect(result.errors[0]).toContain("Unknown card");
+  });
+});
