@@ -3,7 +3,7 @@
 
 import type { DeckArchetype, StarterDeckDefinition } from "./types";
 
-export const STARTER_DECKS: readonly StarterDeckDefinition[] = [
+const DEFAULT_STARTER_DECKS: readonly StarterDeckDefinition[] = [
   {
     name: "Infernal Dragons Starter",
     deckCode: "INFERNAL_DRAGONS",
@@ -45,8 +45,20 @@ export const STARTER_DECKS: readonly StarterDeckDefinition[] = [
     playstyle: "Grind",
     cardCount: 34,
   },
-] as const;
+];
 
-export type StarterDeckCode = (typeof STARTER_DECKS)[number]["deckCode"];
+export const STARTER_DECKS: readonly StarterDeckDefinition[] = (() => {
+  const envConfig = process.env["STARTER_DECKS_CONFIG"];
+  if (envConfig) {
+    try {
+      return JSON.parse(envConfig) as StarterDeckDefinition[];
+    } catch (e) {
+      console.error("Failed to parse STARTER_DECKS_CONFIG from env", e);
+    }
+  }
+  return DEFAULT_STARTER_DECKS;
+})();
+
+export type StarterDeckCode = string;
 
 export const VALID_DECK_CODES: readonly StarterDeckCode[] = STARTER_DECKS.map((d) => d.deckCode);

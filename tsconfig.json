@@ -51,6 +51,12 @@
       ],
       "@data/*": [
         "./data/*"
+      ],
+      "@ltcg/core": [
+        "./packages/core/src"
+      ],
+      "@ltcg/core/*": [
+        "./packages/core/src/*"
       ]
     },
     "allowJs": true,

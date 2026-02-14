@@ -8,9 +8,9 @@ import { toast } from "sonner";
 import { useAuth } from "../auth/useConvexAuthHook";
 
 interface UseCardBinderReturn {
-  userCards: ReturnType<typeof useQuery<typeof api.cards.getUserCards>> | undefined;
-  favoriteCards: ReturnType<typeof useQuery<typeof api.cards.getUserFavoriteCards>> | undefined;
-  collectionStats: ReturnType<typeof useQuery<typeof api.cards.getUserCollectionStats>> | undefined;
+  userCards: ReturnType<typeof useQuery<typeof api.core.cards.getUserCards>> | undefined;
+  favoriteCards: ReturnType<typeof useQuery<typeof api.core.cards.getUserFavoriteCards>> | undefined;
+  collectionStats: ReturnType<typeof useQuery<typeof api.core.cards.getUserCollectionStats>> | undefined;
   isLoading: boolean;
   toggleFavorite: (playerCardId: Id<"playerCards">) => Promise<void>;
 }
@@ -59,14 +59,14 @@ export function useCardBinder(): UseCardBinderReturn {
   const { isAuthenticated } = useAuth();
 
   // Queries
-  const userCards = useQuery(api.cards.getUserCards, isAuthenticated ? {} : "skip");
+  const userCards = useQuery(api.core.cards.getUserCards, isAuthenticated ? {} : "skip");
 
-  const favoriteCards = useQuery(api.cards.getUserFavoriteCards, isAuthenticated ? {} : "skip");
+  const favoriteCards = useQuery(api.core.cards.getUserFavoriteCards, isAuthenticated ? {} : "skip");
 
-  const collectionStats = useQuery(api.cards.getUserCollectionStats, isAuthenticated ? {} : "skip");
+  const collectionStats = useQuery(api.core.cards.getUserCollectionStats, isAuthenticated ? {} : "skip");
 
   // Mutation
-  const toggleFavoriteMutation = useMutation(api.cards.toggleFavorite);
+  const toggleFavoriteMutation = useMutation(api.core.cards.toggleFavorite);
 
   const toggleFavorite = async (playerCardId: Id<"playerCards">) => {
     if (!isAuthenticated) throw new Error("Not authenticated");

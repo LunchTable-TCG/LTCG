@@ -46,6 +46,9 @@ export function getDisplayUsername(user: Doc<"users">) {
   return user.username || user.name || "Unknown";
 }
 
+import { GAME_CONFIG } from "@ltcg/core";
+import { Attribute } from "./types";
+
 /**
  * Map archetype name to element for frontend compatibility
  *
@@ -54,25 +57,9 @@ export function getDisplayUsername(user: Doc<"users">) {
  *
  * @param archetype - Archetype identifier (e.g., "infernal_dragons", "fire")
  * @returns Element type for frontend display
- * @example
- * archetypeToElement("infernal_dragons") // "fire"
- * archetypeToElement("fire") // "fire"
- * archetypeToElement("unknown") // "neutral"
  */
-export function archetypeToElement(
-  archetype: string
-): "fire" | "water" | "earth" | "wind" | "neutral" {
-  const mapping: Record<string, "fire" | "water" | "earth" | "wind" | "neutral"> = {
-    infernal_dragons: "fire",
-    abyssal_horrors: "water",
-    nature_spirits: "earth",
-    storm_elementals: "wind",
-    fire: "fire",
-    water: "water",
-    earth: "earth",
-    wind: "wind",
-  };
-  return mapping[archetype] || "neutral";
+export function archetypeToElement(archetype: string): Attribute {
+  return (GAME_CONFIG.ARCHETYPE_TO_ATTRIBUTE[archetype] as Attribute) || "neutral";
 }
 
 /**

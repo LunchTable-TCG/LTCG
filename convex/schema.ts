@@ -10,6 +10,7 @@ import {
   userStreamingPlatformValidator,
 } from "./lib/streamingPlatforms";
 import { livekitTables } from "./livekit/schema";
+import { GAME_CONFIG } from "@ltcg/core";
 
 // ============================================================================
 // SHARED VALIDATORS (Reusable across schema and function args)
@@ -38,14 +39,7 @@ export const progressStatusValidator = literals("locked", "available", "in_progr
 export type ProgressStatus = Infer<typeof progressStatusValidator>;
 
 /** Card variant types for collectible scarcity */
-export const cardVariantValidator = literals(
-  "standard",
-  "foil",
-  "alt_art",
-  "full_art",
-  "numbered",
-  "first_edition"
-);
+export const cardVariantValidator = literals(...GAME_CONFIG.VARIANTS);
 export type CardVariant = Infer<typeof cardVariantValidator>;
 
 /** Sale types for shop promotions */
@@ -1024,68 +1018,19 @@ export default defineSchema({
   // Master card definitions - all cards available in the game
   cardDefinitions: defineTable({
     name: v.string(),
-    rarity: literals("common", "uncommon", "rare", "epic", "legendary"),
-    archetype: literals(
-      // Primary archetypes (from card CSV)
-      "infernal_dragons",
-      "abyssal_depths",
-      "iron_legion",
-      "necro_empire",
-      // Legacy archetypes (for backwards compatibility)
-      "abyssal_horrors",
-      "nature_spirits",
-      "storm_elementals",
-      // Future/placeholder archetypes
-      "shadow_assassins",
-      "celestial_guardians",
-      "undead_legion",
-      "divine_knights",
-      "arcane_mages",
-      "mechanical_constructs",
-      "neutral",
-      // Old archetypes (deprecated - for backward compatibility)
-      "fire",
-      "water",
-      "earth",
-      "wind"
-    ),
-    cardType: literals("creature", "spell", "trap", "equipment"),
+    rarity: literals(...GAME_CONFIG.RARITIES),
+    archetype: literals(...GAME_CONFIG.ARCHETYPES),
+    cardType: literals(...GAME_CONFIG.CARD_TYPES),
     attack: v.optional(v.number()),
     defense: v.optional(v.number()),
     cost: v.number(),
 
     // Industry-standard TCG fields
     level: v.optional(v.number()), // Monster level (1-12), determines tribute requirements
-    attribute: v.optional(
-      literals("fire", "water", "earth", "wind", "light", "dark", "divine", "neutral")
-    ),
-    monsterType: v.optional(
-      v.union(
-        v.literal("dragon"),
-        v.literal("spellcaster"),
-        v.literal("warrior"),
-        v.literal("beast"),
-        v.literal("fiend"),
-        v.literal("zombie"),
-        v.literal("machine"),
-        v.literal("aqua"),
-        v.literal("pyro"),
-        v.literal("divine_beast")
-      )
-    ),
-    spellType: v.optional(
-      v.union(
-        v.literal("normal"),
-        v.literal("quick_play"),
-        v.literal("continuous"),
-        v.literal("field"),
-        v.literal("equip"),
-        v.literal("ritual")
-      )
-    ),
-    trapType: v.optional(
-      v.union(v.literal("normal"), v.literal("continuous"), v.literal("counter"))
-    ),
+    attribute: v.optional(literals(...GAME_CONFIG.ATTRIBUTES)),
+    monsterType: v.optional(literals(...GAME_CONFIG.MONSTER_TYPES)),
+    spellType: v.optional(literals(...GAME_CONFIG.SPELL_TYPES)),
+    trapType: v.optional(literals(...GAME_CONFIG.TRAP_TYPES)),
 
     ability: v.optional(jsonAbilityValidator), // JSON ability format
     flavorText: v.optional(v.string()),
@@ -1094,215 +1039,12 @@ export default defineSchema({
     thumbnailStorageId: v.optional(v.id("_storage")),
     isActive: v.boolean(),
     createdAt: v.number(),
-    templateId: v.optional(v.id("cardTemplates")), // Link to visual template
   })
     .index("by_rarity", ["rarity"])
     .index("by_archetype", ["archetype"])
     .index("by_type", ["cardType"])
     .index("by_name", ["name"])
     .index("by_active_rarity", ["isActive", "rarity"]),
-
-  // =============================================================================
-  // Card Template Designer
-  // =============================================================================
-
-  // Card background images - uploaded to Vercel Blob for use in templates
-  cardBackgrounds: defineTable({
-    filename: v.string(),
-    blobUrl: v.string(),
-    width: v.number(),
-    height: v.number(),
-    uploadedAt: v.number(),
-    tags: v.optional(v.array(v.string())),
-  }).index("by_filename", ["filename"]),
-
-  // Card type templates - defines text field positions/styles for card rendering
-  cardTypeTemplates: defineTable({
-    cardType: v.string(), // "creature" | "spell" | "trap" | "magic" | "environment"
-    name: v.string(),
-    backgroundId: v.id("cardBackgrounds"),
-    canvasWidth: v.number(),
-    canvasHeight: v.number(),
-    textFields: v.array(
-      v.object({
-        id: v.string(),
-        dataField: v.string(), // "title" | "effect" | "cardType" | "manaCost" | "atk" | "def"
-        x: v.number(),
-        y: v.number(),
-        width: v.number(),
-        height: v.number(),
-        rotation: v.number(),
-        fontFamily: v.string(),
-        fontSize: v.number(),
-        fontWeight: v.string(),
-        color: v.string(),
-        align: v.string(),
-        stroke: v.optional(
-          v.object({
-            color: v.string(),
-            width: v.number(),
-          })
-        ),
-        shadow: v.optional(
-          v.object({
-            color: v.string(),
-            blur: v.number(),
-            offsetX: v.number(),
-            offsetY: v.number(),
-          })
-        ),
-        letterSpacing: v.number(),
-        lineHeight: v.number(),
-        autoScale: v.boolean(),
-      })
-    ),
-    createdAt: v.number(),
-    updatedAt: v.number(),
-  })
-    .index("by_card_type", ["cardType"])
-    .index("by_created_at", ["createdAt"]),
-
-  // Card visual templates - defines layout for card rendering
-  cardTemplates: defineTable({
-    name: v.string(),
-    description: v.optional(v.string()),
-    cardType: literals("creature", "spell", "trap", "equipment", "universal"), // "universal" applies to all types
-    // Template mode:
-    // - "frame_artwork": Traditional mode with separate frame image + artwork placement
-    // - "full_card_image": Card's own image is the full background (frame + art baked in)
-    mode: v.optional(literals("frame_artwork", "full_card_image")), // defaults to "frame_artwork" for backwards compatibility
-    // Canvas dimensions (standard TCG: 750x1050)
-    width: v.number(),
-    height: v.number(),
-    // Frame images per rarity (different borders for each rarity)
-    frameImages: v.object({
-      common: v.optional(v.string()),
-      uncommon: v.optional(v.string()),
-      rare: v.optional(v.string()),
-      epic: v.optional(v.string()),
-      legendary: v.optional(v.string()),
-    }),
-    // Fallback frame if rarity-specific not set
-    defaultFrameImageUrl: v.optional(v.string()),
-    // Artwork area (where card art goes)
-    artworkBounds: v.object({
-      x: v.number(),
-      y: v.number(),
-      width: v.number(),
-      height: v.number(),
-    }),
-    // Default text styles
-    defaultFontFamily: v.string(),
-    defaultFontSize: v.number(),
-    defaultFontColor: v.string(),
-    // Metadata
-    isDefault: v.boolean(),
-    isActive: v.boolean(),
-    createdBy: v.optional(v.id("users")),
-    createdAt: v.number(),
-    updatedAt: v.number(),
-  })
-    .index("by_cardType", ["cardType"])
-    .index("by_default", ["isDefault", "cardType"])
-    .index("by_active", ["isActive"]),
-
-  // Blocks within a template (text, image, icon elements)
-  cardTemplateBlocks: defineTable({
-    templateId: v.id("cardTemplates"),
-    blockType: literals(
-      // Text blocks
-      "name",
-      "level",
-      "attribute",
-      "attack",
-      "defense",
-      "cost",
-      "cardType",
-      "monsterType",
-      "effect",
-      "flavorText",
-      "custom",
-      // Image blocks (NEW)
-      "image",
-      "icon"
-    ),
-    label: v.string(), // Display label in editor
-    // For custom blocks, what field or static text to display
-    customContent: v.optional(v.string()),
-    // Position (percentage-based 0-100 for responsiveness)
-    x: v.number(),
-    y: v.number(),
-    width: v.number(),
-    height: v.number(),
-    // Typography (for text blocks)
-    fontFamily: v.string(),
-    fontSize: v.number(),
-    fontWeight: literals("normal", "bold"),
-    fontStyle: literals("normal", "italic"),
-    textAlign: literals("left", "center", "right"),
-    color: v.string(),
-    // Optional styling
-    backgroundColor: v.optional(v.string()),
-    borderColor: v.optional(v.string()),
-    borderWidth: v.optional(v.number()),
-    borderRadius: v.optional(v.number()),
-    padding: v.optional(v.number()),
-    // Image block properties (NEW)
-    imageUrl: v.optional(v.string()), // URL to image (Vercel Blob or external)
-    imageStorageId: v.optional(v.string()), // Reference to asset storage
-    imageFit: v.optional(literals("fill", "contain", "cover", "none")),
-    // Transform properties (NEW)
-    opacity: v.optional(v.number()), // 0-1
-    rotation: v.optional(v.number()), // degrees
-    // Visibility rules - which card types should show this block
-    showForCardTypes: v.optional(v.array(literals("creature", "spell", "trap", "equipment"))),
-    // Z-index for layering
-    zIndex: v.number(),
-  })
-    .index("by_template", ["templateId"])
-    .index("by_template_zIndex", ["templateId", "zIndex"]),
-
-  // Freeform card designs - simple drag-and-drop canvas editor
-  freeformDesigns: defineTable({
-    name: v.string(),
-    description: v.optional(v.string()),
-    width: v.number(), // default 750
-    height: v.number(), // default 1050
-    thumbnailUrl: v.optional(v.string()),
-    isActive: v.boolean(),
-    createdBy: v.optional(v.string()),
-    createdAt: v.number(),
-    updatedAt: v.number(),
-  })
-    .index("by_active", ["isActive"])
-    .index("by_created_at", ["createdAt"]),
-
-  // Elements within a freeform design (images and text)
-  freeformElements: defineTable({
-    designId: v.id("freeformDesigns"),
-    type: v.union(v.literal("image"), v.literal("text")),
-    // Position & dimensions (pixels)
-    x: v.number(),
-    y: v.number(),
-    width: v.number(),
-    height: v.number(),
-    rotation: v.number(), // degrees, default 0
-    opacity: v.number(), // 0-1, default 1
-    zIndex: v.number(),
-    // Image-specific props
-    imageUrl: v.optional(v.string()),
-    objectFit: v.optional(v.string()), // "cover" | "contain" | "fill"
-    // Text-specific props
-    text: v.optional(v.string()),
-    fontSize: v.optional(v.number()),
-    fontFamily: v.optional(v.string()),
-    fontWeight: v.optional(v.string()), // "normal" | "bold"
-    fontStyle: v.optional(v.string()), // "normal" | "italic"
-    fill: v.optional(v.string()), // text color
-    align: v.optional(v.string()), // "left" | "center" | "right"
-  })
-    .index("by_design", ["designId"])
-    .index("by_design_zIndex", ["designId", "zIndex"]),
 
   // Player's card inventory - tracks owned cards and quantities
   // NOTE: Each unique (card + variant) combination is a separate row
@@ -1531,35 +1273,10 @@ export default defineSchema({
     packConfig: v.optional(
       v.object({
         cardCount: v.number(),
-        guaranteedRarity: v.optional(literals("common", "uncommon", "rare", "epic", "legendary")),
+        guaranteedRarity: v.optional(literals(...GAME_CONFIG.RARITIES)),
         guaranteedCount: v.optional(v.number()), // How many guaranteed rarity slots
         allRareOrBetter: v.optional(v.boolean()), // For collector packs - all cards Rare+
-        archetype: v.optional(
-          literals(
-            // Primary archetypes (from card CSV)
-            "infernal_dragons",
-            "abyssal_depths",
-            "iron_legion",
-            "necro_empire",
-            // Legacy archetypes (for backwards compatibility)
-            "abyssal_horrors",
-            "nature_spirits",
-            "storm_elementals",
-            // Future/placeholder archetypes
-            "shadow_assassins",
-            "celestial_guardians",
-            "undead_legion",
-            "divine_knights",
-            "arcane_mages",
-            "mechanical_constructs",
-            "neutral",
-            // Old archetypes (temporary for migration)
-            "fire",
-            "water",
-            "earth",
-            "wind"
-          )
-        ),
+        archetype: v.optional(literals(...GAME_CONFIG.ARCHETYPES)),
         // Variant drop rate multipliers (1.0 = base rate, 2.0 = 2x chance)
         variantMultipliers: v.optional(
           v.object({
@@ -1676,22 +1393,6 @@ export default defineSchema({
     refundedAt: v.optional(v.number()),
     // Idempotency flag to prevent double refunds
     refunded: v.optional(v.boolean()),
-    createdAt: v.number(),
-  })
-    .index("by_listing", ["listingId", "createdAt"])
-    .index("by_bidder", ["bidderId", "bidStatus"]),
-
-  // DEPRECATED: Duplicate of auctionBids table
-  // TODO: Remove after migration (migrations/mergeMarketplaceBids.ts) is complete
-  // This table was an exact duplicate with same structure and indexes.
-  // All code has been updated to use auctionBids instead.
-  marketplaceBids: defineTable({
-    listingId: v.id("marketplaceListings"),
-    bidderId: v.id("users"),
-    bidderUsername: v.string(),
-    bidAmount: v.number(),
-    bidStatus: literals("active", "outbid", "won", "refunded", "cancelled"),
-    refundedAt: v.optional(v.number()),
     createdAt: v.number(),
   })
     .index("by_listing", ["listingId", "createdAt"])
@@ -3807,17 +3508,6 @@ export default defineSchema({
     .index("by_agent_status", ["agentId", "status"])
     .index("by_lobby", ["currentLobbyId"])
     .index("by_egress", ["egressId"]),
-
-  // Overlay access codes for secure overlay URL validation
-  overlayAccessCodes: defineTable({
-    sessionId: v.id("streamingSessions"),
-    code: v.string(),
-    expiresAt: v.number(),
-    used: v.boolean(),
-    createdAt: v.number(),
-  })
-    .index("by_session_code", ["sessionId", "code"])
-    .index("by_expiry", ["expiresAt"]),
 
   // Multi-destination streaming — tracks individual RTMP destinations per session
   streamingDestinations: defineTable({

@@ -5,72 +5,31 @@
  * Includes representations for cards in Hand, Board, Backrow, and Graveyard.
  */
 
+import { GAME_CONFIG } from "../config/gameConfig";
 import type { JsonAbility } from "./card-logic";
 import type { Id } from "./common";
 
 /**
  * Basic simplified CardType
  */
-export type CardType = "creature" | "spell" | "trap" | "equipment";
+export type CardType = (typeof GAME_CONFIG.CARD_TYPES)[number];
 
-export type Rarity = "common" | "uncommon" | "rare" | "epic" | "legendary";
+export type Rarity = (typeof GAME_CONFIG.RARITIES)[number];
 
-export type Attribute =
-  | "fire"
-  | "water"
-  | "earth"
-  | "wind"
-  | "light"
-  | "dark"
-  | "divine"
-  | "neutral";
+export type Attribute = (typeof GAME_CONFIG.ATTRIBUTES)[number];
 
 /** @deprecated Use Attribute instead */
 export type Element = Attribute;
 
-export type Archetype =
-  | "infernal_dragons"
-  | "abyssal_depths"
-  | "iron_legion"
-  | "necro_empire"
-  | "abyssal_horrors"
-  | "nature_spirits"
-  | "storm_elementals"
-  | "shadow_assassins"
-  | "celestial_guardians"
-  | "undead_legion"
-  | "divine_knights"
-  | "arcane_mages"
-  | "mechanical_constructs"
-  | "neutral"
-  | "fire"
-  | "water"
-  | "earth"
-  | "wind";
+export type Archetype = (typeof GAME_CONFIG.ARCHETYPES)[number];
 
-export type MonsterType =
-  | "dragon"
-  | "spellcaster"
-  | "warrior"
-  | "beast"
-  | "fiend"
-  | "zombie"
-  | "machine"
-  | "aqua"
-  | "pyro"
-  | "divine_beast";
+export type MonsterType = (typeof GAME_CONFIG.MONSTER_TYPES)[number];
 
-export type SpellType = "normal" | "quick_play" | "continuous" | "field" | "equip" | "ritual";
+export type SpellType = (typeof GAME_CONFIG.SPELL_TYPES)[number];
 
-export type TrapType = "normal" | "continuous" | "counter";
+export type TrapType = (typeof GAME_CONFIG.TRAP_TYPES)[number];
 
-export type CardVariant =
-  | "standard"
-  | "foil"
-  | "alt_art"
-  | "full_art"
-  | "numbered"
-  | "first_edition";
+export type CardVariant = (typeof GAME_CONFIG.VARIANTS)[number];
 
 /**
  * Card representation in the player's hand.

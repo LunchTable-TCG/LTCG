@@ -14,8 +14,17 @@ import type {
   FunctionReference,
 } from "convex/server";
 import { anyApi, componentsGeneric } from "convex/server";
+import type * as brackets from "../brackets.js";
+import type * as history from "../history.js";
+import type * as participants from "../participants.js";
+import type * as tournaments from "../tournaments.js";
 
-const fullApi: ApiFromModules<{}> = anyApi as any;
+const fullApi: ApiFromModules<{
+  brackets: typeof brackets;
+  history: typeof history;
+  participants: typeof participants;
+  tournaments: typeof tournaments;
+}> = anyApi as any;
 
 /**
  * A utility for referencing Convex functions in your app's public API.

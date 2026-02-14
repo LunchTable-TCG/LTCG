@@ -4,6 +4,7 @@ import { NotificationToast } from "@/components/notifications/NotificationToast"
 import { Toaster } from "@/components/ui/toaster";
 import { usePathname } from "next/navigation";
 import { Footer } from "./Footer";
+import { GrimoireSidebar } from "./GrimoireSidebar";
 import { Navbar, SidebarProvider } from "./Navbar";
 
 const FULL_SCREEN_ROUTES = [
@@ -37,10 +38,15 @@ export function LayoutWrapper({ children }: { children: React.ReactNode }) {
   return (
     <SidebarProvider>
       <NotificationToast />
-      <div className="relative flex min-h-screen flex-col">
-        <Navbar />
-        <main className="flex-1">{children}</main>
-        {!hideFooter && <Footer />}
+      <div className="flex min-h-screen bg-background">
+        {/* Desktop Sidebar - hidden on mobile, visible on md+ */}
+        {!isFullScreen && <GrimoireSidebar className="hidden md:flex shrink-0 z-30" />}
+
+        <div className="relative flex min-h-screen flex-1 flex-col transition-[width] duration-300 ease-in-out">
+          {!isFullScreen && <Navbar />}
+          <main className="flex-1">{children}</main>
+          {!hideFooter && !isFullScreen && <Footer />}
+        </div>
       </div>
       <Toaster />
     </SidebarProvider>

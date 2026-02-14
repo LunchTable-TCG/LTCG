@@ -672,26 +672,32 @@ export async function resolveChainHelper(
 
             if (foundOnHost && !targetInvalid) {
               const monster = hostBoard[hostMonsterIdx];
-              const updatedMonster = {
-                ...monster,
-                equippedCards: [...(monster.equippedCards || []), chainLink.cardId],
-              };
-              const updatedBoard = [...hostBoard];
-              updatedBoard[hostMonsterIdx] = updatedMonster;
-              await ctx.db.patch(currentState._id, {
-                hostBoard: updatedBoard,
-              });
+              if (monster) {
+                const updatedMonster = {
+                  ...monster,
+                  attack: monster.attack ?? 0,
+                  equippedCards: [...(monster.equippedCards || []), chainLink.cardId],
+                };
+                const updatedBoard = [...hostBoard];
+                updatedBoard[hostMonsterIdx] = updatedMonster;
+                await ctx.db.patch(currentState._id, {
+                  hostBoard: updatedBoard,
+                });
+              }
             } else if (foundOnOpponent && !targetInvalid) {
               const monster = opponentBoard[opponentMonsterIdx];
-              const updatedMonster = {
-                ...monster,
-                equippedCards: [...(monster.equippedCards || []), chainLink.cardId],
-              };
-              const updatedBoard = [...opponentBoard];
-              updatedBoard[opponentMonsterIdx] = updatedMonster;
-              await ctx.db.patch(currentState._id, {
-                opponentBoard: updatedBoard,
-              });
+              if (monster) {
+                const updatedMonster = {
+                  ...monster,
+                  attack: monster.attack ?? 0,
+                  equippedCards: [...(monster.equippedCards || []), chainLink.cardId],
+                };
+                const updatedBoard = [...opponentBoard];
+                updatedBoard[opponentMonsterIdx] = updatedMonster;
+                await ctx.db.patch(currentState._id, {
+                  opponentBoard: updatedBoard,
+                });
+              }
             } else {
               // Target no longer on field (destroyed during chain) — send equip to graveyard
               const graveyard = isHost

@@ -1,40 +1,49 @@
 import { v } from "convex/values";
-import { mutation, query } from "../_generated/server";
+import { mutation, query } from "./_generated/server";
 
 const transactionReturnValidator = v.object({
   _id: v.string(),
   _creationTime: v.number(),
-  escrowId: v.string(),
-  playerId: v.string(),
-  type: v.string(),
+  lobbyId: v.string(),
+  userId: v.string(),
+  walletAddress: v.string(),
+  type: v.union(v.literal("deposit"), v.literal("payout"), v.literal("treasury_fee")),
+  currency: v.union(v.literal("sol"), v.literal("usdc")),
   amount: v.number(),
-  currency: v.string(),
+  amountAtomic: v.string(),
   txSignature: v.optional(v.string()),
-  timestamp: v.number(),
-  metadata: v.optional(v.any()),
+  escrowPda: v.string(),
+  status: v.union(v.literal("pending"), v.literal("confirmed"), v.literal("failed")),
+  createdAt: v.number(),
 });
 
 export const recordTransaction = mutation({
   args: {
-    escrowId: v.id("escrows"),
-    playerId: v.string(),
-    type: v.string(),
+    lobbyId: v.string(), // Reference to parent gameLobbies table
+    userId: v.string(), // Reference to parent users table
+    walletAddress: v.string(),
+    type: v.union(v.literal("deposit"), v.literal("payout"), v.literal("treasury_fee")),
+    currency: v.union(v.literal("sol"), v.literal("usdc")),
     amount: v.number(),
-    currency: v.string(),
+    amountAtomic: v.string(),
+    escrowPda: v.string(),
     txSignature: v.optional(v.string()),
-    metadata: v.optional(v.any()),
+    status: v.optional(v.union(v.literal("pending"), v.literal("confirmed"), v.literal("failed"))),
   },
   returns: v.string(),
   handler: async (ctx, args) => {
-    const id = await ctx.db.insert("wagerTransactions", {
-      escrowId: args.escrowId,
-      playerId: args.playerId,
+    const id = await ctx.db.insert("cryptoWagerTransactions", {
+      lobbyId: args.lobbyId,
+      userId: args.userId,
+      walletAddress: args.walletAddress,
       type: args.type,
-      amount: args.amount,
       currency: args.currency,
+      amount: args.amount,
+      amountAtomic: args.amountAtomic,
       txSignature: args.txSignature,
-      timestamp: Date.now(),
-      metadata: args.metadata,
+      escrowPda: args.escrowPda,
+      status: args.status ?? "pending",
+      createdAt: Date.now(),
     });
     return id as string;
   },
@@ -42,73 +51,64 @@ export const recordTransaction = mutation({
 
 export const getPlayerTransactions = query({
   args: {
-    playerId: v.string(),
+    userId: v.string(), // Reference to parent users table
     limit: v.optional(v.number()),
   },
   returns: v.array(transactionReturnValidator),
   handler: async (ctx, args) => {
-    const query = ctx.db
-      .query("wagerTransactions")
-      .withIndex("by_player", (q) => q.eq("playerId", args.playerId))
+    const txQuery = ctx.db
+      .query("cryptoWagerTransactions")
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
       .order("desc");
 
     const transactions = args.limit
-      ? await query.take(args.limit)
-      : await query.collect();
+      ? await txQuery.take(args.limit)
+      : await txQuery.collect();
 
     return transactions.map((tx) => ({
       ...tx,
       _id: tx._id as string,
-      escrowId: tx.escrowId as string,
+      lobbyId: tx.lobbyId,
+      userId: tx.userId,
     }));
   },
 });
 
-export const getTransactionsByGame = query({
+export const getTransactionsByLobby = query({
   args: {
-    gameId: v.string(),
+    lobbyId: v.string(), // Reference to parent gameLobbies table
   },
   returns: v.array(transactionReturnValidator),
   handler: async (ctx, args) => {
-    // First find the escrow for this game
-    const escrow = await ctx.db
-      .query("escrows")
-      .withIndex("by_game", (q) => q.eq("gameId", args.gameId))
-      .first();
-
-    if (!escrow) {
-      return [];
-    }
-
-    // Get all transactions for this escrow
     const transactions = await ctx.db
-      .query("wagerTransactions")
-      .withIndex("by_escrow", (q) => q.eq("escrowId", escrow._id))
+      .query("cryptoWagerTransactions")
+      .withIndex("by_lobby", (q) => q.eq("lobbyId", args.lobbyId))
       .collect();
 
     return transactions.map((tx) => ({
       ...tx,
       _id: tx._id as string,
-      escrowId: tx.escrowId as string,
+      lobbyId: tx.lobbyId,
+      userId: tx.userId,
     }));
   },
 });
 
 export const getPlayerBalance = query({
   args: {
-    playerId: v.string(),
-    currency: v.optional(v.string()),
+    userId: v.string(), // Reference to parent users table
+    currency: v.optional(v.union(v.literal("sol"), v.literal("usdc"))),
   },
   returns: v.object({
     totalWon: v.number(),
     totalLost: v.number(),
     netBalance: v.number(),
-    currency: v.optional(v.string()),
+    currency: v.optional(v.union(v.literal("sol"), v.literal("usdc"))),
   }),
   handler: async (ctx, args) => {
     const transactions = await ctx.db
-      .query("wagerTransactions")
-      .withIndex("by_player", (q) => q.eq("playerId", args.playerId))
+      .query("cryptoWagerTransactions")
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
       .collect();
 
     // Filter by currency if specified
@@ -120,25 +120,21 @@ export const getPlayerBalance = query({
     let totalLost = 0;
 
     for (const tx of filteredTransactions) {
+      // Only count confirmed transactions
+      if (tx.status !== "confirmed") continue;
+
       switch (tx.type) {
         case "payout":
-          // Payout is the full winnings (original bet + opponent's bet)
-          // So net gain is payout minus original deposit
+          // Payout is winnings
           totalWon += tx.amount;
           break;
         case "deposit":
-          // Deposits are losses if the escrow was settled to opponent
-          // We'll check this by looking at the escrow
-          const escrow = await ctx.db.get(tx.escrowId);
-          if (escrow && escrow.status === "settled" && escrow.winnerId !== args.playerId) {
-            totalLost += tx.amount;
-          }
-          break;
-        case "forfeit":
-          // Forfeits are direct losses
+          // Deposits are potential losses - we count them as losses
+          // since we can't access gameLobbies from component
+          // The parent schema should calculate accurate balance
           totalLost += tx.amount;
           break;
-        // "refund" transactions don't affect balance (money returned)
+        // treasury_fee doesn't affect player balance
       }
     }
 
@@ -152,34 +148,33 @@ export const getPlayerBalance = query({
 });
 
 export const getTransactionById = query({
-  args: { id: v.id("wagerTransactions") },
+  args: { id: v.string() }, // Transaction ID as string
   returns: v.union(transactionReturnValidator, v.null()),
   handler: async (ctx, args) => {
-    const tx = await ctx.db.get(args.id);
+    const tx = await ctx.db.get(args.id as any);
     if (!tx) return null;
     return {
       ...tx,
       _id: tx._id as string,
-      escrowId: tx.escrowId as string,
+      lobbyId: tx.lobbyId,
+      userId: tx.userId,
     };
   },
 });
 
-export const getEscrowTransactions = query({
+export const updateTransactionStatus = mutation({
   args: {
-    escrowId: v.id("escrows"),
+    id: v.string(), // Transaction ID as string
+    status: v.union(v.literal("pending"), v.literal("confirmed"), v.literal("failed")),
+    txSignature: v.optional(v.string()),
   },
-  returns: v.array(transactionReturnValidator),
+  returns: v.null(),
   handler: async (ctx, args) => {
-    const transactions = await ctx.db
-      .query("wagerTransactions")
-      .withIndex("by_escrow", (q) => q.eq("escrowId", args.escrowId))
-      .collect();
-
-    return transactions.map((tx) => ({
-      ...tx,
-      _id: tx._id as string,
-      escrowId: tx.escrowId as string,
-    }));
+    const updates: any = { status: args.status };
+    if (args.txSignature) {
+      updates.txSignature = args.txSignature;
+    }
+    await ctx.db.patch(args.id as any, updates);
+    return null;
   },
 });

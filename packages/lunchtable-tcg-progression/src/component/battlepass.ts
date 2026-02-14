@@ -1,70 +1,105 @@
 import { v } from "convex/values";
-import { mutation, query } from "../_generated/server";
+import { mutation, query } from "./_generated/server";
 
 const seasonReturnValidator = v.object({
   _id: v.string(),
   _creationTime: v.number(),
+  seasonId: v.string(),
   name: v.string(),
+  description: v.optional(v.string()),
+  status: v.union(
+    v.literal("upcoming"),
+    v.literal("active"),
+    v.literal("ended")
+  ),
+  totalTiers: v.number(),
+  xpPerTier: v.number(),
   startDate: v.number(),
   endDate: v.number(),
-  isActive: v.boolean(),
-  totalTiers: v.number(),
-  premiumPrice: v.optional(v.number()),
-  metadata: v.optional(v.any()),
+  createdAt: v.number(),
+  createdBy: v.string(),
+  updatedAt: v.number(),
+});
+
+const rewardValidator = v.object({
+  type: v.union(
+    v.literal("gold"),
+    v.literal("gems"),
+    v.literal("xp"),
+    v.literal("card"),
+    v.literal("pack"),
+    v.literal("title"),
+    v.literal("avatar")
+  ),
+  amount: v.optional(v.number()),
+  cardId: v.optional(v.string()),
+  packProductId: v.optional(v.string()),
+  titleName: v.optional(v.string()),
+  avatarUrl: v.optional(v.string()),
 });
 
 const tierReturnValidator = v.object({
   _id: v.string(),
   _creationTime: v.number(),
-  seasonId: v.string(),
+  battlePassId: v.string(),
   tier: v.number(),
-  xpRequired: v.number(),
-  freeReward: v.optional(v.any()),
-  premiumReward: v.optional(v.any()),
-  metadata: v.optional(v.any()),
+  freeReward: v.optional(rewardValidator),
+  premiumReward: v.optional(rewardValidator),
+  isMilestone: v.boolean(),
 });
 
 const progressReturnValidator = v.object({
   _id: v.string(),
   _creationTime: v.number(),
   userId: v.string(),
-  seasonId: v.string(),
-  currentTier: v.number(),
+  battlePassId: v.string(),
   currentXP: v.number(),
+  currentTier: v.number(),
   isPremium: v.boolean(),
-  claimedTiers: v.array(v.number()),
-  metadata: v.optional(v.any()),
+  premiumPurchasedAt: v.optional(v.number()),
+  claimedFreeTiers: v.array(v.number()),
+  claimedPremiumTiers: v.array(v.number()),
+  lastXPGainAt: v.optional(v.number()),
+  createdAt: v.number(),
+  updatedAt: v.number(),
 });
 
 export const createSeason = mutation({
   args: {
+    seasonId: v.string(),
     name: v.string(),
+    description: v.optional(v.string()),
+    totalTiers: v.number(),
+    xpPerTier: v.number(),
     startDate: v.number(),
     endDate: v.number(),
-    totalTiers: v.number(),
-    premiumPrice: v.optional(v.number()),
-    metadata: v.optional(v.any()),
+    createdBy: v.string(),
   },
   returns: v.string(),
   handler: async (ctx, args) => {
-    // Deactivate other active seasons
+    // End other active seasons
     const activeSeasons = await ctx.db
       .query("battlePassSeasons")
-      .withIndex("by_active", (q) => q.eq("isActive", true))
+      .withIndex("by_status", (q) => q.eq("status", "active"))
       .collect();
 
     for (const season of activeSeasons) {
-      await ctx.db.patch(season._id, { isActive: false });
+      await ctx.db.patch(season._id, { status: "ended", updatedAt: Date.now() });
     }
 
+    const now = Date.now();
     const id = await ctx.db.insert("battlePassSeasons", {
+      seasonId: args.seasonId,
       name: args.name,
+      description: args.description,
+      status: "active",
+      totalTiers: args.totalTiers,
+      xpPerTier: args.xpPerTier,
       startDate: args.startDate,
       endDate: args.endDate,
-      isActive: true,
-      totalTiers: args.totalTiers,
-      premiumPrice: args.premiumPrice,
-      metadata: args.metadata,
+      createdAt: now,
+      createdBy: args.createdBy,
+      updatedAt: now,
     });
 
     return id as string;
@@ -77,7 +112,7 @@ export const getCurrentSeason = query({
   handler: async (ctx) => {
     const season = await ctx.db
       .query("battlePassSeasons")
-      .withIndex("by_active", (q) => q.eq("isActive", true))
+      .withIndex("by_status", (q) => q.eq("status", "active"))
       .first();
 
     if (!season) return null;
@@ -91,27 +126,59 @@ export const getCurrentSeason = query({
 
 export const defineTier = mutation({
   args: {
-    seasonId: v.string(),
+    battlePassId: v.string(),
     tier: v.number(),
-    xpRequired: v.number(),
-    freeReward: v.optional(v.any()),
-    premiumReward: v.optional(v.any()),
-    metadata: v.optional(v.any()),
+    freeReward: v.optional(
+      v.object({
+        type: v.union(
+          v.literal("gold"),
+          v.literal("gems"),
+          v.literal("xp"),
+          v.literal("card"),
+          v.literal("pack"),
+          v.literal("title"),
+          v.literal("avatar")
+        ),
+        amount: v.optional(v.number()),
+        cardId: v.optional(v.string()),
+        packProductId: v.optional(v.string()),
+        titleName: v.optional(v.string()),
+        avatarUrl: v.optional(v.string()),
+      })
+    ),
+    premiumReward: v.optional(
+      v.object({
+        type: v.union(
+          v.literal("gold"),
+          v.literal("gems"),
+          v.literal("xp"),
+          v.literal("card"),
+          v.literal("pack"),
+          v.literal("title"),
+          v.literal("avatar")
+        ),
+        amount: v.optional(v.number()),
+        cardId: v.optional(v.string()),
+        packProductId: v.optional(v.string()),
+        titleName: v.optional(v.string()),
+        avatarUrl: v.optional(v.string()),
+      })
+    ),
+    isMilestone: v.boolean(),
   },
   returns: v.string(),
   handler: async (ctx, args) => {
-    const season = await ctx.db.get(args.seasonId as any);
-    if (!season) {
-      throw new Error(`Season not found: ${args.seasonId}`);
+    const seasonDoc = await ctx.db.get(args.battlePassId as any);
+    if (!seasonDoc) {
+      throw new Error(`Battle Pass season not found: ${args.battlePassId}`);
     }
 
     const id = await ctx.db.insert("battlePassTiers", {
-      seasonId: args.seasonId as any,
+      battlePassId: args.battlePassId as any,
       tier: args.tier,
-      xpRequired: args.xpRequired,
       freeReward: args.freeReward,
       premiumReward: args.premiumReward,
-      metadata: args.metadata,
+      isMilestone: args.isMilestone,
     });
 
     return id as string;
@@ -120,13 +187,13 @@ export const defineTier = mutation({
 
 export const getTiers = query({
   args: {
-    seasonId: v.string(),
+    battlePassId: v.string(),
   },
   returns: v.array(tierReturnValidator),
   handler: async (ctx, args) => {
     const tiers = await ctx.db
       .query("battlePassTiers")
-      .withIndex("by_season", (q) => q.eq("seasonId", args.seasonId as any))
+      .withIndex("by_battlepass", (q) => q.eq("battlePassId", args.battlePassId as any))
       .collect();
 
     return tiers
@@ -134,7 +201,7 @@ export const getTiers = query({
       .map((tier) => ({
         ...tier,
         _id: tier._id as string,
-        seasonId: tier.seasonId as string,
+        battlePassId: tier.battlePassId as string,
       }));
   },
 });
@@ -142,26 +209,26 @@ export const getTiers = query({
 export const getPlayerProgress = query({
   args: {
     userId: v.string(),
-    seasonId: v.optional(v.string()),
+    battlePassId: v.optional(v.string()),
   },
   returns: v.union(progressReturnValidator, v.null()),
   handler: async (ctx, args) => {
-    let targetSeasonId = args.seasonId;
+    let targetBattlePassId = args.battlePassId;
 
-    if (!targetSeasonId) {
+    if (!targetBattlePassId) {
       const currentSeason = await ctx.db
         .query("battlePassSeasons")
-        .withIndex("by_active", (q) => q.eq("isActive", true))
+        .withIndex("by_status", (q) => q.eq("status", "active"))
         .first();
 
       if (!currentSeason) return null;
-      targetSeasonId = currentSeason._id as string;
+      targetBattlePassId = currentSeason._id as string;
     }
 
     const progress = await ctx.db
       .query("battlePassProgress")
-      .withIndex("by_user_season", (q) =>
-        q.eq("userId", args.userId).eq("seasonId", targetSeasonId as any)
+      .withIndex("by_user_battlepass", (q) =>
+        q.eq("userId", args.userId).eq("battlePassId", targetBattlePassId as any)
       )
       .unique();
 
@@ -170,7 +237,7 @@ export const getPlayerProgress = query({
     return {
       ...progress,
       _id: progress._id as string,
-      seasonId: progress.seasonId as string,
+      battlePassId: progress.battlePassId as string,
     };
   },
 });
@@ -178,7 +245,7 @@ export const getPlayerProgress = query({
 export const addXP = mutation({
   args: {
     userId: v.string(),
-    seasonId: v.optional(v.string()),
+    battlePassId: v.optional(v.string()),
     amount: v.number(),
   },
   returns: v.object({
@@ -187,75 +254,76 @@ export const addXP = mutation({
     tierUps: v.number(),
   }),
   handler: async (ctx, args) => {
-    let targetSeasonId = args.seasonId;
+    let targetBattlePassId = args.battlePassId;
 
-    if (!targetSeasonId) {
+    if (!targetBattlePassId) {
       const currentSeason = await ctx.db
         .query("battlePassSeasons")
-        .withIndex("by_active", (q) => q.eq("isActive", true))
+        .withIndex("by_status", (q) => q.eq("status", "active"))
         .first();
 
       if (!currentSeason) {
-        throw new Error("No active season found");
+        throw new Error("No active battle pass season found");
       }
-      targetSeasonId = currentSeason._id as string;
+      targetBattlePassId = currentSeason._id as string;
     }
+
+    // Get the battle pass season to get xpPerTier
+    const battlePassDoc = await ctx.db.get(targetBattlePassId as any);
+    if (!battlePassDoc) {
+      throw new Error(`Battle pass season not found: ${targetBattlePassId}`);
+    }
+    // Cast to access battlePassSeasons-specific fields
+    const battlePass = battlePassDoc as any;
 
     let progress = await ctx.db
       .query("battlePassProgress")
-      .withIndex("by_user_season", (q) =>
-        q.eq("userId", args.userId).eq("seasonId", targetSeasonId as any)
+      .withIndex("by_user_battlepass", (q) =>
+        q.eq("userId", args.userId).eq("battlePassId", targetBattlePassId as any)
       )
       .unique();
 
+    const now = Date.now();
+
     if (!progress) {
-      // Initialize progress for this season
+      // Initialize progress for this battle pass
+      const newXP = args.amount;
+      const currentTier = Math.floor(newXP / (battlePass.xpPerTier as number));
+
       const id = await ctx.db.insert("battlePassProgress", {
         userId: args.userId,
-        seasonId: targetSeasonId as any,
-        currentTier: 0,
-        currentXP: args.amount,
+        battlePassId: targetBattlePassId as any,
+        currentXP: newXP,
+        currentTier: Math.min(currentTier, battlePass.totalTiers as number),
         isPremium: false,
-        claimedTiers: [],
+        claimedFreeTiers: [],
+        claimedPremiumTiers: [],
+        lastXPGainAt: now,
+        createdAt: now,
+        updatedAt: now,
       });
 
       return {
-        currentTier: 0,
-        currentXP: args.amount,
-        tierUps: 0,
+        currentTier: Math.min(currentTier, battlePass.totalTiers as number),
+        currentXP: newXP,
+        tierUps: currentTier,
       };
     }
 
     const newXP = progress.currentXP + args.amount;
-    let currentTier = progress.currentTier;
-    let tierUps = 0;
-
-    // Get all tiers for this season
-    const allTiers = await ctx.db
-      .query("battlePassTiers")
-      .withIndex("by_season", (q) => q.eq("seasonId", targetSeasonId as any))
-      .collect();
-
-    const sortedTiers = allTiers.sort((a, b) => a.tier - b.tier);
-
-    // Calculate tier ups
-    for (const tier of sortedTiers) {
-      if (tier.tier <= currentTier) continue;
-      if (newXP >= tier.xpRequired) {
-        currentTier = tier.tier;
-        tierUps++;
-      } else {
-        break;
-      }
-    }
+    const oldTier = progress.currentTier;
+    const newTier = Math.min(Math.floor(newXP / (battlePass.xpPerTier as number)), battlePass.totalTiers as number);
+    const tierUps = newTier - oldTier;
 
     await ctx.db.patch(progress._id, {
       currentXP: newXP,
-      currentTier,
+      currentTier: newTier,
+      lastXPGainAt: now,
+      updatedAt: now,
     });
 
     return {
-      currentTier,
+      currentTier: newTier,
       currentXP: newXP,
       tierUps,
     };
@@ -265,35 +333,71 @@ export const addXP = mutation({
 export const claimTier = mutation({
   args: {
     userId: v.string(),
-    seasonId: v.optional(v.string()),
+    battlePassId: v.optional(v.string()),
     tier: v.number(),
+    isPremium: v.boolean(),
   },
   returns: v.union(
     v.object({
       success: v.boolean(),
-      reward: v.any(),
+      freeReward: v.optional(
+        v.object({
+          type: v.union(
+            v.literal("gold"),
+            v.literal("gems"),
+            v.literal("xp"),
+            v.literal("card"),
+            v.literal("pack"),
+            v.literal("title"),
+            v.literal("avatar")
+          ),
+          amount: v.optional(v.number()),
+          cardId: v.optional(v.string()),
+          packProductId: v.optional(v.string()),
+          titleName: v.optional(v.string()),
+          avatarUrl: v.optional(v.string()),
+        })
+      ),
+      premiumReward: v.optional(
+        v.object({
+          type: v.union(
+            v.literal("gold"),
+            v.literal("gems"),
+            v.literal("xp"),
+            v.literal("card"),
+            v.literal("pack"),
+            v.literal("title"),
+            v.literal("avatar")
+          ),
+          amount: v.optional(v.number()),
+          cardId: v.optional(v.string()),
+          packProductId: v.optional(v.string()),
+          titleName: v.optional(v.string()),
+          avatarUrl: v.optional(v.string()),
+        })
+      ),
     }),
     v.null()
   ),
   handler: async (ctx, args) => {
-    let targetSeasonId = args.seasonId;
+    let targetBattlePassId = args.battlePassId;
 
-    if (!targetSeasonId) {
+    if (!targetBattlePassId) {
       const currentSeason = await ctx.db
         .query("battlePassSeasons")
-        .withIndex("by_active", (q) => q.eq("isActive", true))
+        .withIndex("by_status", (q) => q.eq("status", "active"))
         .first();
 
       if (!currentSeason) {
-        throw new Error("No active season found");
+        throw new Error("No active battle pass season found");
       }
-      targetSeasonId = currentSeason._id as string;
+      targetBattlePassId = currentSeason._id as string;
     }
 
     const progress = await ctx.db
       .query("battlePassProgress")
-      .withIndex("by_user_season", (q) =>
-        q.eq("userId", args.userId).eq("seasonId", targetSeasonId as any)
+      .withIndex("by_user_battlepass", (q) =>
+        q.eq("userId", args.userId).eq("battlePassId", targetBattlePassId as any)
       )
       .unique();
 
@@ -305,32 +409,48 @@ export const claimTier = mutation({
       throw new Error("Tier not yet reached");
     }
 
-    if (progress.claimedTiers.includes(args.tier)) {
-      return { success: false, reward: null };
+    // Check if already claimed
+    if (args.isPremium) {
+      if (!progress.isPremium) {
+        throw new Error("Player does not have premium battle pass");
+      }
+      if (progress.claimedPremiumTiers.includes(args.tier)) {
+        return null;
+      }
+    } else {
+      if (progress.claimedFreeTiers.includes(args.tier)) {
+        return null;
+      }
     }
 
     const tierDef = await ctx.db
       .query("battlePassTiers")
-      .withIndex("by_season_tier", (q) =>
-        q.eq("seasonId", targetSeasonId as any).eq("tier", args.tier)
+      .withIndex("by_battlepass_tier", (q) =>
+        q.eq("battlePassId", targetBattlePassId as any).eq("tier", args.tier)
       )
       .unique();
 
     if (!tierDef) {
-      throw new Error(`Tier ${args.tier} not found in season ${targetSeasonId}`);
+      throw new Error(`Tier ${args.tier} not found in battle pass ${targetBattlePassId}`);
     }
 
-    const reward = progress.isPremium
-      ? tierDef.premiumReward || tierDef.freeReward
-      : tierDef.freeReward;
-
-    await ctx.db.patch(progress._id, {
-      claimedTiers: [...progress.claimedTiers, args.tier],
-    });
+    // Update claimed tiers
+    if (args.isPremium) {
+      await ctx.db.patch(progress._id, {
+        claimedPremiumTiers: [...progress.claimedPremiumTiers, args.tier],
+        updatedAt: Date.now(),
+      });
+    } else {
+      await ctx.db.patch(progress._id, {
+        claimedFreeTiers: [...progress.claimedFreeTiers, args.tier],
+        updatedAt: Date.now(),
+      });
+    }
 
     return {
       success: true,
-      reward,
+      freeReward: tierDef.freeReward,
+      premiumReward: args.isPremium ? tierDef.premiumReward : undefined,
     };
   },
 });
@@ -338,28 +458,28 @@ export const claimTier = mutation({
 export const upgradeToPremium = mutation({
   args: {
     userId: v.string(),
-    seasonId: v.optional(v.string()),
+    battlePassId: v.optional(v.string()),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    let targetSeasonId = args.seasonId;
+    let targetBattlePassId = args.battlePassId;
 
-    if (!targetSeasonId) {
+    if (!targetBattlePassId) {
       const currentSeason = await ctx.db
         .query("battlePassSeasons")
-        .withIndex("by_active", (q) => q.eq("isActive", true))
+        .withIndex("by_status", (q) => q.eq("status", "active"))
         .first();
 
       if (!currentSeason) {
-        throw new Error("No active season found");
+        throw new Error("No active battle pass season found");
       }
-      targetSeasonId = currentSeason._id as string;
+      targetBattlePassId = currentSeason._id as string;
     }
 
     const progress = await ctx.db
       .query("battlePassProgress")
-      .withIndex("by_user_season", (q) =>
-        q.eq("userId", args.userId).eq("seasonId", targetSeasonId as any)
+      .withIndex("by_user_battlepass", (q) =>
+        q.eq("userId", args.userId).eq("battlePassId", targetBattlePassId as any)
       )
       .unique();
 
@@ -374,6 +494,8 @@ export const upgradeToPremium = mutation({
 
     await ctx.db.patch(progress._id, {
       isPremium: true,
+      premiumPurchasedAt: Date.now(),
+      updatedAt: Date.now(),
     });
 
     return null;

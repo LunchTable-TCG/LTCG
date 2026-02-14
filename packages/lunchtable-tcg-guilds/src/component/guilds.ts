@@ -7,15 +7,12 @@ const guildReturnValidator = v.object({
   name: v.string(),
   description: v.optional(v.string()),
   ownerId: v.string(),
-  tag: v.optional(v.string()),
-  imageUrl: v.optional(v.string()),
-  bannerUrl: v.optional(v.string()),
-  isPublic: v.boolean(),
-  maxMembers: v.number(),
+  profileImageId: v.optional(v.string()),
+  bannerImageId: v.optional(v.string()),
+  visibility: v.union(v.literal("public"), v.literal("private")),
   memberCount: v.number(),
-  level: v.optional(v.number()),
-  xp: v.optional(v.number()),
-  metadata: v.optional(v.any()),
+  createdAt: v.number(),
+  updatedAt: v.number(),
 });
 
 export const create = mutation({
@@ -23,12 +20,9 @@ export const create = mutation({
     ownerId: v.string(),
     name: v.string(),
     description: v.optional(v.string()),
-    tag: v.optional(v.string()),
-    imageUrl: v.optional(v.string()),
-    bannerUrl: v.optional(v.string()),
-    isPublic: v.optional(v.boolean()),
-    maxMembers: v.optional(v.number()),
-    metadata: v.optional(v.any()),
+    profileImageId: v.optional(v.string()),
+    bannerImageId: v.optional(v.string()),
+    visibility: v.optional(v.union(v.literal("public"), v.literal("private"))),
   },
   returns: v.string(),
   handler: async (ctx, args) => {
@@ -52,19 +46,17 @@ export const create = mutation({
       throw new Error("Guild name already exists");
     }
 
+    const now = Date.now();
     const guildId = await ctx.db.insert("guilds", {
       name: args.name,
       description: args.description,
       ownerId: args.ownerId,
-      tag: args.tag,
-      imageUrl: args.imageUrl,
-      bannerUrl: args.bannerUrl,
-      isPublic: args.isPublic ?? true,
-      maxMembers: args.maxMembers ?? 50,
+      profileImageId: args.profileImageId,
+      bannerImageId: args.bannerImageId,
+      visibility: args.visibility ?? "public",
       memberCount: 1,
-      level: 1,
-      xp: 0,
-      metadata: args.metadata,
+      createdAt: now,
+      updatedAt: now,
     });
 
     // Add owner as first member
@@ -113,7 +105,7 @@ export const getPublicGuilds = query({
     const limit = args.limit ?? 50;
     const guilds = await ctx.db
       .query("guilds")
-      .withIndex("by_public", (q) => q.eq("isPublic", true))
+      .withIndex("by_visibility", (q) => q.eq("visibility", "public"))
       .take(limit);
     return guilds.map((guild) => ({
       ...guild,
@@ -128,12 +120,9 @@ export const update = mutation({
     ownerId: v.string(),
     name: v.optional(v.string()),
     description: v.optional(v.string()),
-    tag: v.optional(v.string()),
-    imageUrl: v.optional(v.string()),
-    bannerUrl: v.optional(v.string()),
-    isPublic: v.optional(v.boolean()),
-    maxMembers: v.optional(v.number()),
-    metadata: v.optional(v.any()),
+    profileImageId: v.optional(v.string()),
+    bannerImageId: v.optional(v.string()),
+    visibility: v.optional(v.union(v.literal("public"), v.literal("private"))),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -150,7 +139,7 @@ export const update = mutation({
     if (args.name && args.name !== guild.name) {
       const nameExists = await ctx.db
         .query("guilds")
-        .withIndex("by_name", (q) => q.eq("name", args.name))
+        .withIndex("by_name", (q) => q.eq("name", args.name!))
         .first();
 
       if (nameExists) {
@@ -158,15 +147,12 @@ export const update = mutation({
       }
     }
 
-    const updates: any = {};
+    const updates: any = { updatedAt: Date.now() };
     if (args.name !== undefined) updates.name = args.name;
     if (args.description !== undefined) updates.description = args.description;
-    if (args.tag !== undefined) updates.tag = args.tag;
-    if (args.imageUrl !== undefined) updates.imageUrl = args.imageUrl;
-    if (args.bannerUrl !== undefined) updates.bannerUrl = args.bannerUrl;
-    if (args.isPublic !== undefined) updates.isPublic = args.isPublic;
-    if (args.maxMembers !== undefined) updates.maxMembers = args.maxMembers;
-    if (args.metadata !== undefined) updates.metadata = args.metadata;
+    if (args.profileImageId !== undefined) updates.profileImageId = args.profileImageId;
+    if (args.bannerImageId !== undefined) updates.bannerImageId = args.bannerImageId;
+    if (args.visibility !== undefined) updates.visibility = args.visibility;
 
     await ctx.db.patch(args.id, updates);
     return null;
@@ -201,7 +187,7 @@ export const disband = mutation({
     // Delete all guild messages
     const messages = await ctx.db
       .query("guildMessages")
-      .withIndex("by_guild", (q) => q.eq("guildId", args.id))
+      .withIndex("by_guild_created", (q) => q.eq("guildId", args.id))
       .collect();
     for (const message of messages) {
       await ctx.db.delete(message._id);

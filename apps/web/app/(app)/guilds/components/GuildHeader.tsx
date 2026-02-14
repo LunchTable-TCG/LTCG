@@ -62,7 +62,7 @@ export function GuildHeader({ guild, myRole }: GuildHeaderProps) {
   });
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-[#3d2b1f]">
+    <div className="relative overflow-hidden rounded-2xl border border-border">
       {/* Banner */}
       <div className="relative h-48 md:h-64">
         {guild.bannerImageUrl ? (
@@ -90,13 +90,13 @@ export function GuildHeader({ guild, myRole }: GuildHeaderProps) {
                 className="w-28 h-28 rounded-2xl object-cover border-4 border-[#0d0a09] shadow-2xl"
               />
             ) : (
-              <div className="w-28 h-28 rounded-2xl bg-gradient-to-br from-[#8b4513] to-[#3d2b1f] border-4 border-[#0d0a09] shadow-2xl flex items-center justify-center">
-                <Shield className="w-12 h-12 text-[#d4af37]" />
+              <div className="w-28 h-28 rounded-2xl bg-gradient-to-br from-primary/20 to-primary/5 border-4 border-background shadow-2xl flex items-center justify-center">
+                <Shield className="w-12 h-12 text-primary" />
               </div>
             )}
             {isPrivate && (
-              <div className="absolute -bottom-2 -right-2 w-8 h-8 rounded-full bg-[#1a1614] border-2 border-[#3d2b1f] flex items-center justify-center">
-                <Lock className="w-4 h-4 text-[#a89f94]" />
+              <div className="absolute -bottom-2 -right-2 w-8 h-8 rounded-full bg-card border-2 border-border flex items-center justify-center">
+                <Lock className="w-4 h-4 text-muted-foreground" />
               </div>
             )}
           </div>
@@ -104,12 +104,12 @@ export function GuildHeader({ guild, myRole }: GuildHeaderProps) {
           {/* Guild Info */}
           <div className="flex-1 min-w-0 space-y-3">
             <div className="flex flex-wrap items-center gap-3">
-              <h1 className="text-3xl md:text-4xl font-black text-[#e8e0d5]">{guild.name}</h1>
+              <h1 className="text-3xl md:text-4xl font-black text-foreground">{guild.name}</h1>
               <div
                 className={cn(
                   "px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider",
                   isPrivate
-                    ? "bg-[#a89f94]/10 text-[#a89f94] border border-[#a89f94]/20"
+                    ? "bg-muted/10 text-muted-foreground border border-muted/20"
                     : "bg-green-500/10 text-green-400 border border-green-500/20"
                 )}
               >
@@ -118,15 +118,15 @@ export function GuildHeader({ guild, myRole }: GuildHeaderProps) {
             </div>
 
             {guild.description && (
-              <p className="text-[#a89f94] leading-relaxed max-w-2xl">{guild.description}</p>
+              <p className="text-muted-foreground leading-relaxed max-w-2xl">{guild.description}</p>
             )}
 
             <div className="flex flex-wrap items-center gap-4 text-sm">
               <div className="flex items-center gap-2">
-                <Users className="w-4 h-4 text-[#d4af37]" />
-                <span className="text-[#e8e0d5] font-medium">
+                <Users className="w-4 h-4 text-primary" />
+                <span className="text-foreground font-medium">
                   {guild.memberCount}
-                  <span className="text-[#a89f94]">/50 members</span>
+                  <span className="text-muted-foreground">/50 members</span>
                 </span>
               </div>
 
@@ -139,16 +139,17 @@ export function GuildHeader({ guild, myRole }: GuildHeaderProps) {
 
               {guild.ownerUsername && (
                 <div className="flex items-center gap-2">
-                  <Crown className="w-4 h-4 text-[#d4af37]" />
-                  <span className="text-[#a89f94]">
-                    Led by <span className="text-[#e8e0d5] font-medium">{guild.ownerUsername}</span>
+                  <Crown className="w-4 h-4 text-primary" />
+                  <span className="text-muted-foreground">
+                    Led by{" "}
+                    <span className="text-foreground font-medium">{guild.ownerUsername}</span>
                   </span>
                 </div>
               )}
 
               <div className="flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-[#a89f94]" />
-                <span className="text-[#a89f94]">Founded {formattedDate}</span>
+                <Calendar className="w-4 h-4 text-muted-foreground" />
+                <span className="text-muted-foreground">Founded {formattedDate}</span>
               </div>
             </div>
           </div>
@@ -159,7 +160,7 @@ export function GuildHeader({ guild, myRole }: GuildHeaderProps) {
             <GuildShareDialog guildName={guild.name}>
               <Button
                 variant="outline"
-                className="border-[#3d2b1f] text-[#d4af37] hover:text-[#f9e29f] hover:border-[#d4af37]/50 hover:bg-[#d4af37]/10 rounded-xl"
+                className="border-border text-primary hover:text-primary hover:border-primary/50 hover:bg-primary/10 rounded-xl"
               >
                 <Share2 className="w-4 h-4 mr-2" />
                 Invite Friends
@@ -175,7 +176,7 @@ export function GuildHeader({ guild, myRole }: GuildHeaderProps) {
                       onClick={handleLeave}
                       disabled={isLeaving}
                       size="sm"
-                      className="bg-red-600 hover:bg-red-500 text-white rounded-lg"
+                      className="bg-destructive hover:bg-destructive/90 text-destructive-foreground rounded-lg"
                     >
                       {isLeaving ? "..." : "Yes"}
                     </Button>
@@ -183,7 +184,7 @@ export function GuildHeader({ guild, myRole }: GuildHeaderProps) {
                       onClick={() => setShowLeaveConfirm(false)}
                       size="sm"
                       variant="ghost"
-                      className="text-[#a89f94] hover:text-[#e8e0d5]"
+                      className="text-muted-foreground hover:text-foreground"
                     >
                       No
                     </Button>
@@ -192,7 +193,7 @@ export function GuildHeader({ guild, myRole }: GuildHeaderProps) {
                   <Button
                     onClick={() => setShowLeaveConfirm(true)}
                     variant="outline"
-                    className="border-[#3d2b1f] text-[#a89f94] hover:text-red-400 hover:border-red-500/50 hover:bg-red-500/10 rounded-xl"
+                    className="border-border text-muted-foreground hover:text-destructive hover:border-destructive/50 hover:bg-destructive/10 rounded-xl"
                   >
                     <DoorOpen className="w-4 h-4 mr-2" />
                     Leave Guild

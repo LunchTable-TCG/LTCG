@@ -42,7 +42,7 @@ export function NoGuildView({ discovery }: NoGuildViewProps) {
   return (
     <div className="space-y-12">
       {/* Hero Section */}
-      <div className="relative overflow-hidden rounded-3xl border border-[#3d2b1f] bg-gradient-to-br from-[#1a1614] via-[#261f1c] to-[#1a1614]">
+      <div className="relative overflow-hidden rounded-3xl border border-border bg-card/50">
         {/* Decorative elements */}
         <div className="absolute top-0 right-0 w-64 h-64 bg-[#d4af37]/5 rounded-full blur-3xl" />
         <div className="absolute bottom-0 left-0 w-48 h-48 bg-amber-600/5 rounded-full blur-2xl" />
@@ -51,19 +51,19 @@ export function NoGuildView({ discovery }: NoGuildViewProps) {
           <div className="grid md:grid-cols-2 gap-8 items-center">
             {/* Left - CTA */}
             <div className="space-y-6">
-              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-[#d4af37]/10 border border-[#d4af37]/30">
-                <Shield className="w-4 h-4 text-[#d4af37]" />
-                <span className="text-xs font-bold text-[#d4af37] uppercase tracking-wider">
+              <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/30">
+                <Shield className="w-4 h-4 text-primary" />
+                <span className="text-xs font-bold text-primary uppercase tracking-wider">
                   Guilds
                 </span>
               </div>
 
-              <h1 className="text-4xl md:text-5xl font-black text-[#e8e0d5] leading-tight">
+              <h1 className="text-4xl md:text-5xl font-black text-foreground leading-tight">
                 Forge Your
-                <span className="block gold-gradient">Legacy Together</span>
+                <span className="block text-primary">Legacy Together</span>
               </h1>
 
-              <p className="text-[#a89f94] text-lg leading-relaxed">
+              <p className="text-muted-foreground text-lg leading-relaxed">
                 Join forces with fellow champions. Create your guild, recruit members, and dominate
                 the leaderboards as a united force.
               </p>
@@ -80,7 +80,7 @@ export function NoGuildView({ discovery }: NoGuildViewProps) {
                 </Button>
                 <Button
                   variant="outline"
-                  className="rounded-xl px-6 py-6 text-base border-[#3d2b1f] text-[#e8e0d5] hover:bg-[#d4af37]/10 hover:border-[#d4af37]/50"
+                  className="rounded-xl px-6 py-6 text-base border-border text-foreground hover:bg-primary/10 hover:border-primary/50"
                   onClick={() =>
                     document
                       .getElementById("guild-discovery")
@@ -105,13 +105,13 @@ export function NoGuildView({ discovery }: NoGuildViewProps) {
                 return (
                   <div
                     key={feature.label}
-                    className="p-4 rounded-xl bg-black/30 border border-[#3d2b1f] hover:border-[#d4af37]/30 transition-all group"
+                    className="p-4 rounded-xl bg-card/30 border border-border hover:border-primary/30 transition-all group"
                   >
-                    <div className="w-10 h-10 rounded-lg bg-[#d4af37]/10 border border-[#d4af37]/20 flex items-center justify-center mb-3 group-hover:bg-[#d4af37]/20 transition-colors">
-                      <Icon className="w-5 h-5 text-[#d4af37]" />
+                    <div className="w-10 h-10 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center mb-3 group-hover:bg-primary/20 transition-colors">
+                      <Icon className="w-5 h-5 text-primary" />
                     </div>
-                    <p className="font-bold text-[#e8e0d5] text-sm">{feature.label}</p>
-                    <p className="text-[10px] text-[#a89f94] uppercase tracking-wider">
+                    <p className="font-bold text-foreground text-sm">{feature.label}</p>
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider">
                       {feature.desc}
                     </p>
                   </div>
@@ -126,12 +126,14 @@ export function NoGuildView({ discovery }: NoGuildViewProps) {
       <div id="guild-discovery" className="space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-[#d4af37]/20 border border-[#d4af37]/30 flex items-center justify-center">
-              <Search className="w-5 h-5 text-[#d4af37]" />
+            <div className="w-10 h-10 rounded-lg bg-primary/20 border border-primary/30 flex items-center justify-center">
+              <Search className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <h2 className="text-xl font-black text-[#e8e0d5]">Discover Guilds</h2>
-              <p className="text-xs text-[#a89f94] uppercase tracking-wider">Find your new home</p>
+              <h2 className="text-xl font-black text-foreground">Discover Guilds</h2>
+              <p className="text-xs text-muted-foreground uppercase tracking-wider">
+                Find your new home
+              </p>
             </div>
           </div>
         </div>
@@ -143,14 +145,14 @@ export function NoGuildView({ discovery }: NoGuildViewProps) {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search guilds by name..."
-            className="pl-12 pr-4 py-6 bg-black/40 border-[#3d2b1f] text-[#e8e0d5] rounded-xl focus:border-[#d4af37]/50"
+            className="pl-12 pr-4 py-6 bg-card/40 border-border text-foreground rounded-xl focus:border-primary/50"
           />
         </form>
 
         {/* Guild Grid */}
         {isSearching ? (
           <div className="flex items-center justify-center py-16">
-            <Loader2 className="w-8 h-8 text-[#d4af37] animate-spin" />
+            <Loader2 className="w-8 h-8 text-primary animate-spin" />
           </div>
         ) : displayGuilds.length > 0 ? (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -169,15 +171,15 @@ export function NoGuildView({ discovery }: NoGuildViewProps) {
             ))}
           </div>
         ) : (
-          <div className="text-center py-16 rounded-xl bg-black/40 border border-[#3d2b1f]">
-            <Shield className="w-16 h-16 mx-auto mb-4 text-[#a89f94]/50" />
-            <p className="text-[#e8e0d5] font-bold mb-2">
+          <div className="text-center py-16 rounded-xl bg-card/40 border border-border">
+            <Shield className="w-16 h-16 mx-auto mb-4 text-muted-foreground/50" />
+            <p className="text-foreground font-bold mb-2">
               {searchQuery ? "No guilds found" : "No public guilds yet"}
             </p>
-            <p className="text-[#a89f94] mb-6">
+            <p className="text-muted-foreground mb-6">
               {searchQuery ? "Try a different search term" : "Be the first to create one!"}
             </p>
-            <Button asChild className="tcg-button-primary rounded-xl">
+            <Button asChild className="rounded-xl">
               <Link href="/guilds/create">
                 <Plus className="w-4 h-4 mr-2" />
                 Create Guild

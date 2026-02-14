@@ -8,7 +8,9 @@
     "baseUrl": ".",
     "types": ["vite/client", "node"],
     "paths": {
-      "@data/*": ["../data/*"]
+      "@data/*": ["../data/*"],
+      "@ltcg/core": ["../packages/core/src"],
+      "@ltcg/core/*": ["../packages/core/src/*"]
     },
     "strict": true,
     "noUncheckedIndexedAccess": true,

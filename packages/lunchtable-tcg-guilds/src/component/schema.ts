@@ -5,72 +5,96 @@ export default defineSchema({
   guilds: defineTable({
     name: v.string(),
     description: v.optional(v.string()),
+    profileImageId: v.optional(v.string()),
+    bannerImageId: v.optional(v.string()),
+    visibility: v.union(v.literal("public"), v.literal("private")),
     ownerId: v.string(),
-    tag: v.optional(v.string()),
-    imageUrl: v.optional(v.string()),
-    bannerUrl: v.optional(v.string()),
-    isPublic: v.boolean(),
-    maxMembers: v.number(),
     memberCount: v.number(),
-    level: v.optional(v.number()),
-    xp: v.optional(v.number()),
-    metadata: v.optional(v.any()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
   })
     .index("by_name", ["name"])
     .index("by_owner", ["ownerId"])
-    .index("by_public", ["isPublic"]),
+    .index("by_visibility", ["visibility"])
+    .index("by_member_count", ["memberCount"])
+    .index("by_created", ["createdAt"])
+    .searchIndex("search_name", { searchField: "name" }),
 
   guildMembers: defineTable({
     guildId: v.id("guilds"),
     userId: v.string(),
-    role: v.string(), // "owner" | "admin" | "moderator" | "member"
+    role: v.union(v.literal("owner"), v.literal("member")),
     joinedAt: v.number(),
-    metadata: v.optional(v.any()),
+    lastActiveAt: v.optional(v.number()),
   })
     .index("by_guild", ["guildId"])
     .index("by_user", ["userId"])
-    .index("by_guild_user", ["guildId", "userId"]),
-
-  guildMessages: defineTable({
-    guildId: v.id("guilds"),
-    senderId: v.string(),
-    senderName: v.string(),
-    content: v.string(),
-    timestamp: v.number(),
-    metadata: v.optional(v.any()),
-  }).index("by_guild", ["guildId"]),
+    .index("by_guild_user", ["guildId", "userId"])
+    .index("by_guild_role", ["guildId", "role"])
+    .index("by_joined", ["guildId", "joinedAt"]),
 
   guildInvites: defineTable({
     guildId: v.id("guilds"),
-    inviterId: v.string(),
-    inviteeId: v.string(),
-    status: v.string(), // "pending" | "accepted" | "declined" | "cancelled"
+    invitedUserId: v.string(),
+    invitedBy: v.string(),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("accepted"),
+      v.literal("declined"),
+      v.literal("expired")
+    ),
     createdAt: v.number(),
-    metadata: v.optional(v.any()),
+    expiresAt: v.number(),
+    respondedAt: v.optional(v.number()),
   })
-    .index("by_guild", ["guildId"])
-    .index("by_invitee", ["inviteeId"]),
-
-  guildJoinRequests: defineTable({
-    guildId: v.id("guilds"),
-    requesterId: v.string(),
-    status: v.string(), // "pending" | "approved" | "rejected"
-    message: v.optional(v.string()),
-    createdAt: v.number(),
-    metadata: v.optional(v.any()),
-  })
-    .index("by_guild", ["guildId"])
-    .index("by_requester", ["requesterId"]),
+    .index("by_guild", ["guildId", "status"])
+    .index("by_invited_user", ["invitedUserId", "status"])
+    .index("by_guild_invited", ["guildId", "invitedUserId"])
+    .index("by_expires", ["expiresAt"])
+    .index("by_inviter", ["invitedBy"]),
 
   guildInviteLinks: defineTable({
     guildId: v.id("guilds"),
     code: v.string(),
     createdBy: v.string(),
+    uses: v.number(),
     maxUses: v.optional(v.number()),
-    currentUses: v.number(),
-    expiresAt: v.optional(v.number()),
-    metadata: v.optional(v.any()),
+    expiresAt: v.number(),
+    isActive: v.boolean(),
+    createdAt: v.number(),
   })
-    .index("by_guild", ["guildId"])
-    .index("by_code", ["code"]),
+    .index("by_code", ["code"])
+    .index("by_guild", ["guildId", "isActive"])
+    .index("by_creator", ["createdBy"]),
+
+  guildJoinRequests: defineTable({
+    guildId: v.id("guilds"),
+    userId: v.string(),
+    message: v.optional(v.string()),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("approved"),
+      v.literal("rejected"),
+      v.literal("cancelled")
+    ),
+    createdAt: v.number(),
+    respondedAt: v.optional(v.number()),
+    respondedBy: v.optional(v.string()),
+  })
+    .index("by_guild", ["guildId", "status"])
+    .index("by_user", ["userId", "status"])
+    .index("by_guild_user", ["guildId", "userId"])
+    .index("by_created", ["createdAt"]),
+
+  guildMessages: defineTable({
+    guildId: v.id("guilds"),
+    userId: v.string(),
+    username: v.string(),
+    message: v.string(),
+    createdAt: v.number(),
+    isSystem: v.boolean(),
+  })
+    .index("by_guild_created", ["guildId", "createdAt"])
+    .index("by_user", ["userId"])
+    .index("by_created", ["createdAt"]),
 });

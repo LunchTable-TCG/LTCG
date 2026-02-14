@@ -14,8 +14,17 @@ import type {
   FunctionReference,
 } from "convex/server";
 import { anyApi, componentsGeneric } from "convex/server";
+import type * as analytics from "../analytics.js";
+import type * as bids from "../bids.js";
+import type * as listings from "../listings.js";
+import type * as shop from "../shop.js";
 
-const fullApi: ApiFromModules<{}> = anyApi as any;
+const fullApi: ApiFromModules<{
+  analytics: typeof analytics;
+  bids: typeof bids;
+  listings: typeof listings;
+  shop: typeof shop;
+}> = anyApi as any;
 
 /**
  * A utility for referencing Convex functions in your app's public API.

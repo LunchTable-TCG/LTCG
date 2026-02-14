@@ -1,32 +1,38 @@
 import { v } from "convex/values";
-import { mutation, query } from "../_generated/server";
+import { mutation, query } from "./_generated/server";
 
 const messageReturnValidator = v.object({
   _id: v.string(),
   _creationTime: v.number(),
   conversationId: v.string(),
   senderId: v.string(),
-  content: v.string(),
-  timestamp: v.number(),
-  readBy: v.optional(v.array(v.string())),
-  metadata: v.optional(v.any()),
+  senderUsername: v.string(),
+  message: v.string(),
+  createdAt: v.number(),
+  isSystem: v.optional(v.boolean()),
 });
 
 const conversationReturnValidator = v.object({
   _id: v.string(),
   _creationTime: v.number(),
-  participantIds: v.array(v.string()),
-  lastMessageAt: v.optional(v.number()),
-  lastMessagePreview: v.optional(v.string()),
-  metadata: v.optional(v.any()),
+  participant1Id: v.string(),
+  participant2Id: v.string(),
+  createdAt: v.number(),
+  lastMessageAt: v.number(),
+  messageCount: v.number(),
+  participant1LastRead: v.optional(v.number()),
+  participant2LastRead: v.optional(v.number()),
+  participant1Archived: v.optional(v.boolean()),
+  participant2Archived: v.optional(v.boolean()),
 });
 
 export const sendMessage = mutation({
   args: {
     senderId: v.string(),
+    senderUsername: v.string(),
     recipientId: v.string(),
-    content: v.string(),
-    metadata: v.optional(v.any()),
+    message: v.string(),
+    isSystem: v.optional(v.boolean()),
   },
   returns: v.string(),
   handler: async (ctx, args) => {
@@ -36,40 +42,45 @@ export const sendMessage = mutation({
 
     // Find or create conversation
     const sortedIds = [args.senderId, args.recipientId].sort();
+    const [participant1Id, participant2Id] = sortedIds;
 
     let conversation = await ctx.db
       .query("dmConversations")
-      .filter((q) =>
-        q.and(
-          q.eq(q.field("participantIds")[0], sortedIds[0]),
-          q.eq(q.field("participantIds")[1], sortedIds[1])
-        )
+      .withIndex("by_participants", (q) =>
+        q.eq("participant1Id", participant1Id).eq("participant2Id", participant2Id)
       )
       .first();
 
+    const now = Date.now();
+
     if (!conversation) {
       const conversationId = await ctx.db.insert("dmConversations", {
-        participantIds: sortedIds,
-        lastMessageAt: Date.now(),
-        lastMessagePreview: args.content.substring(0, 100),
-        metadata: {},
+        participant1Id,
+        participant2Id,
+        createdAt: now,
+        lastMessageAt: now,
+        messageCount: 0,
       });
-      conversation = await ctx.db.get(conversationId);
-    } else {
-      // Update conversation metadata
-      await ctx.db.patch(conversation._id, {
-        lastMessageAt: Date.now(),
-        lastMessagePreview: args.content.substring(0, 100),
-      });
+      const newConversation = await ctx.db.get(conversationId);
+      if (!newConversation) {
+        throw new Error("Failed to create conversation");
+      }
+      conversation = newConversation;
     }
 
+    // Update conversation
+    await ctx.db.patch(conversation._id, {
+      lastMessageAt: now,
+      messageCount: conversation.messageCount + 1,
+    });
+
     const messageId = await ctx.db.insert("directMessages", {
-      conversationId: conversation!._id,
+      conversationId: conversation._id,
       senderId: args.senderId,
-      content: args.content,
-      timestamp: Date.now(),
-      readBy: [args.senderId],
-      metadata: args.metadata,
+      senderUsername: args.senderUsername,
+      message: args.message,
+      createdAt: now,
+      isSystem: args.isSystem,
     });
 
     return messageId as string;
@@ -84,14 +95,12 @@ export const getConversation = query({
   returns: v.union(conversationReturnValidator, v.null()),
   handler: async (ctx, args) => {
     const sortedIds = [args.userId1, args.userId2].sort();
+    const [participant1Id, participant2Id] = sortedIds;
 
     const conversation = await ctx.db
       .query("dmConversations")
-      .filter((q) =>
-        q.and(
-          q.eq(q.field("participantIds")[0], sortedIds[0]),
-          q.eq(q.field("participantIds")[1], sortedIds[1])
-        )
+      .withIndex("by_participants", (q) =>
+        q.eq("participant1Id", participant1Id).eq("participant2Id", participant2Id)
       )
       .first();
 
@@ -120,7 +129,7 @@ export const getMessages = query({
       .order("desc");
 
     if (args.before) {
-      query = query.filter((q) => q.lt(q.field("timestamp"), args.before!));
+      query = query.filter((q) => q.lt(q.field("createdAt"), args.before!));
     }
 
     const messages = await query
@@ -140,19 +149,21 @@ export const getConversations = query({
   },
   returns: v.array(conversationReturnValidator),
   handler: async (ctx, args) => {
-    const conversations = await ctx.db
+    const asParticipant1 = await ctx.db
       .query("dmConversations")
-      .filter((q) =>
-        q.or(
-          q.eq(q.field("participantIds")[0], args.userId),
-          q.eq(q.field("participantIds")[1], args.userId)
-        )
-      )
+      .withIndex("by_participant1", (q) => q.eq("participant1Id", args.userId))
       .collect();
+
+    const asParticipant2 = await ctx.db
+      .query("dmConversations")
+      .withIndex("by_participant2", (q) => q.eq("participant2Id", args.userId))
+      .collect();
+
+    const conversations = [...asParticipant1, ...asParticipant2];
 
     // Sort by last message time
     return conversations
-      .sort((a, b) => (b.lastMessageAt ?? 0) - (a.lastMessageAt ?? 0))
+      .sort((a, b) => b.lastMessageAt - a.lastMessageAt)
       .map((c) => ({
         ...c,
         _id: c._id as string,
@@ -173,25 +184,20 @@ export const markRead = mutation({
       throw new Error("Conversation not found");
     }
 
-    if (!conversation.participantIds.includes(args.userId)) {
+    if (conversation.participant1Id !== args.userId && conversation.participant2Id !== args.userId) {
       throw new Error("User is not a participant in this conversation");
     }
 
-    // Mark all messages as read by this user
-    const messages = await ctx.db
-      .query("directMessages")
-      .withIndex("by_conversation", (q) =>
-        q.eq("conversationId", args.conversationId)
-      )
-      .collect();
-
-    for (const message of messages) {
-      const readBy = message.readBy ?? [];
-      if (!readBy.includes(args.userId)) {
-        await ctx.db.patch(message._id, {
-          readBy: [...readBy, args.userId],
-        });
-      }
+    // Update the lastRead timestamp for the participant
+    const now = Date.now();
+    if (conversation.participant1Id === args.userId) {
+      await ctx.db.patch(args.conversationId, {
+        participant1LastRead: now,
+      });
+    } else {
+      await ctx.db.patch(args.conversationId, {
+        participant2LastRead: now,
+      });
     }
 
     return null;

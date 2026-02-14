@@ -188,7 +188,7 @@ export const populateShop = mutation({
     });
 
     // CURRENCY BUNDLES - Gem to Gold conversion (from constants)
-    GOLD_BUNDLES.forEach((bundle, idx) => {
+    GOLD_BUNDLES.forEach((bundle: { id: string; name: string; gems: number; gold: number }, idx: number) => {
       products.push({
         productId: bundle.id,
         name: bundle.name,

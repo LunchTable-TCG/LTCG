@@ -12,13 +12,7 @@ import { ErrorCode, createError } from "../lib/errorCodes";
 function getInternalApi() {
   return require("../_generated/api").internal;
 }
-import {
-  ABYSSAL_DEPTHS_CARDS,
-  INFERNAL_DRAGONS_CARDS,
-  IRON_LEGION_CARDS,
-  NECRO_EMPIRE_CARDS,
-  STORM_RIDERS_CARDS,
-} from "../seeds/starterCards";
+import { getCardsForDeck } from "../seeds/starterCards";
 import { STARTER_DECKS, type StarterDeckCode, VALID_DECK_CODES } from "../seeds/starterDecks";
 
 const MAX_AGENTS_PER_USER = 3;
@@ -525,16 +519,8 @@ export const registerAgentInternal = internalMutation({
     }
 
     // Load card list based on deck code
-    const cardListMap: Record<string, readonly (typeof INFERNAL_DRAGONS_CARDS)[number][]> = {
-      INFERNAL_DRAGONS: INFERNAL_DRAGONS_CARDS,
-      ABYSSAL_DEPTHS: ABYSSAL_DEPTHS_CARDS,
-      IRON_LEGION: IRON_LEGION_CARDS,
-      STORM_RIDERS: STORM_RIDERS_CARDS,
-      NECRO_EMPIRE: NECRO_EMPIRE_CARDS,
-    };
-
-    const cardList = cardListMap[args.starterDeckCode];
-    if (!cardList) {
+    const cardList = getCardsForDeck(starterDeck);
+    if (!cardList || cardList.length === 0) {
       throw createError(ErrorCode.AGENT_INVALID_STARTER_DECK, { code: args.starterDeckCode });
     }
 
@@ -550,13 +536,8 @@ export const registerAgentInternal = internalMutation({
 
       if (!existingCardDefs) {
         // Seed all starter cards on first use
-        const allCards = [
-          ...INFERNAL_DRAGONS_CARDS,
-          ...ABYSSAL_DEPTHS_CARDS,
-          ...IRON_LEGION_CARDS,
-          ...STORM_RIDERS_CARDS,
-        ];
-        for (const card of allCards) {
+        // Use the cards from this specific deck
+        for (const card of cardList) {
           await ctx.db.insert("cardDefinitions", {
             name: card.name,
             rarity: card.rarity,
@@ -714,16 +695,8 @@ export const selectStarterDeckInternal = internalMutation({
     }
 
     // Load card list based on deck code
-    const cardListMap: Record<string, readonly (typeof INFERNAL_DRAGONS_CARDS)[number][]> = {
-      INFERNAL_DRAGONS: INFERNAL_DRAGONS_CARDS,
-      ABYSSAL_DEPTHS: ABYSSAL_DEPTHS_CARDS,
-      IRON_LEGION: IRON_LEGION_CARDS,
-      STORM_RIDERS: STORM_RIDERS_CARDS,
-      NECRO_EMPIRE: NECRO_EMPIRE_CARDS,
-    };
-
-    const cardList = cardListMap[args.starterDeckCode];
-    if (!cardList) {
+    const cardList = getCardsForDeck(starterDeck);
+    if (!cardList || cardList.length === 0) {
       throw createError(ErrorCode.AGENT_INVALID_STARTER_DECK, { code: args.starterDeckCode });
     }
 
@@ -738,13 +711,7 @@ export const selectStarterDeckInternal = internalMutation({
         .first();
 
       if (!existingCardDefs) {
-        const allCards = [
-          ...INFERNAL_DRAGONS_CARDS,
-          ...ABYSSAL_DEPTHS_CARDS,
-          ...IRON_LEGION_CARDS,
-          ...STORM_RIDERS_CARDS,
-        ];
-        for (const card of allCards) {
+        for (const card of cardList) {
           await ctx.db.insert("cardDefinitions", {
             name: card.name,
             rarity: card.rarity,

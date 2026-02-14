@@ -50,14 +50,14 @@ export function GuildChat({ guildId }: GuildChatProps) {
   };
 
   return (
-    <div className="h-[600px] flex flex-col rounded-2xl tcg-chat-leather overflow-hidden shadow-2xl border border-[#3d2b1f]">
+    <div className="h-[600px] flex flex-col rounded-2xl tcg-panel overflow-hidden shadow-2xl border border-border">
       {/* Header */}
-      <div className="p-4 border-b border-[#3d2b1f] bg-linear-to-r from-[#1a1614] to-[#261f1c]">
+      <div className="p-4 border-b border-border bg-muted/20">
         <div className="flex items-center gap-3">
-          <MessageSquare className="w-5 h-5 text-amber-400" />
-          <h3 className="font-bold text-[#e8e0d5] uppercase tracking-wide text-sm">Guild Chat</h3>
+          <MessageSquare className="w-5 h-5 text-primary" />
+          <h3 className="font-bold text-foreground uppercase tracking-wide text-sm">Guild Chat</h3>
           {messages && (
-            <span className="text-[10px] text-[#a89f94]/60 uppercase tracking-widest">
+            <span className="text-[10px] text-muted-foreground uppercase tracking-widest">
               {messages.length} messages
             </span>
           )}
@@ -96,7 +96,7 @@ export function GuildChat({ guildId }: GuildChatProps) {
 
             {canLoadMore && !isLoadingMore && (
               <div className="flex justify-center pb-3">
-                <div className="px-4 py-2 text-[10px] font-medium text-[#a89f94]/60 uppercase tracking-widest">
+                <div className="px-4 py-2 text-[10px] font-medium text-muted-foreground uppercase tracking-widest">
                   Scroll up for older messages
                 </div>
               </div>
@@ -106,31 +106,31 @@ export function GuildChat({ guildId }: GuildChatProps) {
             {messages?.map((msg) =>
               msg.isSystem ? (
                 <div key={msg._id} className="py-1 text-center">
-                  <span className="inline-block px-3 py-1 rounded-full bg-amber-500/10 text-[10px] text-amber-400 font-medium">
+                  <span className="inline-block px-3 py-1 rounded-full bg-primary/10 text-[10px] text-primary font-medium">
                     {msg.message}
                   </span>
                 </div>
               ) : (
                 <div key={msg._id} className="group flex gap-3">
                   {/* Avatar */}
-                  <div className="shrink-0 w-8 h-8 rounded-lg bg-linear-to-br from-[#8b4513] to-[#3d2b1f] flex items-center justify-center border border-amber-500/20">
-                    <span className="text-xs font-black text-amber-400">
+                  <div className="shrink-0 w-8 h-8 rounded-lg bg-secondary flex items-center justify-center border border-border">
+                    <span className="text-xs font-black text-primary">
                       {sanitizeText(msg.username)[0]?.toUpperCase()}
                     </span>
                   </div>
 
                   {/* Message bubble */}
                   <div className="flex-1 min-w-0">
-                    <div className="bg-black/20 rounded-lg p-3 border border-[#3d2b1f]/50 hover:border-amber-500/30 transition-colors">
+                    <div className="bg-card/50 rounded-lg p-3 border border-border/50 hover:border-primary/30 transition-colors">
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs font-black uppercase tracking-wide text-amber-400">
+                        <span className="text-xs font-black uppercase tracking-wide text-primary">
                           {sanitizeText(msg.username)}
                         </span>
-                        <span className="text-[10px] text-[#a89f94]/60 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <span className="text-[10px] text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity">
                           {formatTime(msg.createdAt)}
                         </span>
                       </div>
-                      <p className="text-sm leading-relaxed break-words text-[#e8e0d5] whitespace-pre-wrap">
+                      <p className="text-sm leading-relaxed break-words text-foreground whitespace-pre-wrap">
                         {msg.message}
                       </p>
                     </div>
@@ -145,7 +145,7 @@ export function GuildChat({ guildId }: GuildChatProps) {
       </div>
 
       {/* Input */}
-      <div className="p-4 border-t border-[#3d2b1f] bg-linear-to-r from-[#1a1614] to-[#261f1c]">
+      <div className="p-4 border-t border-border bg-muted/20">
         <div className="flex gap-2">
           <input
             type="text"
@@ -154,7 +154,7 @@ export function GuildChat({ guildId }: GuildChatProps) {
             onKeyDown={handleKeyDown}
             placeholder="Message your guild..."
             disabled={isSending}
-            className="flex-1 px-4 py-3 rounded-xl bg-parchment text-[#2a1f14] placeholder:text-[#2a1f14]/40 border border-amber-500/20 focus:border-amber-500/50 focus:ring-amber-500/10 focus:outline-none focus:ring-2 text-sm transition-all disabled:opacity-50"
+            className="flex-1 px-4 py-3 rounded-xl bg-background/50 text-foreground placeholder:text-muted-foreground border border-input focus:border-primary/50 focus:ring-primary/10 focus:outline-none focus:ring-2 text-sm transition-all disabled:opacity-50"
           />
           <button
             type="button"
@@ -163,8 +163,8 @@ export function GuildChat({ guildId }: GuildChatProps) {
             className={cn(
               "px-4 py-3 rounded-xl font-bold uppercase tracking-wide transition-all",
               message.trim() && !isSending
-                ? "bg-amber-600 hover:bg-amber-500 text-white"
-                : "bg-[#3d2b1f]/50 text-[#a89f94]/50 cursor-not-allowed"
+                ? "bg-primary hover:bg-primary/90 text-primary-foreground"
+                : "bg-muted text-muted-foreground cursor-not-allowed"
             )}
           >
             {isSending ? (

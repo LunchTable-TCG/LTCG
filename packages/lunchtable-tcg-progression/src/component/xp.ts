@@ -1,51 +1,47 @@
 import { v } from "convex/values";
-import { mutation, query } from "../_generated/server";
+import { mutation, query } from "./_generated/server";
 
 const playerXPReturnValidator = v.object({
   _id: v.string(),
   _creationTime: v.number(),
   userId: v.string(),
-  totalXP: v.number(),
-  level: v.number(),
-  currentLevelXP: v.number(),
-  xpToNextLevel: v.number(),
-  metadata: v.optional(v.any()),
+  currentXP: v.number(),
+  currentLevel: v.number(),
+  lifetimeXP: v.number(),
+  lastUpdatedAt: v.number(),
 });
 
 // Standard XP curve: XP required for level N = N * 100
-function calculateLevelFromXP(totalXP: number): {
-  level: number;
-  currentLevelXP: number;
-  xpToNextLevel: number;
+function calculateLevelFromXP(lifetimeXP: number): {
+  currentLevel: number;
+  currentXP: number;
 } {
-  let level = 1;
+  let currentLevel = 1;
   let xpForCurrentLevel = 0;
 
   // Find the level
   while (true) {
-    const xpForNextLevel = level * 100;
-    if (xpForCurrentLevel + xpForNextLevel > totalXP) {
+    const xpForNextLevel = currentLevel * 100;
+    if (xpForCurrentLevel + xpForNextLevel > lifetimeXP) {
       break;
     }
     xpForCurrentLevel += xpForNextLevel;
-    level++;
+    currentLevel++;
   }
 
-  const currentLevelXP = totalXP - xpForCurrentLevel;
-  const xpToNextLevel = level * 100 - currentLevelXP;
+  const currentXP = lifetimeXP - xpForCurrentLevel;
 
-  return { level, currentLevelXP, xpToNextLevel };
+  return { currentLevel, currentXP };
 }
 
 export const addXP = mutation({
   args: {
     userId: v.string(),
     amount: v.number(),
-    metadata: v.optional(v.any()),
   },
   returns: v.object({
-    totalXP: v.number(),
-    level: v.number(),
+    lifetimeXP: v.number(),
+    currentLevel: v.number(),
     levelUps: v.number(),
   }),
   handler: async (ctx, args) => {
@@ -54,45 +50,42 @@ export const addXP = mutation({
       .withIndex("by_user", (q) => q.eq("userId", args.userId))
       .unique();
 
-    const oldLevel = playerXP?.level ?? 1;
+    const oldLevel = playerXP?.currentLevel ?? 1;
+    const now = Date.now();
 
     if (!playerXP) {
-      const totalXP = args.amount;
-      const { level, currentLevelXP, xpToNextLevel } =
-        calculateLevelFromXP(totalXP);
+      const lifetimeXP = args.amount;
+      const { currentLevel, currentXP } = calculateLevelFromXP(lifetimeXP);
 
       await ctx.db.insert("playerXP", {
         userId: args.userId,
-        totalXP,
-        level,
-        currentLevelXP,
-        xpToNextLevel,
-        metadata: args.metadata,
+        lifetimeXP,
+        currentLevel,
+        currentXP,
+        lastUpdatedAt: now,
       });
 
       return {
-        totalXP,
-        level,
-        levelUps: level - 1,
+        lifetimeXP,
+        currentLevel,
+        levelUps: currentLevel - 1,
       };
     }
 
-    const totalXP = playerXP.totalXP + args.amount;
-    const { level, currentLevelXP, xpToNextLevel } =
-      calculateLevelFromXP(totalXP);
+    const lifetimeXP = playerXP.lifetimeXP + args.amount;
+    const { currentLevel, currentXP } = calculateLevelFromXP(lifetimeXP);
 
     await ctx.db.patch(playerXP._id, {
-      totalXP,
-      level,
-      currentLevelXP,
-      xpToNextLevel,
-      metadata: args.metadata ?? playerXP.metadata,
+      lifetimeXP,
+      currentLevel,
+      currentXP,
+      lastUpdatedAt: now,
     });
 
     return {
-      totalXP,
-      level,
-      levelUps: level - oldLevel,
+      lifetimeXP,
+      currentLevel,
+      levelUps: currentLevel - oldLevel,
     };
   },
 });
@@ -126,8 +119,8 @@ export const getLeaderboard = query({
     const limit = args.limit ?? 100;
     const allPlayers = await ctx.db.query("playerXP").collect();
 
-    // Sort by totalXP descending
-    const sorted = allPlayers.sort((a, b) => b.totalXP - a.totalXP);
+    // Sort by lifetimeXP descending
+    const sorted = allPlayers.sort((a, b) => b.lifetimeXP - a.lifetimeXP);
     const top = sorted.slice(0, limit);
 
     return top.map((xp) => ({

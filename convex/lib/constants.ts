@@ -268,7 +268,7 @@ export const TOKEN = {
 /**
  * Daily and Weekly Rewards Configuration
  */
-export const DAILY_REWARDS = {
+const DEFAULT_DAILY_REWARDS = {
   /** Number of cards in daily free pack */
   DAILY_PACK_CARDS: 3,
 
@@ -298,11 +298,26 @@ export const DAILY_REWARDS = {
   },
 } as const;
 
+export const DAILY_REWARDS = (() => {
+  const envConfig = process.env["GAME_ECONOMY_CONFIG"];
+  if (envConfig) {
+    try {
+      const config = JSON.parse(envConfig);
+      if (config.dailyRewards) {
+        return { ...DEFAULT_DAILY_REWARDS, ...config.dailyRewards };
+      }
+    } catch (e) {
+      console.error("Failed to parse GAME_ECONOMY_CONFIG for DAILY_REWARDS", e);
+    }
+  }
+  return DEFAULT_DAILY_REWARDS;
+})();
+
 /**
  * Gem Package Definitions
  * Token → Gems conversion with bonus tiers
  */
-export const GEM_PACKAGES = [
+const DEFAULT_GEM_PACKAGES = [
   { id: "gem_starter", name: "Starter", gems: 300, usdCents: 299, bonus: 0 },
   { id: "gem_basic", name: "Basic", gems: 650, usdCents: 499, bonus: 8 },
   { id: "gem_standard", name: "Standard", gems: 1200, usdCents: 999, bonus: 20 },
@@ -317,10 +332,25 @@ export const GEM_PACKAGES = [
   { id: "gem_ultimate", name: "Ultimate", gems: 5000000, usdCents: 999999, bonus: 400 },
 ] as const;
 
+export const GEM_PACKAGES = (() => {
+  const envConfig = process.env["GAME_ECONOMY_CONFIG"];
+  if (envConfig) {
+    try {
+      const config = JSON.parse(envConfig);
+      if (config.gemPackages) {
+        return config.gemPackages;
+      }
+    } catch (e) {
+      console.error("Failed to parse GAME_ECONOMY_CONFIG for GEM_PACKAGES", e);
+    }
+  }
+  return DEFAULT_GEM_PACKAGES;
+})();
+
 /**
  * Gold Earning Rates (F2P economy)
  */
-export const GOLD_REWARDS = {
+const DEFAULT_GOLD_REWARDS = {
   /** Ranked match win (varies by opponent ELO) */
   RANKED_WIN_BASE: 50,
   RANKED_WIN_MAX: 100, // Against higher rated opponent
@@ -349,10 +379,25 @@ export const GOLD_REWARDS = {
   SEASON_REWARD_LEGEND: 10000,
 } as const;
 
+export const GOLD_REWARDS = (() => {
+  const envConfig = process.env["GAME_ECONOMY_CONFIG"];
+  if (envConfig) {
+    try {
+      const config = JSON.parse(envConfig);
+      if (config.goldRewards) {
+        return { ...DEFAULT_GOLD_REWARDS, ...config.goldRewards };
+      }
+    } catch (e) {
+      console.error("Failed to parse GAME_ECONOMY_CONFIG for GOLD_REWARDS", e);
+    }
+  }
+  return DEFAULT_GOLD_REWARDS;
+})();
+
 /**
  * Gems → Gold Conversion Bundles
  */
-export const GOLD_BUNDLES = [
+const DEFAULT_GOLD_BUNDLES = [
   { id: "gold_pouch", name: "Gold Pouch", gems: 100, gold: 400 },
   { id: "gold_sack", name: "Gold Sack", gems: 250, gold: 1100 },
   { id: "gold_chest", name: "Gold Chest", gems: 500, gold: 2500 },
@@ -360,11 +405,26 @@ export const GOLD_BUNDLES = [
   { id: "gold_hoard", name: "Gold Hoard", gems: 2500, gold: 15000 },
 ] as const;
 
+export const GOLD_BUNDLES = (() => {
+  const envConfig = process.env["GAME_ECONOMY_CONFIG"];
+  if (envConfig) {
+    try {
+      const config = JSON.parse(envConfig);
+      if (config.goldBundles) {
+        return config.goldBundles;
+      }
+    } catch (e) {
+      console.error("Failed to parse GAME_ECONOMY_CONFIG for GOLD_BUNDLES", e);
+    }
+  }
+  return DEFAULT_GOLD_BUNDLES;
+})();
+
 /**
  * Shop Pack Definitions
  * Products available for purchase
  */
-export const SHOP_PACKS = {
+const DEFAULT_SHOP_PACKS = {
   basic: {
     id: "pack_basic",
     name: "Basic Pack",
@@ -415,6 +475,22 @@ export const SHOP_PACKS = {
     guaranteedLegendary: 1,
   },
 } as const;
+
+export const SHOP_PACKS = (() => {
+  const envConfig = process.env["GAME_ECONOMY_CONFIG"];
+  if (envConfig) {
+    try {
+      const config = JSON.parse(envConfig);
+      if (config.shopPacks) {
+        // Deep merge or replacement logic could be needed, but simple replacement for now
+        return { ...DEFAULT_SHOP_PACKS, ...config.shopPacks };
+      }
+    } catch (e) {
+      console.error("Failed to parse GAME_ECONOMY_CONFIG for SHOP_PACKS", e);
+    }
+  }
+  return DEFAULT_SHOP_PACKS;
+})();
 
 /**
  * Sales System Configuration

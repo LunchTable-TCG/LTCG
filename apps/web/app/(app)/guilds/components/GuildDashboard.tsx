@@ -34,7 +34,7 @@ export function GuildDashboard({ dashboard }: GuildDashboardProps) {
       <GuildHeader guild={guild} myRole={myRole} />
 
       {/* Tabs */}
-      <div className="flex gap-2 p-1 bg-black/40 rounded-xl border border-[#3d2b1f] w-fit">
+      <div className="flex gap-2 p-1 bg-card/40 rounded-xl border border-border w-fit">
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
           return (
@@ -45,8 +45,8 @@ export function GuildDashboard({ dashboard }: GuildDashboardProps) {
               className={cn(
                 "flex items-center gap-2 px-5 py-3 rounded-lg font-medium transition-all",
                 isActive
-                  ? "bg-[#d4af37] text-[#1a1614]"
-                  : "text-[#a89f94] hover:text-[#e8e0d5] hover:bg-white/5"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:text-foreground hover:bg-white/5"
               )}
             >
               <span>{tab.label}</span>

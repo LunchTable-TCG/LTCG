@@ -2,36 +2,20 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
 export default defineSchema({
-  escrows: defineTable({
-    gameId: v.string(),
-    player1Id: v.string(),
-    player2Id: v.string(),
+  cryptoWagerTransactions: defineTable({
+    lobbyId: v.string(), // Reference to parent gameLobbies table
+    userId: v.string(), // Reference to parent users table
+    walletAddress: v.string(),
+    type: v.union(v.literal("deposit"), v.literal("payout"), v.literal("treasury_fee")),
+    currency: v.union(v.literal("sol"), v.literal("usdc")),
     amount: v.number(),
-    currency: v.string(), // "token" | "gold" | "gems"
-    status: v.string(), // "pending" | "funded" | "settled" | "refunded" | "disputed"
-    player1Deposited: v.boolean(),
-    player2Deposited: v.boolean(),
-    winnerId: v.optional(v.string()),
-    settledAt: v.optional(v.number()),
-    createdAt: v.number(),
-    expiresAt: v.optional(v.number()),
-    metadata: v.optional(v.any()),
-  })
-    .index("by_game", ["gameId"])
-    .index("by_player1", ["player1Id"])
-    .index("by_player2", ["player2Id"])
-    .index("by_status", ["status"]),
-
-  wagerTransactions: defineTable({
-    escrowId: v.id("escrows"),
-    playerId: v.string(),
-    type: v.string(), // "deposit" | "payout" | "refund" | "forfeit"
-    amount: v.number(),
-    currency: v.string(),
+    amountAtomic: v.string(),
     txSignature: v.optional(v.string()),
-    timestamp: v.number(),
-    metadata: v.optional(v.any()),
+    escrowPda: v.string(),
+    status: v.union(v.literal("pending"), v.literal("confirmed"), v.literal("failed")),
+    createdAt: v.number(),
   })
-    .index("by_escrow", ["escrowId"])
-    .index("by_player", ["playerId"]),
+    .index("by_lobby", ["lobbyId"])
+    .index("by_user", ["userId"])
+    .index("by_status", ["status"]),
 });

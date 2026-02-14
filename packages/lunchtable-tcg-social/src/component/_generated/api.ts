@@ -14,8 +14,15 @@ import type {
   FunctionReference,
 } from "convex/server";
 import { anyApi, componentsGeneric } from "convex/server";
+import type * as friends from "../friends.js";
+import type * as messages from "../messages.js";
+import type * as presence from "../presence.js";
 
-const fullApi: ApiFromModules<{}> = anyApi as any;
+const fullApi: ApiFromModules<{
+  friends: typeof friends;
+  messages: typeof messages;
+  presence: typeof presence;
+}> = anyApi as any;
 
 /**
  * A utility for referencing Convex functions in your app's public API.

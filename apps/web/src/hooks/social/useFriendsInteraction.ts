@@ -8,7 +8,29 @@ import { useFriends } from "./useFriends";
 
 export type TabType = "friends" | "requests" | "blocked";
 
-export function useFriendsInteraction() {
+import type { UseFriendsReturn } from "./useFriends";
+
+export interface UseFriendsInteractionReturn extends UseFriendsReturn {
+  activeTab: TabType;
+  setActiveTab: (tab: TabType) => void;
+  searchQuery: string;
+  setSearchQuery: (query: string) => void;
+  addFriendUsername: string;
+  setAddFriendUsername: (username: string) => void;
+  isAdding: boolean;
+  showAddFriend: boolean;
+  setShowAddFriend: (show: boolean) => void;
+  confirmRemove: string | null;
+  setConfirmRemove: (id: string | null) => void;
+  tabs: { id: TabType; label: string; count: number }[];
+  filteredFriends: UseFriendsReturn["friends"];
+  offlineFriends: UseFriendsReturn["friends"];
+  filteredOnline: UseFriendsReturn["friends"];
+  handleAddFriend: () => Promise<void>;
+  handleMessage: (friendId: Id<"users">) => Promise<void>;
+}
+
+export function useFriendsInteraction(): UseFriendsInteractionReturn {
   const friendsHook = useFriends();
   const { startConversation } = useDMConversations();
   const router = useRouter();

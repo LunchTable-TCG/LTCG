@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { useAuth } from "../auth/useConvexAuthHook";
 
 interface UseDeckBuilderReturn {
-  decks: ReturnType<typeof useQuery<typeof api.decks.getUserDecks>> | undefined;
+  decks: ReturnType<typeof useQuery<typeof api.core.decks.getUserDecks>> | undefined;
   isLoading: boolean;
   createDeck: (name: string) => Promise<Id<"userDecks">>;
   saveDeck: (
@@ -75,15 +75,15 @@ export function useDeckBuilder(): UseDeckBuilderReturn {
   const { isAuthenticated } = useAuth();
 
   // Queries
-  const decks = useQuery(api.decks.getUserDecks, isAuthenticated ? {} : "skip");
+  const decks = useQuery(api.core.decks.getUserDecks, isAuthenticated ? {} : "skip");
 
   // Mutations
-  const createMutation = useMutation(api.decks.createDeck);
-  const saveMutation = useMutation(api.decks.saveDeck);
-  const renameMutation = useMutation(api.decks.renameDeck);
-  const deleteMutation = useMutation(api.decks.deleteDeck);
-  const duplicateMutation = useMutation(api.decks.duplicateDeck);
-  const setActiveMutation = useMutation(api.decks.setActiveDeck);
+  const createMutation = useMutation(api.core.decks.createDeck);
+  const saveMutation = useMutation(api.core.decks.saveDeck);
+  const renameMutation = useMutation(api.core.decks.renameDeck);
+  const deleteMutation = useMutation(api.core.decks.deleteDeck);
+  const duplicateMutation = useMutation(api.core.decks.duplicateDeck);
+  const setActiveMutation = useMutation(api.core.decks.setActiveDeck);
 
   // Actions
   const createDeck = async (name: string) => {
@@ -214,7 +214,7 @@ export function useDeckBuilder(): UseDeckBuilderReturn {
 export function useDeck(deckId: Id<"userDecks"> | null) {
   const { isAuthenticated } = useAuth();
 
-  return useQuery(api.decks.getDeckWithCards, isAuthenticated && deckId ? { deckId } : "skip");
+  return useQuery(api.core.decks.getDeckWithCards, isAuthenticated && deckId ? { deckId } : "skip");
 }
 
 /**
@@ -250,5 +250,5 @@ export function useDeck(deckId: Id<"userDecks"> | null) {
 export function useValidateDeck(deckId: Id<"userDecks"> | null) {
   const { isAuthenticated } = useAuth();
 
-  return useQuery(api.decks.validateDeck, isAuthenticated && deckId ? { deckId } : "skip");
+  return useQuery(api.core.decks.validateDeck, isAuthenticated && deckId ? { deckId } : "skip");
 }

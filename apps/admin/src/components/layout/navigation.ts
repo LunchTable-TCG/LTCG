@@ -30,7 +30,6 @@ import {
   MessageSquare,
   Newspaper,
   Package,
-  Paintbrush,
   Palette,
   Printer,
   Receipt,
@@ -43,7 +42,6 @@ import {
   ToggleLeft,
   TrendingUp,
   Trophy,
-  Upload,
   User,
   Users,
   Video,
@@ -120,10 +118,7 @@ export const MAIN_NAVIGATION: NavSection[] = [
       {
         title: "Card Tools",
         items: [
-          { title: "Template Designer", href: "/cards/template-designer", icon: Paintbrush, permission: "config.edit", keywords: ["templates", "design"] },
           { title: "Batch Render", href: "/cards/batch-render", icon: Printer, permission: "config.edit", keywords: ["generate", "bulk"] },
-          { title: "Upload Backgrounds", href: "/cards/upload-backgrounds", icon: Upload, permission: "config.edit", keywords: ["images", "bg"] },
-          { title: "Design Gallery", href: "/templates", icon: Palette, permission: "config.edit", keywords: ["freeform", "canvas", "designs"] },
         ],
       },
     ],
@@ -301,14 +296,10 @@ export const ROUTE_MAP: Record<string, { label: string; parent?: string }> = {
 
   // Game Content
   "/cards": { label: "Cards", parent: "/game-content" },
-  "/cards/template-designer": { label: "Template Designer", parent: "/cards" },
   "/cards/batch-render": { label: "Batch Render", parent: "/cards" },
-  "/cards/upload-backgrounds": { label: "Upload Backgrounds", parent: "/cards" },
   "/assets": { label: "Assets", parent: "/game-content" },
   "/story": { label: "Story Mode", parent: "/game-content" },
   "/quests": { label: "Quests", parent: "/game-content" },
-  "/templates": { label: "Design Gallery", parent: "/game-content" },
-  "/templates/[templateId]": { label: "Design Editor", parent: "/templates" },
 
   // Live Operations
   "/seasons": { label: "Seasons", parent: "/live-ops" },

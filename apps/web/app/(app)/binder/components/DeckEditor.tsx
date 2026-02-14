@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { calculateDeckStats } from "@/lib/deckUtils";
 import { cn } from "@/lib/utils";
 import {
   AlertCircle,
@@ -18,7 +19,6 @@ import {
 import { useMemo } from "react";
 import type { DeckCard } from "../types";
 import { DECK_MIN_SIZE } from "../types";
-import { calculateDeckStats } from "@/lib/deckUtils";
 import { BinderCard, type CardData, type Rarity } from "./BinderCard";
 
 const RARITY_COLORS: Record<Rarity, { bg: string; text: string; border: string }> = {

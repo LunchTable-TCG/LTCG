@@ -5,20 +5,20 @@ const messageReturnValidator = v.object({
   _id: v.string(),
   _creationTime: v.number(),
   guildId: v.string(),
-  senderId: v.string(),
-  senderName: v.string(),
-  content: v.string(),
-  timestamp: v.number(),
-  metadata: v.optional(v.any()),
+  userId: v.string(),
+  username: v.string(),
+  message: v.string(),
+  createdAt: v.number(),
+  isSystem: v.boolean(),
 });
 
 export const sendMessage = mutation({
   args: {
     guildId: v.id("guilds"),
-    senderId: v.string(),
-    senderName: v.string(),
-    content: v.string(),
-    metadata: v.optional(v.any()),
+    userId: v.string(),
+    username: v.string(),
+    message: v.string(),
+    isSystem: v.optional(v.boolean()),
   },
   returns: v.string(),
   handler: async (ctx, args) => {
@@ -26,7 +26,7 @@ export const sendMessage = mutation({
     const membership = await ctx.db
       .query("guildMembers")
       .withIndex("by_guild_user", (q) =>
-        q.eq("guildId", args.guildId).eq("userId", args.senderId)
+        q.eq("guildId", args.guildId).eq("userId", args.userId)
       )
       .unique();
 
@@ -36,11 +36,11 @@ export const sendMessage = mutation({
 
     const messageId = await ctx.db.insert("guildMessages", {
       guildId: args.guildId,
-      senderId: args.senderId,
-      senderName: args.senderName,
-      content: args.content,
-      timestamp: Date.now(),
-      metadata: args.metadata,
+      userId: args.userId,
+      username: args.username,
+      message: args.message,
+      createdAt: Date.now(),
+      isSystem: args.isSystem ?? false,
     });
 
     return messageId as string;
@@ -59,17 +59,18 @@ export const getMessages = query({
 
     let query = ctx.db
       .query("guildMessages")
-      .withIndex("by_guild", (q) => q.eq("guildId", args.guildId));
+      .withIndex("by_guild_created", (q) => q.eq("guildId", args.guildId));
 
     let messages = await query.collect();
 
     // Filter by timestamp if provided
     if (args.before !== undefined) {
-      messages = messages.filter((msg) => msg.timestamp < args.before);
+      const before = args.before;
+      messages = messages.filter((msg) => msg.createdAt < before);
     }
 
     // Sort by timestamp descending and take limit
-    messages.sort((a, b) => b.timestamp - a.timestamp);
+    messages.sort((a, b) => b.createdAt - a.createdAt);
     messages = messages.slice(0, limit);
 
     return messages.map((msg) => ({
@@ -91,11 +92,11 @@ export const getRecentMessages = query({
 
     const messages = await ctx.db
       .query("guildMessages")
-      .withIndex("by_guild", (q) => q.eq("guildId", args.guildId))
+      .withIndex("by_guild_created", (q) => q.eq("guildId", args.guildId))
       .collect();
 
     // Sort by timestamp descending and take count
-    messages.sort((a, b) => b.timestamp - a.timestamp);
+    messages.sort((a, b) => b.createdAt - a.createdAt);
     const recent = messages.slice(0, count);
 
     return recent.map((msg) => ({
@@ -119,12 +120,12 @@ export const deleteMessage = mutation({
     }
 
     // Check if deleter is the sender
-    if (message.senderId === args.deletedBy) {
+    if (message.userId === args.deletedBy) {
       await ctx.db.delete(args.messageId);
       return null;
     }
 
-    // Check if deleter is admin or owner
+    // Check if deleter is owner
     const membership = await ctx.db
       .query("guildMembers")
       .withIndex("by_guild_user", (q) =>
@@ -136,8 +137,8 @@ export const deleteMessage = mutation({
       throw new Error("You are not a member of this guild");
     }
 
-    if (!["owner", "admin"].includes(membership.role)) {
-      throw new Error("Only the message sender, guild owner, or admin can delete messages");
+    if (membership.role !== "owner") {
+      throw new Error("Only the message sender or guild owner can delete messages");
     }
 
     await ctx.db.delete(args.messageId);

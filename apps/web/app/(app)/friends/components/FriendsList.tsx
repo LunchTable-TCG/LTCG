@@ -1,23 +1,22 @@
 "use client";
 
-import { useFriendsInteraction } from "@/hooks/social/useFriendsInteraction";
+import type { useFriendsInteraction } from "@/hooks/social/useFriendsInteraction";
+import type { Id } from "@convex/_generated/dataModel";
 import { Circle, Users } from "lucide-react";
-import { FriendRow } from "./FriendRow";
 import { EmptyState } from "./EmptyState";
+import { FriendRow } from "./FriendRow";
 
 interface FriendsListProps {
-  filteredFriends?: ReturnType<typeof useFriendsInteraction>["filteredFriends"];
-  filteredOnline: ReturnType<typeof useFriendsInteraction>["filteredOnline"];
+  friends: ReturnType<typeof useFriendsInteraction>["friends"];
   offlineFriends: ReturnType<typeof useFriendsInteraction>["offlineFriends"];
   searchQuery: string;
-  handleMessage: (friendId: any) => void;
-  removeFriend: (friendId: any) => void;
+  handleMessage: (friendId: Id<"users">) => void;
+  removeFriend: (friendId: Id<"users">) => void;
   confirmRemove: string | null;
   setConfirmRemove: (id: string | null) => void;
 }
 
 export function FriendsList({
-  filteredFriends,
   filteredOnline,
   offlineFriends,
   searchQuery,

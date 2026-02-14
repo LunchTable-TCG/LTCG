@@ -1,5 +1,6 @@
 "use client";
 
+import type { BattleHistoryEntry, LeaderboardEntry } from "@/types";
 import type { Id } from "@convex/_generated/dataModel";
 import { useState } from "react";
 import { useLeaderboard } from "./useLeaderboard";
@@ -20,7 +21,25 @@ export interface SelectedPlayer {
   isAiAgent?: boolean;
 }
 
-export function useLeaderboardInteraction() {
+interface UseLeaderboardInteractionReturn {
+  currentUser: ReturnType<typeof useProfile>["profile"];
+  profileLoading: boolean;
+  activeType: LeaderboardType;
+  setActiveType: (type: LeaderboardType) => void;
+  activeSegment: PlayerSegment;
+  setActiveSegment: (segment: PlayerSegment) => void;
+  selectedPlayer: SelectedPlayer | null;
+  rankings: LeaderboardEntry[];
+  userRank: LeaderboardEntry | null | undefined;
+  battleHistory: BattleHistoryEntry[];
+  lastUpdated: number | undefined;
+  userInTop100: boolean;
+  handlePlayerClick: (player: LeaderboardEntry) => void;
+  handleOpponentClick: (match: BattleHistoryEntry) => void;
+  closePlayerModal: () => void;
+}
+
+export function useLeaderboardInteraction(): UseLeaderboardInteractionReturn {
   const { profile: currentUser, isLoading: profileLoading } = useProfile();
 
   const [activeType, setActiveType] = useState<LeaderboardType>("ranked");
@@ -36,7 +55,7 @@ export function useLeaderboardInteraction() {
     lastUpdated,
   } = leaderboardData || {};
 
-  const handlePlayerClick = (player: (typeof rankings)[number]) => {
+  const handlePlayerClick = (player: LeaderboardEntry) => {
     if (player.userId === currentUser?._id) return; // Don't open modal for self
     setSelectedPlayer({
       userId: player.userId,
@@ -46,17 +65,17 @@ export function useLeaderboardInteraction() {
       wins: player.wins,
       losses: player.losses,
       winRate: player.winRate,
-      level: player.level,
+      level: player.level || 1,
       isAiAgent: player.isAiAgent,
     });
   };
 
-  const handleOpponentClick = (match: (typeof battleHistory)[number]) => {
+  const handleOpponentClick = (match: BattleHistoryEntry) => {
     if (match.opponentId === currentUser?._id) return; // Don't open modal for self
     setSelectedPlayer({
       userId: match.opponentId,
       username: match.opponentUsername,
-      rating: match.ratingAfter, // Use their rating from the match
+      rating: match.ratingAfter || 0, // Use their rating from the match
       rank: 0, // Unknown from battle history
       wins: 0, // Unknown from battle history
       losses: 0,
@@ -68,9 +87,7 @@ export function useLeaderboardInteraction() {
   const closePlayerModal = () => setSelectedPlayer(null);
 
   // Check if current user is in top 100
-  const userInTop100 = rankings.some(
-    (p: (typeof rankings)[number]) => p.userId === currentUser?._id
-  );
+  const userInTop100 = rankings.some((p: LeaderboardEntry) => p.userId === currentUser?._id);
 
   return {
     currentUser,
@@ -84,9 +101,9 @@ export function useLeaderboardInteraction() {
     selectedPlayer,
 
     // Data
-    rankings,
-    userRank,
-    battleHistory,
+    rankings: rankings as LeaderboardEntry[],
+    userRank: userRank as LeaderboardEntry | undefined | null,
+    battleHistory: battleHistory as BattleHistoryEntry[],
     lastUpdated,
     userInTop100,
 

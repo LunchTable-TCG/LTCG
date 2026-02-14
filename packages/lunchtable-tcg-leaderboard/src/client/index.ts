@@ -52,27 +52,11 @@ export class LTCGLeaderboard {
 export class RankingsClient {
   constructor(private component: typeof api) {}
 
-  async submitScore(
-    ctx: RunMutationCtx,
-    args: {
-      boardId: string;
-      playerId: string;
-      playerName?: string;
-      score: number;
-      wins?: number;
-      losses?: number;
-      streak?: number;
-      rating?: number;
-      metadata?: any;
-    }
-  ) {
-    return await ctx.runMutation(this.component.rankings.submitScore, args);
-  }
-
   async getTopPlayers(
     ctx: RunQueryCtx,
     args: {
-      boardId: string;
+      leaderboardType: "ranked" | "casual" | "story";
+      playerSegment?: "all" | "humans" | "ai";
       limit?: number;
     }
   ) {
@@ -82,8 +66,9 @@ export class RankingsClient {
   async getPlayerRank(
     ctx: RunQueryCtx,
     args: {
-      boardId: string;
+      leaderboardType: "ranked" | "casual" | "story";
       playerId: string;
+      playerSegment?: "all" | "humans" | "ai";
     }
   ) {
     return await ctx.runQuery(this.component.rankings.getPlayerRank, args);
@@ -92,30 +77,23 @@ export class RankingsClient {
   async getAroundPlayer(
     ctx: RunQueryCtx,
     args: {
-      boardId: string;
+      leaderboardType: "ranked" | "casual" | "story";
       playerId: string;
+      playerSegment?: "all" | "humans" | "ai";
       range?: number;
     }
   ) {
     return await ctx.runQuery(this.component.rankings.getAroundPlayer, args);
   }
 
-  async getByCategory(
+  async getLeaderboard(
     ctx: RunQueryCtx,
     args: {
-      boardId: string;
+      leaderboardType: "ranked" | "casual" | "story";
+      playerSegment?: "all" | "humans" | "ai";
     }
   ) {
-    return await ctx.runQuery(this.component.rankings.getByCategory, args);
-  }
-
-  async resetCategory(
-    ctx: RunMutationCtx,
-    args: {
-      boardId: string;
-    }
-  ) {
-    return await ctx.runMutation(this.component.rankings.resetCategory, args);
+    return await ctx.runQuery(this.component.rankings.getLeaderboard, args);
   }
 }
 
@@ -128,9 +106,19 @@ export class SnapshotsClient {
   async createSnapshot(
     ctx: RunMutationCtx,
     args: {
-      boardId: string;
-      period: string;
-      metadata?: any;
+      leaderboardType: "ranked" | "casual" | "story";
+      playerSegment: "all" | "humans" | "ai";
+      rankings: Array<{
+        userId: string;
+        username: string;
+        rank: number;
+        rating: number;
+        level?: number;
+        wins: number;
+        losses: number;
+        winRate: number;
+        isAiAgent: boolean;
+      }>;
     }
   ) {
     return await ctx.runMutation(this.component.snapshots.createSnapshot, args);
@@ -138,14 +126,12 @@ export class SnapshotsClient {
 
   async getSnapshots(
     ctx: RunQueryCtx,
-    args: {
-      boardId: string;
-      period?: string;
-      startDate?: number;
-      endDate?: number;
+    args?: {
+      leaderboardType?: "ranked" | "casual" | "story";
+      playerSegment?: "all" | "humans" | "ai";
     }
   ) {
-    return await ctx.runQuery(this.component.snapshots.getSnapshots, args);
+    return await ctx.runQuery(this.component.snapshots.getSnapshots, args ?? {});
   }
 
   async getSnapshotById(
@@ -157,6 +143,16 @@ export class SnapshotsClient {
     return await ctx.runQuery(this.component.snapshots.getSnapshotById, {
       id: args.id as any,
     });
+  }
+
+  async getSnapshot(
+    ctx: RunQueryCtx,
+    args: {
+      leaderboardType: "ranked" | "casual" | "story";
+      playerSegment: "all" | "humans" | "ai";
+    }
+  ) {
+    return await ctx.runQuery(this.component.snapshots.getSnapshot, args);
   }
 }
 
@@ -171,13 +167,12 @@ export class MatchesClient {
     args: {
       winnerId: string;
       loserId: string;
-      loserName?: string;
-      winnerName?: string;
-      winnerRatingChange?: number;
-      loserRatingChange?: number;
-      gameMode: string;
-      gameId?: string;
-      metadata?: any;
+      gameType: "ranked" | "casual" | "story";
+      winnerRatingBefore: number;
+      winnerRatingAfter: number;
+      loserRatingBefore: number;
+      loserRatingAfter: number;
+      xpAwarded?: number;
     }
   ) {
     return await ctx.runMutation(this.component.matches.recordMatch, args);
@@ -187,7 +182,7 @@ export class MatchesClient {
     ctx: RunQueryCtx,
     args: {
       playerId: string;
-      gameMode?: string;
+      gameType?: "ranked" | "casual" | "story";
       limit?: number;
     }
   ) {
@@ -196,12 +191,12 @@ export class MatchesClient {
 
   async getRecentMatches(
     ctx: RunQueryCtx,
-    args: {
-      gameMode?: string;
+    args?: {
+      gameType?: "ranked" | "casual" | "story";
       limit?: number;
     }
   ) {
-    return await ctx.runQuery(this.component.matches.getRecentMatches, args);
+    return await ctx.runQuery(this.component.matches.getRecentMatches, args ?? {});
   }
 
   async getHeadToHead(
@@ -209,7 +204,7 @@ export class MatchesClient {
     args: {
       playerId: string;
       opponentId: string;
-      gameMode?: string;
+      gameType?: "ranked" | "casual" | "story";
     }
   ) {
     return await ctx.runQuery(this.component.matches.getHeadToHead, args);

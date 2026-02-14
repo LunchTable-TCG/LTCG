@@ -16,6 +16,7 @@
 
 // Re-export all modules
 export * from "./types";
+export * from "./config/gameConfig";
 export * from "./utils";
 export * from "./api";
 export * from "./ui";

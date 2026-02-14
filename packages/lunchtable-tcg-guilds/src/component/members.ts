@@ -6,9 +6,9 @@ const memberReturnValidator = v.object({
   _creationTime: v.number(),
   guildId: v.string(),
   userId: v.string(),
-  role: v.string(),
+  role: v.union(v.literal("owner"), v.literal("member")),
   joinedAt: v.number(),
-  metadata: v.optional(v.any()),
+  lastActiveAt: v.optional(v.number()),
 });
 
 export const join = mutation({
@@ -33,11 +33,6 @@ export const join = mutation({
       throw new Error("User is already in a guild");
     }
 
-    // Check if guild is full
-    if (guild.memberCount >= guild.maxMembers) {
-      throw new Error("Guild is full");
-    }
-
     // Add member
     const memberId = await ctx.db.insert("guildMembers", {
       guildId: args.guildId,
@@ -49,6 +44,7 @@ export const join = mutation({
     // Update member count
     await ctx.db.patch(args.guildId, {
       memberCount: guild.memberCount + 1,
+      updatedAt: Date.now(),
     });
 
     return memberId as string;
@@ -89,6 +85,7 @@ export const leave = mutation({
     // Update member count
     await ctx.db.patch(args.guildId, {
       memberCount: guild.memberCount - 1,
+      updatedAt: Date.now(),
     });
 
     return null;
@@ -120,8 +117,8 @@ export const kick = mutation({
       throw new Error("You are not a member of this guild");
     }
 
-    if (!["owner", "admin"].includes(kicker.role)) {
-      throw new Error("Only owners and admins can kick members");
+    if (kicker.role !== "owner") {
+      throw new Error("Only guild owner can kick members");
     }
 
     // Get target member
@@ -141,17 +138,13 @@ export const kick = mutation({
       throw new Error("Cannot kick the guild owner");
     }
 
-    // Admins cannot kick other admins
-    if (kicker.role === "admin" && target.role === "admin") {
-      throw new Error("Admins cannot kick other admins");
-    }
-
     // Remove member
     await ctx.db.delete(target._id);
 
     // Update member count
     await ctx.db.patch(args.guildId, {
       memberCount: guild.memberCount - 1,
+      updatedAt: Date.now(),
     });
 
     return null;
@@ -162,7 +155,7 @@ export const updateRole = mutation({
   args: {
     guildId: v.id("guilds"),
     targetUserId: v.string(),
-    newRole: v.string(),
+    newRole: v.union(v.literal("owner"), v.literal("member")),
     updatedBy: v.string(),
   },
   returns: v.null(),
@@ -170,11 +163,6 @@ export const updateRole = mutation({
     const guild = await ctx.db.get(args.guildId);
     if (!guild) {
       throw new Error("Guild not found");
-    }
-
-    // Validate role
-    if (!["owner", "admin", "moderator", "member"].includes(args.newRole)) {
-      throw new Error("Invalid role");
     }
 
     // Check updater's permissions
@@ -254,15 +242,12 @@ export const getPlayerGuild = query({
         name: v.string(),
         description: v.optional(v.string()),
         ownerId: v.string(),
-        tag: v.optional(v.string()),
-        imageUrl: v.optional(v.string()),
-        bannerUrl: v.optional(v.string()),
-        isPublic: v.boolean(),
-        maxMembers: v.number(),
+        profileImageId: v.optional(v.string()),
+        bannerImageId: v.optional(v.string()),
+        visibility: v.union(v.literal("public"), v.literal("private")),
         memberCount: v.number(),
-        level: v.optional(v.number()),
-        xp: v.optional(v.number()),
-        metadata: v.optional(v.any()),
+        createdAt: v.number(),
+        updatedAt: v.number(),
       }),
       membership: memberReturnValidator,
     }),
@@ -335,14 +320,17 @@ export const transferOwnership = mutation({
       .unique();
 
     if (currentOwnerMembership) {
-      await ctx.db.patch(currentOwnerMembership._id, { role: "admin" });
+      await ctx.db.patch(currentOwnerMembership._id, { role: "member" });
     }
 
     // Update new owner's role
     await ctx.db.patch(newOwnerMembership._id, { role: "owner" });
 
     // Update guild's ownerId
-    await ctx.db.patch(args.guildId, { ownerId: args.newOwnerId });
+    await ctx.db.patch(args.guildId, {
+      ownerId: args.newOwnerId,
+      updatedAt: Date.now(),
+    });
 
     return null;
   },

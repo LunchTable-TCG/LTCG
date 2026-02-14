@@ -1,7 +1,7 @@
-import type { CardData } from "@/types/binder";
-import type { ElementWithNeutral as Element, Rarity, CardType } from "@/types/cards";
-import type { SortOption } from "@/types";
 import { getAbilityDisplayText } from "@/lib/cardHelpers";
+import type { SortOption } from "@/types";
+import type { CardData } from "@/types/binder";
+import type { CardType, ElementWithNeutral as Element, Rarity } from "@/types/cards";
 
 export const RARITY_ORDER: Record<string, number> = {
   legendary: 5,
@@ -81,8 +81,7 @@ export function sortCards(cards: CardData[], options: CardSortOptions): CardData
         comparison = a.name.localeCompare(b.name);
         break;
       case "rarity":
-        comparison =
-          (RARITY_ORDER[a.rarity] || 0) - (RARITY_ORDER[b.rarity] || 0);
+        comparison = (RARITY_ORDER[a.rarity] || 0) - (RARITY_ORDER[b.rarity] || 0);
         break;
       case "element":
         comparison = a.element.localeCompare(b.element);

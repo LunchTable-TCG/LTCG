@@ -189,20 +189,20 @@ export function PlayerCardModal({ userId, isOpen, onClose, initialData }: Player
 
         {isLoading && !displayData ? (
           <div className="flex items-center justify-center py-12">
-            <Loader2 className="w-8 h-8 text-[#d4af37] animate-spin" />
+            <Loader2 className="w-8 h-8 text-primary animate-spin" />
           </div>
         ) : displayData ? (
           <div className="space-y-6">
             {/* Player Header */}
             <div className="flex items-center gap-4">
-              <Avatar className="w-16 h-16 border-2 border-[#3d2b1f]">
-                <AvatarFallback className="bg-[#1a1614] text-[#d4af37] text-xl font-bold">
+              <Avatar className="w-16 h-16 border-2 border-primary/30">
+                <AvatarFallback className="bg-secondary text-primary text-xl font-bold">
                   {(displayData.username || "?")[0]?.toUpperCase()}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1">
                 <div className="flex items-center gap-2">
-                  <h2 className="text-xl font-bold text-[#e8e0d5]">
+                  <h2 className="text-xl font-bold text-foreground">
                     {displayData.username || "Unknown"}
                   </h2>
                   {displayData.isAiAgent && (
@@ -212,8 +212,8 @@ export function PlayerCardModal({ userId, isOpen, onClose, initialData }: Player
                     </Badge>
                   )}
                 </div>
-                <div className="flex items-center gap-2 text-sm text-[#a89f94]">
-                  <Badge className="bg-[#d4af37]/20 text-[#d4af37] border-[#d4af37]/30">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Badge className="bg-primary/20 text-primary border-primary/30">
                     LV {displayData.level}
                   </Badge>
                   <span>{displayData.rankedElo} ELO</span>
@@ -222,7 +222,9 @@ export function PlayerCardModal({ userId, isOpen, onClose, initialData }: Player
             </div>
 
             {/* Bio */}
-            {playerData?.bio && <p className="text-sm text-[#a89f94] italic">"{playerData.bio}"</p>}
+            {playerData?.bio && (
+              <p className="text-sm text-muted-foreground italic">"{playerData.bio}"</p>
+            )}
 
             {/* Stats Grid */}
             <div className="grid grid-cols-3 gap-3">
@@ -238,12 +240,12 @@ export function PlayerCardModal({ userId, isOpen, onClose, initialData }: Player
                 value={displayData.totalLosses}
                 color="text-red-400"
               />
-              <StatBox icon={Medal} label="Win Rate" value={`${winRate}%`} color="text-[#d4af37]" />
+              <StatBox icon={Medal} label="Win Rate" value={`${winRate}%`} color="text-primary" />
             </div>
 
             {/* Member Since */}
             {playerData?.createdAt && (
-              <div className="flex items-center gap-2 text-xs text-[#a89f94]">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <Calendar className="w-3 h-3" />
                 Member since{" "}
                 {new Date(playerData.createdAt).toLocaleDateString("en-US", {
@@ -262,8 +264,7 @@ export function PlayerCardModal({ userId, isOpen, onClose, initialData }: Player
                 variant={friendButton.variant}
                 className={cn(
                   "w-full",
-                  friendButton.variant !== "outline" &&
-                    "bg-[#d4af37] hover:bg-[#f9e29f] text-[#1a1614]"
+                  friendButton.variant !== "outline" && "tcg-button-primary text-primary-foreground"
                 )}
               >
                 {isSubmitting ? (
@@ -289,7 +290,7 @@ export function PlayerCardModal({ userId, isOpen, onClose, initialData }: Player
                 <Button
                   disabled
                   variant="outline"
-                  className="w-full border-[#3d2b1f] text-[#a89f94] opacity-50 cursor-not-allowed"
+                  className="w-full border-border text-muted-foreground opacity-50 cursor-not-allowed"
                 >
                   <Users className="w-4 h-4 mr-2" />
                   Invite to Guild
@@ -298,7 +299,7 @@ export function PlayerCardModal({ userId, isOpen, onClose, initialData }: Player
             </div>
           </div>
         ) : (
-          <div className="text-center py-8 text-[#a89f94]">Player not found</div>
+          <div className="text-center py-8 text-muted-foreground">Player not found</div>
         )}
       </DialogContent>
 
@@ -327,10 +328,10 @@ function StatBox({
   color: string;
 }) {
   return (
-    <div className="p-3 rounded-lg bg-black/40 border border-[#3d2b1f] text-center">
+    <div className="p-3 rounded-lg bg-black/40 border border-border/50 text-center">
       <Icon className={cn("w-4 h-4 mx-auto mb-1", color)} />
-      <p className="text-lg font-bold text-[#e8e0d5]">{value}</p>
-      <p className="text-xs text-[#a89f94]">{label}</p>
+      <p className="text-lg font-bold text-foreground">{value}</p>
+      <p className="text-xs text-muted-foreground">{label}</p>
     </div>
   );
 }

@@ -90,4 +90,5 @@ export interface StarterDeckDefinition {
   readonly description: string;
   readonly playstyle: string;
   readonly cardCount: number;
+  readonly cardNames?: string[];
 }

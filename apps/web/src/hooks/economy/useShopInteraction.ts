@@ -60,7 +60,7 @@ export function useShopInteraction() {
   );
 
   // Mutations
-  const createListingMutation = useMutation(api.marketplace.createListing);
+  const createListingMutation = useMutation(api.economy.marketplace.createListing);
 
   // Filter marketplace listings (gold)
   const filteredGoldListings = useMemo(() => {

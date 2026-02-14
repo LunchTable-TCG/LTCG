@@ -69,8 +69,49 @@ export const STORM_RIDERS_CARDS: readonly CardSeed[] = STORM_ELEMENTALS_JSON.map
 export const NECRO_EMPIRE_CARDS: readonly CardSeed[] = NECRO_EMPIRE_JSON.map(toCardSeed);
 
 // =============================================================================
-// Card Counts
+// Helper Functions
 // =============================================================================
+
+import type { StarterDeckDefinition } from "./types";
+import { getCardByName } from "@data/cards";
+
+/**
+ * Get the list of cards for a given starter deck definition.
+ * If cardNames are provided in the definition (from env config), use those.
+ * Otherwise fallback to the hardcoded archetype lists.
+ */
+export function getCardsForDeck(deck: StarterDeckDefinition): readonly CardSeed[] {
+  // 1. If configured with explicit card names (e.g. from Env), use those
+  if (deck.cardNames && deck.cardNames.length > 0) {
+    return deck.cardNames
+      .map((name) => {
+        const card = getCardByName(name);
+        if (!card) {
+          console.warn(`Card definition for "${name}" not found in @data/cards`);
+          return null;
+        }
+        return toCardSeed(card);
+      })
+      .filter((c): c is CardSeed => c !== null);
+  }
+
+  // 2. Fallback to hardcoded lists based on deck code
+  switch (deck.deckCode) {
+    case "INFERNAL_DRAGONS":
+      return INFERNAL_DRAGONS_CARDS;
+    case "ABYSSAL_DEPTHS":
+      return ABYSSAL_DEPTHS_CARDS;
+    case "IRON_LEGION":
+      return IRON_LEGION_CARDS;
+    case "STORM_RIDERS":
+      return STORM_RIDERS_CARDS;
+    case "NECRO_EMPIRE":
+      return NECRO_EMPIRE_CARDS;
+    default:
+      console.warn(`No card list defined for deck code: ${deck.deckCode}`);
+      return [];
+  }
+}
 
 export const CARD_COUNTS = {
   INFERNAL_DRAGONS: INFERNAL_DRAGONS_CARDS.length,

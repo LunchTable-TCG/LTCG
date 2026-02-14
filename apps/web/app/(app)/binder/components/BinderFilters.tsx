@@ -2,10 +2,10 @@
 
 import { cn } from "@/lib/utils";
 import { isSortOption } from "@/types";
-import type { Rarity } from "@/types/cards";
-import type { ElementWithNeutral as Element, CardType } from "@/types/cards";
 import type { SortOption } from "@/types";
 import type { ViewMode } from "@/types/binder";
+import type { Rarity } from "@/types/cards";
+import type { CardType, ElementWithNeutral as Element } from "@/types/cards";
 import {
   ChevronDown,
   Crown,

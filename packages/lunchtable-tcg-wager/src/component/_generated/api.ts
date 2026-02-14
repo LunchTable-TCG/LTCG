@@ -14,8 +14,13 @@ import type {
   FunctionReference,
 } from "convex/server";
 import { anyApi, componentsGeneric } from "convex/server";
+import type * as escrow from "../escrow.js";
+import type * as transactions from "../transactions.js";
 
-const fullApi: ApiFromModules<{}> = anyApi as any;
+const fullApi: ApiFromModules<{
+  escrow: typeof escrow;
+  transactions: typeof transactions;
+}> = anyApi as any;
 
 /**
  * A utility for referencing Convex functions in your app's public API.

@@ -1,41 +1,89 @@
 import { v } from "convex/values";
-import { mutation, query } from "../_generated/server";
+import { mutation, query } from "./_generated/server";
 
 const questDefFields = {
-  key: v.string(),
+  questId: v.string(),
   name: v.string(),
   description: v.string(),
-  type: v.string(),
-  requirement: v.any(),
-  reward: v.any(),
+  questType: v.union(
+    v.literal("daily"),
+    v.literal("weekly"),
+    v.literal("achievement")
+  ),
+  requirementType: v.string(),
+  targetValue: v.number(),
+  rewards: v.object({
+    gold: v.number(),
+    xp: v.number(),
+    gems: v.optional(v.number()),
+  }),
+  filters: v.optional(
+    v.object({
+      gameMode: v.optional(
+        v.union(
+          v.literal("ranked"),
+          v.literal("casual"),
+          v.literal("story")
+        )
+      ),
+      archetype: v.optional(v.string()),
+      cardType: v.optional(v.string()),
+    })
+  ),
   isActive: v.boolean(),
-  metadata: v.optional(v.any()),
+  createdAt: v.number(),
 };
 
 const questDefReturnValidator = v.object({
   _id: v.string(),
   _creationTime: v.number(),
-  key: v.string(),
+  questId: v.string(),
   name: v.string(),
   description: v.string(),
-  type: v.string(),
-  requirement: v.any(),
-  reward: v.any(),
+  questType: v.union(
+    v.literal("daily"),
+    v.literal("weekly"),
+    v.literal("achievement")
+  ),
+  requirementType: v.string(),
+  targetValue: v.number(),
+  rewards: v.object({
+    gold: v.number(),
+    xp: v.number(),
+    gems: v.optional(v.number()),
+  }),
+  filters: v.optional(
+    v.object({
+      gameMode: v.optional(
+        v.union(
+          v.literal("ranked"),
+          v.literal("casual"),
+          v.literal("story")
+        )
+      ),
+      archetype: v.optional(v.string()),
+      cardType: v.optional(v.string()),
+    })
+  ),
   isActive: v.boolean(),
-  metadata: v.optional(v.any()),
+  createdAt: v.number(),
 });
 
 const userQuestReturnValidator = v.object({
   _id: v.string(),
   _creationTime: v.number(),
   userId: v.string(),
-  questKey: v.string(),
-  progress: v.number(),
-  completed: v.boolean(),
-  claimed: v.boolean(),
-  assignedAt: v.number(),
+  questId: v.string(),
+  currentProgress: v.number(),
+  status: v.union(
+    v.literal("active"),
+    v.literal("completed"),
+    v.literal("claimed")
+  ),
+  startedAt: v.number(),
+  completedAt: v.optional(v.number()),
+  claimedAt: v.optional(v.number()),
   expiresAt: v.optional(v.number()),
-  metadata: v.optional(v.any()),
 });
 
 export const defineQuest = mutation({
@@ -49,19 +97,23 @@ export const defineQuest = mutation({
 
 export const getActiveQuests = query({
   args: {
-    type: v.optional(v.string()),
+    questType: v.optional(
+      v.union(
+        v.literal("daily"),
+        v.literal("weekly"),
+        v.literal("achievement")
+      )
+    ),
   },
   returns: v.array(questDefReturnValidator),
   handler: async (ctx, args) => {
-    let questQuery = ctx.db.query("questDefinitions");
+    const quests = args.questType
+      ? await ctx.db
+          .query("questDefinitions")
+          .withIndex("by_type", (q) => q.eq("questType", args.questType!))
+          .collect()
+      : await ctx.db.query("questDefinitions").collect();
 
-    if (args.type) {
-      questQuery = questQuery.withIndex("by_type", (q) =>
-        q.eq("type", args.type!)
-      );
-    }
-
-    const quests = await questQuery.collect();
     const activeQuests = quests.filter((q) => q.isActive);
 
     return activeQuests.map((q) => ({
@@ -74,7 +126,7 @@ export const getActiveQuests = query({
 export const getPlayerQuests = query({
   args: {
     userId: v.string(),
-    includeCompleted: v.optional(v.boolean()),
+    includeClaimed: v.optional(v.boolean()),
   },
   returns: v.array(userQuestReturnValidator),
   handler: async (ctx, args) => {
@@ -84,8 +136,8 @@ export const getPlayerQuests = query({
       .collect();
 
     let filtered = quests;
-    if (!args.includeCompleted) {
-      filtered = quests.filter((q) => !q.completed);
+    if (!args.includeClaimed) {
+      filtered = quests.filter((q) => q.status !== "claimed");
     }
 
     return filtered.map((q) => ({
@@ -98,46 +150,43 @@ export const getPlayerQuests = query({
 export const startQuest = mutation({
   args: {
     userId: v.string(),
-    questKey: v.string(),
+    questId: v.string(),
     expiresAt: v.optional(v.number()),
-    metadata: v.optional(v.any()),
   },
   returns: v.string(),
   handler: async (ctx, args) => {
     const existing = await ctx.db
       .query("userQuests")
       .withIndex("by_user_quest", (q) =>
-        q.eq("userId", args.userId).eq("questKey", args.questKey)
+        q.eq("userId", args.userId).eq("questId", args.questId)
       )
       .unique();
 
-    if (existing && !existing.completed) {
+    if (existing && existing.status === "active") {
       // Already in progress
       return existing._id as string;
     }
 
     const def = await ctx.db
       .query("questDefinitions")
-      .withIndex("by_key", (q) => q.eq("key", args.questKey))
+      .withIndex("by_quest_id", (q) => q.eq("questId", args.questId))
       .unique();
 
     if (!def) {
-      throw new Error(`Quest definition not found: ${args.questKey}`);
+      throw new Error(`Quest definition not found: ${args.questId}`);
     }
 
     if (!def.isActive) {
-      throw new Error(`Quest is not active: ${args.questKey}`);
+      throw new Error(`Quest is not active: ${args.questId}`);
     }
 
     const id = await ctx.db.insert("userQuests", {
       userId: args.userId,
-      questKey: args.questKey,
-      progress: 0,
-      completed: false,
-      claimed: false,
-      assignedAt: Date.now(),
+      questId: args.questId,
+      currentProgress: 0,
+      status: "active",
+      startedAt: Date.now(),
       expiresAt: args.expiresAt,
-      metadata: args.metadata,
     });
 
     return id as string;
@@ -147,63 +196,73 @@ export const startQuest = mutation({
 export const updateQuestProgress = mutation({
   args: {
     userId: v.string(),
-    questKey: v.string(),
+    questId: v.string(),
     delta: v.number(),
   },
   returns: v.object({
-    progress: v.number(),
-    completed: v.boolean(),
+    currentProgress: v.number(),
+    status: v.union(
+      v.literal("active"),
+      v.literal("completed"),
+      v.literal("claimed")
+    ),
   }),
   handler: async (ctx, args) => {
     const userQuest = await ctx.db
       .query("userQuests")
       .withIndex("by_user_quest", (q) =>
-        q.eq("userId", args.userId).eq("questKey", args.questKey)
+        q.eq("userId", args.userId).eq("questId", args.questId)
       )
       .unique();
 
     if (!userQuest) {
       throw new Error(
-        `User quest not found: ${args.userId} / ${args.questKey}`
+        `User quest not found: ${args.userId} / ${args.questId}`
       );
     }
 
-    if (userQuest.completed) {
-      // Quest already completed
-      return { progress: userQuest.progress, completed: true };
+    if (userQuest.status !== "active") {
+      // Quest already completed or claimed
+      return { currentProgress: userQuest.currentProgress, status: userQuest.status } as const;
     }
 
     const def = await ctx.db
       .query("questDefinitions")
-      .withIndex("by_key", (q) => q.eq("key", args.questKey))
+      .withIndex("by_quest_id", (q) => q.eq("questId", args.questId))
       .unique();
 
     if (!def) {
-      throw new Error(`Quest definition not found: ${args.questKey}`);
+      throw new Error(`Quest definition not found: ${args.questId}`);
     }
 
-    const newProgress = userQuest.progress + args.delta;
-    const threshold = def.requirement?.threshold ?? 1;
-    const completed = newProgress >= threshold;
+    const newProgress = userQuest.currentProgress + args.delta;
+    const targetValue = def.targetValue ?? 1;
+    const isCompleted = newProgress >= targetValue;
+    const newStatus: "active" | "completed" = isCompleted ? "completed" : "active";
 
     await ctx.db.patch(userQuest._id, {
-      progress: newProgress,
-      completed,
+      currentProgress: newProgress,
+      status: newStatus,
+      completedAt: isCompleted ? Date.now() : undefined,
     });
 
-    return { progress: newProgress, completed };
+    return { currentProgress: newProgress, status: newStatus };
   },
 });
 
-export const completeQuest = mutation({
+export const claimQuest = mutation({
   args: {
     userId: v.string(),
-    questKey: v.string(),
+    questId: v.string(),
   },
   returns: v.union(
     v.object({
       success: v.boolean(),
-      reward: v.any(),
+      rewards: v.object({
+        gold: v.number(),
+        xp: v.number(),
+        gems: v.optional(v.number()),
+      }),
     }),
     v.null()
   ),
@@ -211,7 +270,7 @@ export const completeQuest = mutation({
     const userQuest = await ctx.db
       .query("userQuests")
       .withIndex("by_user_quest", (q) =>
-        q.eq("userId", args.userId).eq("questKey", args.questKey)
+        q.eq("userId", args.userId).eq("questId", args.questId)
       )
       .unique();
 
@@ -219,31 +278,27 @@ export const completeQuest = mutation({
       return null;
     }
 
-    if (!userQuest.completed) {
-      throw new Error(`Quest not yet completed: ${args.questKey}`);
-    }
-
-    if (userQuest.claimed) {
-      // Already claimed
-      return { success: false, reward: null };
+    if (userQuest.status !== "completed") {
+      throw new Error(`Quest not yet completed: ${args.questId}`);
     }
 
     const def = await ctx.db
       .query("questDefinitions")
-      .withIndex("by_key", (q) => q.eq("key", args.questKey))
+      .withIndex("by_quest_id", (q) => q.eq("questId", args.questId))
       .unique();
 
     if (!def) {
-      throw new Error(`Quest definition not found: ${args.questKey}`);
+      throw new Error(`Quest definition not found: ${args.questId}`);
     }
 
     await ctx.db.patch(userQuest._id, {
-      claimed: true,
+      status: "claimed",
+      claimedAt: Date.now(),
     });
 
     return {
       success: true,
-      reward: def.reward,
+      rewards: def.rewards,
     };
   },
 });
@@ -251,20 +306,20 @@ export const completeQuest = mutation({
 export const abandonQuest = mutation({
   args: {
     userId: v.string(),
-    questKey: v.string(),
+    questId: v.string(),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
     const userQuest = await ctx.db
       .query("userQuests")
       .withIndex("by_user_quest", (q) =>
-        q.eq("userId", args.userId).eq("questKey", args.questKey)
+        q.eq("userId", args.userId).eq("questId", args.questId)
       )
       .unique();
 
     if (!userQuest) {
       throw new Error(
-        `User quest not found: ${args.userId} / ${args.questKey}`
+        `User quest not found: ${args.userId} / ${args.questId}`
       );
     }
 

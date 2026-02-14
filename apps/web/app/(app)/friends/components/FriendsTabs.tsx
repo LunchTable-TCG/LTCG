@@ -1,7 +1,7 @@
 "use client";
 
-import { cn } from "@/lib/utils";
 import type { TabType } from "@/hooks/social/useFriendsInteraction";
+import { cn } from "@/lib/utils";
 
 interface FriendsTabsProps {
   tabs: { id: TabType; label: string; count: number }[];

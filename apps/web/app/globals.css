@@ -48,6 +48,8 @@
   --color-arcane: var(--arcane);
   --color-nature: var(--nature);
   --color-frost: var(--frost);
+  --font-heading: var(--font-heading);
+  --font-body: var(--font-body);
 }
 
 :root {

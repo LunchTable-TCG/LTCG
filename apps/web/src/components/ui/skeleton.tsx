@@ -15,7 +15,7 @@ function Skeleton({ className, variant = "default", ...props }: SkeletonProps) {
 
   return (
     <div
-      className={cn("animate-pulse bg-[#3d2b1f]/50", variantClasses[variant], className)}
+      className={cn("animate-pulse bg-muted/50", variantClasses[variant], className)}
       {...props}
     />
   );

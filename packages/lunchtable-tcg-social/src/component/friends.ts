@@ -1,22 +1,22 @@
 import { v } from "convex/values";
-import { mutation, query } from "../_generated/server";
+import { mutation, query } from "./_generated/server";
 
 const friendshipReturnValidator = v.object({
   _id: v.string(),
   _creationTime: v.number(),
-  userId1: v.string(),
-  userId2: v.string(),
+  userId: v.string(),
+  friendId: v.string(),
   status: v.string(),
-  initiatedBy: v.string(),
+  requestedBy: v.string(),
   createdAt: v.number(),
-  metadata: v.optional(v.any()),
+  respondedAt: v.optional(v.number()),
+  lastInteraction: v.optional(v.number()),
 });
 
 export const sendRequest = mutation({
   args: {
     fromUserId: v.string(),
     toUserId: v.string(),
-    metadata: v.optional(v.any()),
   },
   returns: v.string(),
   handler: async (ctx, args) => {
@@ -27,8 +27,8 @@ export const sendRequest = mutation({
     // Check if relationship already exists
     const existing = await ctx.db
       .query("friendships")
-      .withIndex("by_pair", (q) =>
-        q.eq("userId1", args.fromUserId).eq("userId2", args.toUserId)
+      .withIndex("by_user_friend", (q) =>
+        q.eq("userId", args.fromUserId).eq("friendId", args.toUserId)
       )
       .first();
 
@@ -39,8 +39,8 @@ export const sendRequest = mutation({
     // Check reverse direction
     const existingReverse = await ctx.db
       .query("friendships")
-      .withIndex("by_pair", (q) =>
-        q.eq("userId1", args.toUserId).eq("userId2", args.fromUserId)
+      .withIndex("by_user_friend", (q) =>
+        q.eq("userId", args.toUserId).eq("friendId", args.fromUserId)
       )
       .first();
 
@@ -49,12 +49,11 @@ export const sendRequest = mutation({
     }
 
     const id = await ctx.db.insert("friendships", {
-      userId1: args.fromUserId,
-      userId2: args.toUserId,
+      userId: args.fromUserId,
+      friendId: args.toUserId,
       status: "pending",
-      initiatedBy: args.fromUserId,
+      requestedBy: args.fromUserId,
       createdAt: Date.now(),
-      metadata: args.metadata,
     });
 
     return id as string;
@@ -78,12 +77,13 @@ export const acceptRequest = mutation({
     }
 
     // Only the recipient can accept
-    if (friendship.userId2 !== args.userId) {
+    if (friendship.friendId !== args.userId) {
       throw new Error("Only the recipient can accept this request");
     }
 
     await ctx.db.patch(args.requestId, {
       status: "accepted",
+      respondedAt: Date.now(),
     });
 
     return null;
@@ -107,7 +107,7 @@ export const declineRequest = mutation({
     }
 
     // Only the recipient can decline
-    if (friendship.userId2 !== args.userId) {
+    if (friendship.friendId !== args.userId) {
       throw new Error("Only the recipient can decline this request");
     }
 
@@ -126,15 +126,15 @@ export const removeFriend = mutation({
     // Check both directions
     const friendship = await ctx.db
       .query("friendships")
-      .withIndex("by_pair", (q) =>
-        q.eq("userId1", args.userId).eq("userId2", args.friendId)
+      .withIndex("by_user_friend", (q) =>
+        q.eq("userId", args.userId).eq("friendId", args.friendId)
       )
       .first();
 
     const friendshipReverse = await ctx.db
       .query("friendships")
-      .withIndex("by_pair", (q) =>
-        q.eq("userId1", args.friendId).eq("userId2", args.userId)
+      .withIndex("by_user_friend", (q) =>
+        q.eq("userId", args.friendId).eq("friendId", args.userId)
       )
       .first();
 
@@ -156,7 +156,6 @@ export const blockUser = mutation({
   args: {
     userId: v.string(),
     blockedUserId: v.string(),
-    metadata: v.optional(v.any()),
   },
   returns: v.string(),
   handler: async (ctx, args) => {
@@ -167,15 +166,15 @@ export const blockUser = mutation({
     // Remove existing friendship if any
     const existing = await ctx.db
       .query("friendships")
-      .withIndex("by_pair", (q) =>
-        q.eq("userId1", args.userId).eq("userId2", args.blockedUserId)
+      .withIndex("by_user_friend", (q) =>
+        q.eq("userId", args.userId).eq("friendId", args.blockedUserId)
       )
       .first();
 
     const existingReverse = await ctx.db
       .query("friendships")
-      .withIndex("by_pair", (q) =>
-        q.eq("userId1", args.blockedUserId).eq("userId2", args.userId)
+      .withIndex("by_user_friend", (q) =>
+        q.eq("userId", args.blockedUserId).eq("friendId", args.userId)
       )
       .first();
 
@@ -188,12 +187,11 @@ export const blockUser = mutation({
 
     // Create block record
     const id = await ctx.db.insert("friendships", {
-      userId1: args.userId,
-      userId2: args.blockedUserId,
+      userId: args.userId,
+      friendId: args.blockedUserId,
       status: "blocked",
-      initiatedBy: args.userId,
+      requestedBy: args.userId,
       createdAt: Date.now(),
-      metadata: args.metadata,
     });
 
     return id as string;
@@ -209,8 +207,8 @@ export const unblockUser = mutation({
   handler: async (ctx, args) => {
     const blockRecord = await ctx.db
       .query("friendships")
-      .withIndex("by_pair", (q) =>
-        q.eq("userId1", args.userId).eq("userId2", args.blockedUserId)
+      .withIndex("by_user_friend", (q) =>
+        q.eq("userId", args.userId).eq("friendId", args.blockedUserId)
       )
       .first();
 
@@ -229,19 +227,17 @@ export const getFriends = query({
   },
   returns: v.array(friendshipReturnValidator),
   handler: async (ctx, args) => {
-    const asFriend1 = await ctx.db
+    const asUser = await ctx.db
       .query("friendships")
-      .withIndex("by_user1", (q) => q.eq("userId1", args.userId))
-      .filter((q) => q.eq(q.field("status"), "accepted"))
+      .withIndex("by_user_status", (q) => q.eq("userId", args.userId).eq("status", "accepted"))
       .collect();
 
-    const asFriend2 = await ctx.db
+    const asFriend = await ctx.db
       .query("friendships")
-      .withIndex("by_user2", (q) => q.eq("userId2", args.userId))
-      .filter((q) => q.eq(q.field("status"), "accepted"))
+      .withIndex("by_friend_status", (q) => q.eq("friendId", args.userId).eq("status", "accepted"))
       .collect();
 
-    return [...asFriend1, ...asFriend2].map((f) => ({
+    return [...asUser, ...asFriend].map((f) => ({
       ...f,
       _id: f._id as string,
     }));
@@ -254,11 +250,10 @@ export const getPendingRequests = query({
   },
   returns: v.array(friendshipReturnValidator),
   handler: async (ctx, args) => {
-    // Get incoming requests where user is userId2
+    // Get incoming requests where user is friendId
     const requests = await ctx.db
       .query("friendships")
-      .withIndex("by_user2", (q) => q.eq("userId2", args.userId))
-      .filter((q) => q.eq(q.field("status"), "pending"))
+      .withIndex("by_friend_status", (q) => q.eq("friendId", args.userId).eq("status", "pending"))
       .collect();
 
     return requests.map((r) => ({
@@ -284,8 +279,8 @@ export const getFriendshipStatus = query({
     // Check both directions
     const friendship = await ctx.db
       .query("friendships")
-      .withIndex("by_pair", (q) =>
-        q.eq("userId1", args.userId).eq("userId2", args.otherUserId)
+      .withIndex("by_user_friend", (q) =>
+        q.eq("userId", args.userId).eq("friendId", args.otherUserId)
       )
       .first();
 
@@ -301,8 +296,8 @@ export const getFriendshipStatus = query({
 
     const friendshipReverse = await ctx.db
       .query("friendships")
-      .withIndex("by_pair", (q) =>
-        q.eq("userId1", args.otherUserId).eq("userId2", args.userId)
+      .withIndex("by_user_friend", (q) =>
+        q.eq("userId", args.otherUserId).eq("friendId", args.userId)
       )
       .first();
 

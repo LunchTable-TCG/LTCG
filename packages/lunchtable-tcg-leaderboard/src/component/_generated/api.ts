@@ -14,8 +14,15 @@ import type {
   FunctionReference,
 } from "convex/server";
 import { anyApi, componentsGeneric } from "convex/server";
+import type * as matches from "../matches.js";
+import type * as rankings from "../rankings.js";
+import type * as snapshots from "../snapshots.js";
 
-const fullApi: ApiFromModules<{}> = anyApi as any;
+const fullApi: ApiFromModules<{
+  matches: typeof matches;
+  rankings: typeof rankings;
+  snapshots: typeof snapshots;
+}> = anyApi as any;
 
 /**
  * A utility for referencing Convex functions in your app's public API.

@@ -3,54 +3,67 @@ import { v } from "convex/values";
 
 export default defineSchema({
   friendships: defineTable({
-    userId1: v.string(),
-    userId2: v.string(),
-    status: v.string(),        // "pending" | "accepted" | "blocked"
-    initiatedBy: v.string(),
+    userId: v.string(),
+    friendId: v.string(),
+    status: v.union(v.literal("pending"), v.literal("accepted"), v.literal("blocked")),
+    requestedBy: v.string(),
     createdAt: v.number(),
-    metadata: v.optional(v.any()),
+    respondedAt: v.optional(v.number()),
+    lastInteraction: v.optional(v.number()),
   })
-    .index("by_user1", ["userId1"])
-    .index("by_user2", ["userId2"])
-    .index("by_pair", ["userId1", "userId2"]),
+    .index("by_user", ["userId"])
+    .index("by_friend", ["friendId"])
+    .index("by_user_status", ["userId", "status"])
+    .index("by_friend_status", ["friendId", "status"])
+    .index("by_user_friend", ["userId", "friendId"])
+    .index("by_status", ["status"])
+    .index("by_created", ["createdAt"])
+    .index("by_user_created", ["userId", "createdAt"]),
+
+  dmConversations: defineTable({
+    participant1Id: v.string(),
+    participant2Id: v.string(),
+    createdAt: v.number(),
+    lastMessageAt: v.number(),
+    messageCount: v.number(),
+    participant1LastRead: v.optional(v.number()),
+    participant2LastRead: v.optional(v.number()),
+    participant1Archived: v.optional(v.boolean()),
+    participant2Archived: v.optional(v.boolean()),
+  })
+    .index("by_participants", ["participant1Id", "participant2Id"])
+    .index("by_participant1", ["participant1Id", "lastMessageAt"])
+    .index("by_participant2", ["participant2Id", "lastMessageAt"])
+    .index("by_last_message", ["lastMessageAt"]),
 
   directMessages: defineTable({
     conversationId: v.id("dmConversations"),
     senderId: v.string(),
-    content: v.string(),
-    timestamp: v.number(),
-    readBy: v.optional(v.array(v.string())),
-    metadata: v.optional(v.any()),
+    senderUsername: v.string(),
+    message: v.string(),
+    createdAt: v.number(),
+    isSystem: v.optional(v.boolean()),
   })
-    .index("by_conversation", ["conversationId"]),
-
-  dmConversations: defineTable({
-    participantIds: v.array(v.string()),
-    lastMessageAt: v.optional(v.number()),
-    lastMessagePreview: v.optional(v.string()),
-    metadata: v.optional(v.any()),
-  })
-    .index("by_participants", ["participantIds"]),
-
-  userPresence: defineTable({
-    userId: v.string(),
-    status: v.string(),        // "online" | "offline" | "away" | "in_game"
-    lastSeen: v.number(),
-    currentActivity: v.optional(v.string()),
-    metadata: v.optional(v.any()),
-  })
-    .index("by_user", ["userId"]),
+    .index("by_conversation", ["conversationId", "createdAt"])
+    .index("by_sender", ["senderId"])
+    .index("by_created", ["createdAt"]),
 
   playerNotifications: defineTable({
     userId: v.string(),
-    type: v.string(),
+    type: v.union(
+      v.literal("achievement_unlocked"),
+      v.literal("level_up"),
+      v.literal("quest_completed"),
+      v.literal("badge_earned")
+    ),
     title: v.string(),
     message: v.string(),
-    isRead: v.boolean(),
-    createdAt: v.number(),
     data: v.optional(v.any()),
-    metadata: v.optional(v.any()),
+    isRead: v.boolean(),
+    readAt: v.optional(v.number()),
+    createdAt: v.number(),
   })
     .index("by_user", ["userId"])
-    .index("by_user_read", ["userId", "isRead"]),
+    .index("by_user_read", ["userId", "isRead"])
+    .index("by_created", ["createdAt"]),
 });

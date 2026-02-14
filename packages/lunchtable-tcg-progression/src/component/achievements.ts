@@ -1,42 +1,88 @@
 import { v } from "convex/values";
-import { mutation, query } from "../_generated/server";
+import { mutation, query } from "./_generated/server";
 
 const achievementDefFields = {
-  key: v.string(),
+  achievementId: v.string(),
   name: v.string(),
   description: v.string(),
-  category: v.string(),
-  iconUrl: v.optional(v.string()),
-  requirement: v.any(),
-  reward: v.optional(v.any()),
-  isHidden: v.optional(v.boolean()),
-  metadata: v.optional(v.any()),
+  category: v.union(
+    v.literal("wins"),
+    v.literal("games_played"),
+    v.literal("collection"),
+    v.literal("social"),
+    v.literal("story"),
+    v.literal("ranked"),
+    v.literal("special")
+  ),
+  rarity: v.union(
+    v.literal("common"),
+    v.literal("rare"),
+    v.literal("epic"),
+    v.literal("legendary")
+  ),
+  icon: v.string(),
+  requirementType: v.string(),
+  targetValue: v.number(),
+  rewards: v.optional(
+    v.object({
+      gold: v.optional(v.number()),
+      xp: v.optional(v.number()),
+      gems: v.optional(v.number()),
+      badge: v.optional(v.string()),
+      cardDefinitionId: v.optional(v.string()),
+    })
+  ),
+  isSecret: v.boolean(),
+  isActive: v.boolean(),
+  createdAt: v.number(),
 };
 
 const achievementDefReturnValidator = v.object({
   _id: v.string(),
   _creationTime: v.number(),
-  key: v.string(),
+  achievementId: v.string(),
   name: v.string(),
   description: v.string(),
-  category: v.string(),
-  iconUrl: v.optional(v.string()),
-  requirement: v.any(),
-  reward: v.optional(v.any()),
-  isHidden: v.optional(v.boolean()),
-  metadata: v.optional(v.any()),
+  category: v.union(
+    v.literal("wins"),
+    v.literal("games_played"),
+    v.literal("collection"),
+    v.literal("social"),
+    v.literal("story"),
+    v.literal("ranked"),
+    v.literal("special")
+  ),
+  rarity: v.union(
+    v.literal("common"),
+    v.literal("rare"),
+    v.literal("epic"),
+    v.literal("legendary")
+  ),
+  icon: v.string(),
+  requirementType: v.string(),
+  targetValue: v.number(),
+  rewards: v.optional(
+    v.object({
+      gold: v.optional(v.number()),
+      xp: v.optional(v.number()),
+      gems: v.optional(v.number()),
+      badge: v.optional(v.string()),
+      cardDefinitionId: v.optional(v.string()),
+    })
+  ),
+  isSecret: v.boolean(),
+  isActive: v.boolean(),
+  createdAt: v.number(),
 });
 
 const userAchievementReturnValidator = v.object({
   _id: v.string(),
   _creationTime: v.number(),
   userId: v.string(),
-  achievementKey: v.string(),
-  progress: v.number(),
-  completed: v.boolean(),
-  completedAt: v.optional(v.number()),
-  claimed: v.optional(v.boolean()),
-  metadata: v.optional(v.any()),
+  achievementId: v.string(),
+  currentProgress: v.number(),
+  isUnlocked: v.boolean(),
+  unlockedAt: v.optional(v.number()),
 });
 
 export const defineAchievement = mutation({
@@ -50,19 +96,27 @@ export const defineAchievement = mutation({
 
 export const getDefinitions = query({
   args: {
-    category: v.optional(v.string()),
+    category: v.optional(
+      v.union(
+        v.literal("wins"),
+        v.literal("games_played"),
+        v.literal("collection"),
+        v.literal("social"),
+        v.literal("story"),
+        v.literal("ranked"),
+        v.literal("special")
+      )
+    ),
   },
   returns: v.array(achievementDefReturnValidator),
   handler: async (ctx, args) => {
-    let query = ctx.db.query("achievementDefinitions");
+    const defs = args.category
+      ? await ctx.db
+          .query("achievementDefinitions")
+          .withIndex("by_category", (q) => q.eq("category", args.category!))
+          .collect()
+      : await ctx.db.query("achievementDefinitions").collect();
 
-    if (args.category) {
-      query = query.withIndex("by_category", (q) =>
-        q.eq("category", args.category!)
-      );
-    }
-
-    const defs = await query.collect();
     return defs.map((def) => ({
       ...def,
       _id: def._id as string,
@@ -83,16 +137,15 @@ export const getDefinitionById = query({
 export const grantAchievement = mutation({
   args: {
     userId: v.string(),
-    achievementKey: v.string(),
-    progress: v.optional(v.number()),
-    metadata: v.optional(v.any()),
+    achievementId: v.string(),
+    currentProgress: v.optional(v.number()),
   },
   returns: v.string(),
   handler: async (ctx, args) => {
     const existing = await ctx.db
       .query("userAchievements")
       .withIndex("by_user_achievement", (q) =>
-        q.eq("userId", args.userId).eq("achievementKey", args.achievementKey)
+        q.eq("userId", args.userId).eq("achievementId", args.achievementId)
       )
       .unique();
 
@@ -101,14 +154,18 @@ export const grantAchievement = mutation({
       return existing._id as string;
     }
 
+    // Get the achievement definition to determine the target value
+    const def = await ctx.db
+      .query("achievementDefinitions")
+      .withIndex("by_achievement_id", (q) => q.eq("achievementId", args.achievementId))
+      .unique();
+
     const id = await ctx.db.insert("userAchievements", {
       userId: args.userId,
-      achievementKey: args.achievementKey,
-      progress: args.progress ?? 100,
-      completed: true,
-      completedAt: Date.now(),
-      claimed: false,
-      metadata: args.metadata,
+      achievementId: args.achievementId,
+      currentProgress: args.currentProgress ?? def?.targetValue ?? 100,
+      isUnlocked: true,
+      unlockedAt: Date.now(),
     });
 
     return id as string;
@@ -136,18 +193,18 @@ export const getPlayerAchievements = query({
 export const updateProgress = mutation({
   args: {
     userId: v.string(),
-    achievementKey: v.string(),
+    achievementId: v.string(),
     delta: v.number(),
   },
   returns: v.object({
-    progress: v.number(),
-    completed: v.boolean(),
+    currentProgress: v.number(),
+    isUnlocked: v.boolean(),
   }),
   handler: async (ctx, args) => {
     const existing = await ctx.db
       .query("userAchievements")
       .withIndex("by_user_achievement", (q) =>
-        q.eq("userId", args.userId).eq("achievementKey", args.achievementKey)
+        q.eq("userId", args.userId).eq("achievementId", args.achievementId)
       )
       .unique();
 
@@ -155,90 +212,88 @@ export const updateProgress = mutation({
       // Create new progress entry
       const id = await ctx.db.insert("userAchievements", {
         userId: args.userId,
-        achievementKey: args.achievementKey,
-        progress: args.delta,
-        completed: false,
-        claimed: false,
+        achievementId: args.achievementId,
+        currentProgress: args.delta,
+        isUnlocked: false,
       });
 
-      return { progress: args.delta, completed: false };
+      return { currentProgress: args.delta, isUnlocked: false };
     }
 
-    const newProgress = existing.progress + args.delta;
+    const newProgress = existing.currentProgress + args.delta;
 
-    // Get achievement definition to check threshold
+    // Get achievement definition to check target value
     const def = await ctx.db
       .query("achievementDefinitions")
-      .withIndex("by_key", (q) => q.eq("key", args.achievementKey))
+      .withIndex("by_achievement_id", (q) => q.eq("achievementId", args.achievementId))
       .unique();
 
-    let completed = existing.completed;
-    let completedAt = existing.completedAt;
+    let isUnlocked = existing.isUnlocked;
+    let unlockedAt = existing.unlockedAt;
 
-    if (def && def.requirement?.threshold) {
-      if (newProgress >= def.requirement.threshold && !existing.completed) {
-        completed = true;
-        completedAt = Date.now();
+    if (def && def.targetValue) {
+      if (newProgress >= def.targetValue && !existing.isUnlocked) {
+        isUnlocked = true;
+        unlockedAt = Date.now();
       }
     }
 
     await ctx.db.patch(existing._id, {
-      progress: newProgress,
-      completed,
-      completedAt,
+      currentProgress: newProgress,
+      isUnlocked,
+      unlockedAt,
     });
 
-    return { progress: newProgress, completed };
+    return { currentProgress: newProgress, isUnlocked };
   },
 });
 
 export const checkAndGrant = mutation({
   args: {
     userId: v.string(),
-    achievementKey: v.string(),
+    achievementId: v.string(),
     currentValue: v.number(),
   },
   returns: v.union(v.string(), v.null()),
   handler: async (ctx, args) => {
     const def = await ctx.db
       .query("achievementDefinitions")
-      .withIndex("by_key", (q) => q.eq("key", args.achievementKey))
+      .withIndex("by_achievement_id", (q) => q.eq("achievementId", args.achievementId))
       .unique();
 
     if (!def) {
-      throw new Error(`Achievement not found: ${args.achievementKey}`);
+      throw new Error(`Achievement not found: ${args.achievementId}`);
     }
 
     const existing = await ctx.db
       .query("userAchievements")
       .withIndex("by_user_achievement", (q) =>
-        q.eq("userId", args.userId).eq("achievementKey", args.achievementKey)
+        q.eq("userId", args.userId).eq("achievementId", args.achievementId)
       )
       .unique();
 
-    if (existing?.completed) {
-      // Already completed
+    if (existing?.isUnlocked) {
+      // Already unlocked
       return null;
     }
 
-    const threshold = def.requirement?.threshold ?? 1;
+    const targetValue = def.targetValue ?? 1;
 
-    if (args.currentValue >= threshold) {
+    if (args.currentValue >= targetValue) {
       if (existing) {
         await ctx.db.patch(existing._id, {
-          progress: args.currentValue,
-          completed: true,
-          completedAt: Date.now(),
+          currentProgress: args.currentValue,
+          isUnlocked: true,
+          unlockedAt: Date.now(),
         });
         return existing._id as string;
       } else {
         const id = await ctx.db.insert("userAchievements", {
           userId: args.userId,
-          achievementKey: args.achievementKey,
-          progress: args.currentValue,
-          completed: true,
-          completedAt: Date.now(),
-          claimed: false,
+          achievementId: args.achievementId,
+          currentProgress: args.currentValue,
+          isUnlocked: true,
+          unlockedAt: Date.now(),
         });
         return id as string;
       }

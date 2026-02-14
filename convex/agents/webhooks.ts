@@ -80,6 +80,9 @@ function isPrivateOrLocalHost(hostname: string): boolean {
       return true;
     }
     const [a, b] = octets;
+    if (a === undefined || b === undefined) {
+      return true;
+    }
     return (
       a === 10 ||
       a === 127 ||

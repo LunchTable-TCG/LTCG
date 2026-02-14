@@ -1,129 +1,137 @@
 import { v } from "convex/values";
-import { mutation, query } from "../_generated/server";
+import { query } from "./_generated/server";
 
-const priceHistoryReturnValidator = v.object({
+// TODO: priceHistory and transactions tables were removed from schema.
+// These analytics functions need to be rewritten to work with marketplaceListings only.
+
+const listingSaleReturnValidator = v.object({
   _id: v.string(),
   _creationTime: v.number(),
-  itemId: v.string(),
-  price: v.number(),
-  currency: v.string(),
-  timestamp: v.number(),
-  type: v.string(),
-  metadata: v.optional(v.any()),
-});
-
-const transactionReturnValidator = v.object({
-  _id: v.string(),
-  _creationTime: v.number(),
-  buyerId: v.string(),
+  cardDefinitionId: v.string(),
+  soldFor: v.number(),
+  soldAt: v.number(),
+  currencyType: v.union(v.literal("gold"), v.literal("token")),
+  listingType: v.union(v.literal("fixed"), v.literal("auction")),
   sellerId: v.string(),
-  listingId: v.optional(v.string()),
-  itemId: v.string(),
-  itemType: v.string(),
-  amount: v.number(),
-  currency: v.string(),
-  type: v.string(),
-  timestamp: v.number(),
-  metadata: v.optional(v.any()),
+  soldTo: v.string(),
 });
 
-export const recordPrice = mutation({
-  args: {
-    itemId: v.string(),
-    price: v.number(),
-    currency: v.string(),
-    type: v.string(),
-    metadata: v.optional(v.any()),
-  },
-  returns: v.string(),
-  handler: async (ctx, args) => {
-    const priceId = await ctx.db.insert("priceHistory", {
-      ...args,
-      timestamp: Date.now(),
-    });
-    return priceId as string;
-  },
-});
-
+// Get price history from sold listings
 export const getPriceHistory = query({
   args: {
-    itemId: v.string(),
+    cardDefinitionId: v.id("cardDefinitions"),
     limit: v.optional(v.number()),
   },
-  returns: v.array(priceHistoryReturnValidator),
+  returns: v.array(listingSaleReturnValidator),
   handler: async (ctx, args) => {
-    const opts = { itemId: args.itemId };
-    let query = ctx.db
-      .query("priceHistory")
-      .withIndex("by_item", (q) => q.eq("itemId", opts.itemId))
+    const query = ctx.db
+      .query("marketplaceListings")
+      .withIndex("by_card", (q) => q.eq("cardDefinitionId", args.cardDefinitionId))
+      .filter((q) => q.eq(q.field("status"), "sold"))
       .order("desc");
 
-    if (args.limit) {
-      query = query.take(args.limit);
-    }
+    const sales = args.limit
+      ? await query.take(args.limit)
+      : await query.collect();
 
-    const prices = await query.collect();
-    return prices.map((price) => ({
-      ...price,
-      _id: price._id as string,
-    }));
+    return sales
+      .filter((s) => s.soldFor !== undefined && s.soldAt !== undefined && s.soldTo !== undefined)
+      .map((sale) => ({
+        _id: sale._id as string,
+        _creationTime: sale._creationTime,
+        cardDefinitionId: sale.cardDefinitionId as string,
+        soldFor: sale.soldFor!,
+        soldAt: sale.soldAt!,
+        currencyType: sale.currencyType || "gold",
+        listingType: sale.listingType,
+        sellerId: sale.sellerId as string,
+        soldTo: sale.soldTo! as string,
+      }));
   },
 });
 
+// Get transaction history for a user (from sold listings)
 export const getTransactionHistory = query({
   args: {
-    userId: v.string(),
+    userId: v.id("users"),
     role: v.optional(v.union(v.literal("buyer"), v.literal("seller"))),
     limit: v.optional(v.number()),
   },
-  returns: v.array(transactionReturnValidator),
+  returns: v.array(listingSaleReturnValidator),
   handler: async (ctx, args) => {
-    let transactions: any[] = [];
+    let sales: any[] = [];
 
     if (!args.role || args.role === "buyer") {
-      const buyerTransactions = await ctx.db
-        .query("transactions")
-        .withIndex("by_buyer", (q) => q.eq("buyerId", args.userId))
+      const buyerSales = await ctx.db
+        .query("marketplaceListings")
+        .filter((q) =>
+          q.and(
+            q.eq(q.field("status"), "sold"),
+            q.eq(q.field("soldTo"), args.userId)
+          )
+        )
         .collect();
-      transactions.push(...buyerTransactions);
+      sales.push(...buyerSales);
     }
 
     if (!args.role || args.role === "seller") {
-      const sellerTransactions = await ctx.db
-        .query("transactions")
+      const sellerSales = await ctx.db
+        .query("marketplaceListings")
         .withIndex("by_seller", (q) => q.eq("sellerId", args.userId))
+        .filter((q) => q.eq(q.field("status"), "sold"))
         .collect();
-      transactions.push(...sellerTransactions);
+      sales.push(...sellerSales);
     }
 
-    // Sort by timestamp descending
-    transactions.sort((a, b) => b.timestamp - a.timestamp);
+    // Sort by soldAt descending
+    sales.sort((a, b) => (b.soldAt || 0) - (a.soldAt || 0));
 
     // Apply limit if specified
     if (args.limit) {
-      transactions = transactions.slice(0, args.limit);
+      sales = sales.slice(0, args.limit);
     }
 
-    return transactions.map((tx) => ({
-      ...tx,
-      _id: tx._id as string,
-    }));
+    return sales
+      .filter((s) => s.soldFor !== undefined && s.soldAt !== undefined && s.soldTo !== undefined)
+      .map((sale) => ({
+        _id: sale._id as string,
+        _creationTime: sale._creationTime,
+        cardDefinitionId: sale.cardDefinitionId as string,
+        soldFor: sale.soldFor!,
+        soldAt: sale.soldAt!,
+        currencyType: sale.currencyType || "gold",
+        listingType: sale.listingType,
+        sellerId: sale.sellerId as string,
+        soldTo: sale.soldTo! as string,
+      }));
   },
 });
 
+// Get recent sales across all listings
 export const getRecentTransactions = query({
   args: { limit: v.optional(v.number()) },
-  returns: v.array(transactionReturnValidator),
+  returns: v.array(listingSaleReturnValidator),
   handler: async (ctx, args) => {
     const limit = args.limit || 50;
-    const transactions = await ctx.db
-      .query("transactions")
+    const sales = await ctx.db
+      .query("marketplaceListings")
+      .filter((q) => q.eq(q.field("status"), "sold"))
       .order("desc")
-      .take(limit);
+      .take(limit * 2); // Get more to ensure we have enough sold items
 
-    return transactions.map((tx) => ({
-      ...tx,
-      _id: tx._id as string,
-    }));
+    return sales
+      .filter((s) => s.soldFor !== undefined && s.soldAt !== undefined && s.soldTo !== undefined)
+      .slice(0, limit)
+      .map((sale) => ({
+        _id: sale._id as string,
+        _creationTime: sale._creationTime,
+        cardDefinitionId: sale.cardDefinitionId as string,
+        soldFor: sale.soldFor!,
+        soldAt: sale.soldAt!,
+        currencyType: sale.currencyType || "gold",
+        listingType: sale.listingType,
+        sellerId: sale.sellerId as string,
+        soldTo: sale.soldTo! as string,
+      }));
   },
 });

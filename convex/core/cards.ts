@@ -8,6 +8,7 @@ import { requireAuthMutation, requireAuthQuery } from "../lib/convexAuth";
 import { ErrorCode, createError } from "../lib/errorCodes";
 import { archetypeToElement } from "../lib/helpers";
 import { cardWithOwnershipValidator } from "../lib/returnValidators";
+import { GAME_CONFIG } from "@ltcg/core";
 
 // ============================================================================
 // QUERIES
@@ -25,62 +26,15 @@ export const getAllCardDefinitions = query({
       _id: v.id("cardDefinitions"),
       _creationTime: v.number(),
       name: v.string(),
-      rarity: literals("common", "uncommon", "rare", "epic", "legendary"),
-      archetype: literals(
-        "infernal_dragons",
-        "abyssal_depths",
-        "iron_legion",
-        "necro_empire",
-        "abyssal_horrors",
-        "nature_spirits",
-        "storm_elementals",
-        "shadow_assassins",
-        "celestial_guardians",
-        "undead_legion",
-        "divine_knights",
-        "arcane_mages",
-        "mechanical_constructs",
-        "neutral",
-        "fire",
-        "water",
-        "earth",
-        "wind"
-      ),
-      cardType: literals("creature", "spell", "trap", "equipment"),
-      attack: v.optional(v.number()),
-      defense: v.optional(v.number()),
+      rarity: literals(...GAME_CONFIG.RARITIES),
+
+
       cost: v.number(),
       level: v.optional(v.number()),
-      attribute: v.optional(
-        literals("fire", "water", "earth", "wind", "light", "dark", "divine", "neutral")
-      ),
-      monsterType: v.optional(
-        v.union(
-          v.literal("dragon"),
-          v.literal("spellcaster"),
-          v.literal("warrior"),
-          v.literal("beast"),
-          v.literal("fiend"),
-          v.literal("zombie"),
-          v.literal("machine"),
-          v.literal("aqua"),
-          v.literal("pyro"),
-          v.literal("divine_beast")
-        )
-      ),
-      spellType: v.optional(
-        v.union(
-          v.literal("normal"),
-          v.literal("quick_play"),
-          v.literal("continuous"),
-          v.literal("field"),
-          v.literal("equip"),
-          v.literal("ritual")
-        )
-      ),
-      trapType: v.optional(
-        v.union(v.literal("normal"), v.literal("continuous"), v.literal("counter"))
-      ),
+      attribute: v.optional(literals(...GAME_CONFIG.ATTRIBUTES)),
+      monsterType: v.optional(literals(...GAME_CONFIG.MONSTER_TYPES)),
+      spellType: v.optional(literals(...GAME_CONFIG.SPELL_TYPES)),
+      trapType: v.optional(literals(...GAME_CONFIG.TRAP_TYPES)),
       ability: v.optional(jsonAbilityValidator),
       flavorText: v.optional(v.string()),
       imageUrl: v.optional(v.string()),
@@ -380,13 +334,29 @@ export const giveStarterCollection = mutation({
       .collect();
 
     // Give the player copies of each card based on rarity
-    const rarityQuantities: Record<string, number> = {
+    // Give the player copies of each card based on rarity
+    const defaultRarityQuantities: Record<string, number> = {
       common: 4,
       uncommon: 3,
       rare: 2,
       epic: 1,
       legendary: 1,
     };
+
+    const rarityQuantities: Record<string, number> = (() => {
+      const envConfig = process.env["STARTER_COLLECTION_CONFIG"];
+      if (envConfig) {
+        try {
+          const config = JSON.parse(envConfig);
+          if (config.rarityQuantities) {
+            return { ...defaultRarityQuantities, ...config.rarityQuantities };
+          }
+        } catch (e) {
+          console.error("Failed to parse STARTER_COLLECTION_CONFIG", e);
+        }
+      }
+      return defaultRarityQuantities;
+    })();
 
     for (const cardDef of allCards) {
       const quantity = rarityQuantities[cardDef.rarity] || 1;
@@ -414,32 +384,9 @@ export const giveStarterCollection = mutation({
 export const createCardDefinition = internalMutation({
   args: {
     name: v.string(),
-    rarity: v.union(
-      v.literal("common"),
-      v.literal("uncommon"),
-      v.literal("rare"),
-      v.literal("epic"),
-      v.literal("legendary")
-    ),
-    archetype: v.union(
-      v.literal("infernal_dragons"),
-      v.literal("abyssal_horrors"),
-      v.literal("nature_spirits"),
-      v.literal("storm_elementals"),
-      v.literal("shadow_assassins"),
-      v.literal("celestial_guardians"),
-      v.literal("undead_legion"),
-      v.literal("divine_knights"),
-      v.literal("arcane_mages"),
-      v.literal("mechanical_constructs"),
-      v.literal("neutral")
-    ),
-    cardType: v.union(
-      v.literal("creature"),
-      v.literal("spell"),
-      v.literal("trap"),
-      v.literal("equipment")
-    ),
+    rarity: literals(...GAME_CONFIG.RARITIES),
+    archetype: literals(...GAME_CONFIG.ARCHETYPES),
+    cardType: literals(...GAME_CONFIG.CARD_TYPES),
     attack: v.optional(v.number()),
     defense: v.optional(v.number()),
     cost: v.number(),

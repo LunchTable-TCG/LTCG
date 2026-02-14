@@ -182,7 +182,7 @@ export const getGemPackages = query({
     }
 
     // Fallback to constants
-    return GEM_PACKAGES.map((pkg, idx) => ({
+    return GEM_PACKAGES.map((pkg: { id: string; name: string; gems: number; usdCents: number; bonus: number }, idx: number) => ({
       packageId: pkg.id,
       name: pkg.name,
       gems: pkg.gems,
@@ -289,7 +289,7 @@ export const createPendingPurchase = mutation({
     const { userId } = await requireAuthMutation(ctx);
 
     // Validate package exists
-    const pkg = GEM_PACKAGES.find((p) => p.id === args.packageId);
+    const pkg = GEM_PACKAGES.find((p: typeof GEM_PACKAGES[number]) => p.id === args.packageId);
     if (!pkg) {
       throw createError(ErrorCode.ECONOMY_INVALID_PRODUCT, {
         reason: `Unknown gem package: ${args.packageId}`,

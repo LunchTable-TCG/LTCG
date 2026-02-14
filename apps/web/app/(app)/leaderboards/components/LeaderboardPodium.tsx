@@ -2,7 +2,7 @@
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
-import { Bot, Crown, Medal, Trophy } from "lucide-react";
+import { Bot, Crown, Medal, type Trophy } from "lucide-react";
 
 interface RankItem {
   userId: string;

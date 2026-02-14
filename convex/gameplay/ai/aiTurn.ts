@@ -1788,7 +1788,7 @@ export const forceEndAITurn = internalMutation({
 
     const shouldDraw = !shouldSkipDraw && sourceDeck.length > 0;
     const newDeck = shouldDraw ? sourceDeck.slice(1) : [...sourceDeck];
-    const newHand = shouldDraw ? [...sourceHand, sourceDeck[0]] : [...sourceHand];
+    const newHand = shouldDraw ? [...sourceHand, sourceDeck[0]].filter((id): id is NonNullable<typeof id> => id !== undefined) : [...sourceHand];
 
     const nextIsHost = nextPlayerId === gameState.hostId;
 

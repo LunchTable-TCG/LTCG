@@ -1,93 +1,81 @@
 import { v } from "convex/values";
-import { mutation, query } from "../_generated/server";
+import { mutation, query } from "./_generated/server";
 
 const matchHistoryValidator = v.object({
   _id: v.string(),
   _creationTime: v.number(),
-  playerId: v.string(),
-  opponentId: v.string(),
-  opponentName: v.optional(v.string()),
-  result: v.string(),
-  ratingChange: v.optional(v.number()),
-  gameMode: v.string(),
-  gameId: v.optional(v.string()),
-  timestamp: v.number(),
-  metadata: v.optional(v.any()),
+  winnerId: v.string(),
+  loserId: v.string(),
+  gameType: v.union(v.literal("ranked"), v.literal("casual"), v.literal("story")),
+  winnerRatingBefore: v.number(),
+  winnerRatingAfter: v.number(),
+  loserRatingBefore: v.number(),
+  loserRatingAfter: v.number(),
+  xpAwarded: v.optional(v.number()),
+  completedAt: v.number(),
 });
 
 export const recordMatch = mutation({
   args: {
     winnerId: v.string(),
     loserId: v.string(),
-    loserName: v.optional(v.string()),
-    winnerName: v.optional(v.string()),
-    winnerRatingChange: v.optional(v.number()),
-    loserRatingChange: v.optional(v.number()),
-    gameMode: v.string(),
-    gameId: v.optional(v.string()),
-    metadata: v.optional(v.any()),
+    gameType: v.union(v.literal("ranked"), v.literal("casual"), v.literal("story")),
+    winnerRatingBefore: v.number(),
+    winnerRatingAfter: v.number(),
+    loserRatingBefore: v.number(),
+    loserRatingAfter: v.number(),
+    xpAwarded: v.optional(v.number()),
   },
-  returns: v.object({
-    winnerMatchId: v.string(),
-    loserMatchId: v.string(),
-  }),
+  returns: v.string(),
   handler: async (ctx, args) => {
-    const timestamp = Date.now();
-
-    const winnerMatchId = await ctx.db.insert("matchHistory", {
-      playerId: args.winnerId,
-      opponentId: args.loserId,
-      opponentName: args.loserName,
-      result: "win",
-      ratingChange: args.winnerRatingChange,
-      gameMode: args.gameMode,
-      gameId: args.gameId,
-      timestamp,
-      metadata: args.metadata,
+    const matchId = await ctx.db.insert("matchHistory", {
+      winnerId: args.winnerId,
+      loserId: args.loserId,
+      gameType: args.gameType,
+      winnerRatingBefore: args.winnerRatingBefore,
+      winnerRatingAfter: args.winnerRatingAfter,
+      loserRatingBefore: args.loserRatingBefore,
+      loserRatingAfter: args.loserRatingAfter,
+      xpAwarded: args.xpAwarded,
+      completedAt: Date.now(),
     });
 
-    const loserMatchId = await ctx.db.insert("matchHistory", {
-      playerId: args.loserId,
-      opponentId: args.winnerId,
-      opponentName: args.winnerName,
-      result: "loss",
-      ratingChange: args.loserRatingChange,
-      gameMode: args.gameMode,
-      gameId: args.gameId,
-      timestamp,
-      metadata: args.metadata,
-    });
-
-    return {
-      winnerMatchId: winnerMatchId as string,
-      loserMatchId: loserMatchId as string,
-    };
+    return matchId as string;
   },
 });
 
 export const getPlayerMatches = query({
   args: {
     playerId: v.string(),
-    gameMode: v.optional(v.string()),
+    gameType: v.optional(v.union(v.literal("ranked"), v.literal("casual"), v.literal("story"))),
     limit: v.optional(v.number()),
   },
   returns: v.array(matchHistoryValidator),
   handler: async (ctx, args) => {
     const limit = args.limit ?? 50;
 
-    let matchesQuery = ctx.db
+    // Get matches where player is either winner or loser
+    const winnerMatches = await ctx.db
       .query("matchHistory")
-      .withIndex("by_player", (q) => q.eq("playerId", args.playerId));
+      .withIndex("by_winner", (q) => q.eq("winnerId", args.playerId))
+      .collect();
 
-    if (args.gameMode) {
-      matchesQuery = ctx.db
-        .query("matchHistory")
-        .withIndex("by_player_mode", (q) =>
-          q.eq("playerId", args.playerId).eq("gameMode", args.gameMode)
-        );
+    const loserMatches = await ctx.db
+      .query("matchHistory")
+      .withIndex("by_loser", (q) => q.eq("loserId", args.playerId))
+      .collect();
+
+    let allMatches = [...winnerMatches, ...loserMatches];
+
+    // Filter by game type if specified
+    if (args.gameType) {
+      allMatches = allMatches.filter((m) => m.gameType === args.gameType);
     }
 
-    const matches = await matchesQuery.order("desc").take(limit);
+    // Sort by completedAt descending and limit
+    const matches = allMatches
+      .sort((a, b) => b.completedAt - a.completedAt)
+      .slice(0, limit);
 
     return matches.map((match) => ({
       ...match,
@@ -98,34 +86,34 @@ export const getPlayerMatches = query({
 
 export const getRecentMatches = query({
   args: {
-    gameMode: v.optional(v.string()),
+    gameType: v.optional(v.union(v.literal("ranked"), v.literal("casual"), v.literal("story"))),
     limit: v.optional(v.number()),
   },
   returns: v.array(matchHistoryValidator),
   handler: async (ctx, args) => {
     const limit = args.limit ?? 50;
 
-    const allMatches = await ctx.db
+    if (args.gameType) {
+      const gameType = args.gameType;
+      const matches = await ctx.db
+        .query("matchHistory")
+        .withIndex("by_game_type", (q) => q.eq("gameType", gameType))
+        .order("desc")
+        .take(limit);
+
+      return matches.map((match) => ({
+        ...match,
+        _id: match._id as string,
+      }));
+    }
+
+    const matches = await ctx.db
       .query("matchHistory")
+      .withIndex("by_completed")
       .order("desc")
-      .collect();
+      .take(limit);
 
-    let matches = allMatches;
-
-    if (args.gameMode) {
-      matches = matches.filter((m) => m.gameMode === args.gameMode);
-    }
-
-    const uniqueMatches = new Map<string, typeof allMatches[0]>();
-    for (const match of matches) {
-      const gameKey = match.gameId || `${match.playerId}-${match.opponentId}-${match.timestamp}`;
-      if (!uniqueMatches.has(gameKey)) {
-        uniqueMatches.set(gameKey, match);
-      }
-      if (uniqueMatches.size >= limit) break;
-    }
-
-    return Array.from(uniqueMatches.values()).map((match) => ({
+    return matches.map((match) => ({
       ...match,
       _id: match._id as string,
     }));
@@ -136,34 +124,40 @@ export const getHeadToHead = query({
   args: {
     playerId: v.string(),
     opponentId: v.string(),
-    gameMode: v.optional(v.string()),
+    gameType: v.optional(v.union(v.literal("ranked"), v.literal("casual"), v.literal("story"))),
   },
   returns: v.object({
     matches: v.array(matchHistoryValidator),
     wins: v.number(),
     losses: v.number(),
-    draws: v.number(),
   }),
   handler: async (ctx, args) => {
-    let matchesQuery = ctx.db
+    // Get matches where playerId won against opponentId
+    const wonMatches = await ctx.db
       .query("matchHistory")
-      .withIndex("by_player", (q) => q.eq("playerId", args.playerId))
-      .filter((q) => q.eq(q.field("opponentId"), args.opponentId));
+      .withIndex("by_winner", (q) => q.eq("winnerId", args.playerId))
+      .filter((q) => q.eq(q.field("loserId"), args.opponentId))
+      .collect();
 
-    if (args.gameMode) {
-      matchesQuery = ctx.db
-        .query("matchHistory")
-        .withIndex("by_player_mode", (q) =>
-          q.eq("playerId", args.playerId).eq("gameMode", args.gameMode)
-        )
-        .filter((q) => q.eq(q.field("opponentId"), args.opponentId));
+    // Get matches where playerId lost to opponentId
+    const lostMatches = await ctx.db
+      .query("matchHistory")
+      .withIndex("by_loser", (q) => q.eq("loserId", args.playerId))
+      .filter((q) => q.eq(q.field("winnerId"), args.opponentId))
+      .collect();
+
+    let allMatches = [...wonMatches, ...lostMatches];
+
+    // Filter by game type if specified
+    if (args.gameType) {
+      allMatches = allMatches.filter((m) => m.gameType === args.gameType);
     }
 
-    const matches = await matchesQuery.order("desc").collect();
+    // Sort by completedAt descending
+    const matches = allMatches.sort((a, b) => b.completedAt - a.completedAt);
 
-    const wins = matches.filter((m) => m.result === "win").length;
-    const losses = matches.filter((m) => m.result === "loss").length;
-    const draws = matches.filter((m) => m.result === "draw").length;
+    const wins = wonMatches.length;
+    const losses = lostMatches.length;
 
     return {
       matches: matches.map((match) => ({
@@ -172,7 +166,6 @@ export const getHeadToHead = query({
       })),
       wins,
       losses,
-      draws,
     };
   },
 });

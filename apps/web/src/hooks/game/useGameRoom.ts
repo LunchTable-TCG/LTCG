@@ -36,7 +36,8 @@ export function useGameRoom(lobbyId: Id<"gameLobbies">) {
   const isLoading = !currentUser || lobby === undefined || gameState === undefined;
 
   const isPlayer =
-    lobby && currentUser &&
+    lobby &&
+    currentUser &&
     (lobby.hostId === currentUser._id || lobby.opponentId === currentUser._id);
 
   return {

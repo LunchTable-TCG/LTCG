@@ -58,15 +58,24 @@ export class AchievementsClient {
   async defineAchievement(
     ctx: RunMutationCtx,
     args: {
-      key: string;
+      achievementId: string;
       name: string;
       description: string;
-      category: string;
-      iconUrl?: string;
-      requirement: any;
-      reward?: any;
-      isHidden?: boolean;
-      metadata?: any;
+      category: "wins" | "games_played" | "collection" | "social" | "story" | "ranked" | "special";
+      rarity: "common" | "rare" | "epic" | "legendary";
+      icon: string;
+      requirementType: string;
+      targetValue: number;
+      rewards?: {
+        gold?: number;
+        xp?: number;
+        gems?: number;
+        badge?: string;
+        cardDefinitionId?: string;
+      };
+      isSecret: boolean;
+      isActive: boolean;
+      createdAt: number;
     }
   ) {
     return await ctx.runMutation(this.component.achievements.defineAchievement, args);
@@ -75,7 +84,7 @@ export class AchievementsClient {
   async getDefinitions(
     ctx: RunQueryCtx,
     args?: {
-      category?: string;
+      category?: "wins" | "games_played" | "collection" | "social" | "story" | "ranked" | "special";
     }
   ) {
     return await ctx.runQuery(this.component.achievements.getDefinitions, args ?? {});
@@ -91,9 +100,8 @@ export class AchievementsClient {
     ctx: RunMutationCtx,
     args: {
       userId: string;
-      achievementKey: string;
-      progress?: number;
-      metadata?: any;
+      achievementId: string;
+      currentProgress?: number;
     }
   ) {
     return await ctx.runMutation(this.component.achievements.grantAchievement, args);
@@ -107,7 +115,7 @@ export class AchievementsClient {
     ctx: RunMutationCtx,
     args: {
       userId: string;
-      achievementKey: string;
+      achievementId: string;
       delta: number;
     }
   ) {
@@ -118,7 +126,7 @@ export class AchievementsClient {
     ctx: RunMutationCtx,
     args: {
       userId: string;
-      achievementKey: string;
+      achievementId: string;
       currentValue: number;
     }
   ) {
@@ -135,14 +143,24 @@ export class QuestsClient {
   async defineQuest(
     ctx: RunMutationCtx,
     args: {
-      key: string;
+      questId: string;
       name: string;
       description: string;
-      type: string;
-      requirement: any;
-      reward: any;
+      questType: "daily" | "weekly" | "achievement";
+      requirementType: string;
+      targetValue: number;
+      rewards: {
+        gold: number;
+        xp: number;
+        gems?: number;
+      };
+      filters?: {
+        gameMode?: "ranked" | "casual" | "story";
+        archetype?: string;
+        cardType?: string;
+      };
       isActive: boolean;
-      metadata?: any;
+      createdAt: number;
     }
   ) {
     return await ctx.runMutation(this.component.quests.defineQuest, args);
@@ -151,7 +169,7 @@ export class QuestsClient {
   async getActiveQuests(
     ctx: RunQueryCtx,
     args?: {
-      type?: string;
+      questType?: "daily" | "weekly" | "achievement";
     }
   ) {
     return await ctx.runQuery(this.component.quests.getActiveQuests, args ?? {});
@@ -161,7 +179,7 @@ export class QuestsClient {
     ctx: RunQueryCtx,
     args: {
       userId: string;
-      includeCompleted?: boolean;
+      includeClaimed?: boolean;
     }
   ) {
     return await ctx.runQuery(this.component.quests.getPlayerQuests, args);
@@ -171,9 +189,8 @@ export class QuestsClient {
     ctx: RunMutationCtx,
     args: {
       userId: string;
-      questKey: string;
+      questId: string;
       expiresAt?: number;
-      metadata?: any;
     }
   ) {
     return await ctx.runMutation(this.component.quests.startQuest, args);
@@ -183,28 +200,28 @@ export class QuestsClient {
     ctx: RunMutationCtx,
     args: {
       userId: string;
-      questKey: string;
+      questId: string;
       delta: number;
     }
   ) {
     return await ctx.runMutation(this.component.quests.updateQuestProgress, args);
   }
 
-  async completeQuest(
+  async claimQuest(
     ctx: RunMutationCtx,
     args: {
       userId: string;
-      questKey: string;
+      questId: string;
     }
   ) {
-    return await ctx.runMutation(this.component.quests.completeQuest, args);
+    return await ctx.runMutation(this.component.quests.claimQuest, args);
   }
 
   async abandonQuest(
     ctx: RunMutationCtx,
     args: {
       userId: string;
-      questKey: string;
+      questId: string;
     }
   ) {
     return await ctx.runMutation(this.component.quests.abandonQuest, args);
@@ -220,12 +237,14 @@ export class BattlePassClient {
   async createSeason(
     ctx: RunMutationCtx,
     args: {
+      seasonId: string;
       name: string;
+      description?: string;
+      totalTiers: number;
+      xpPerTier: number;
       startDate: number;
       endDate: number;
-      totalTiers: number;
-      premiumPrice?: number;
-      metadata?: any;
+      createdBy: string;
     }
   ) {
     return await ctx.runMutation(this.component.battlepass.createSeason, args);
@@ -238,18 +257,31 @@ export class BattlePassClient {
   async defineTier(
     ctx: RunMutationCtx,
     args: {
-      seasonId: string;
+      battlePassId: string;
       tier: number;
-      xpRequired: number;
-      freeReward?: any;
-      premiumReward?: any;
-      metadata?: any;
+      freeReward?: {
+        type: "gold" | "gems" | "xp" | "card" | "pack" | "title" | "avatar";
+        amount?: number;
+        cardId?: string;
+        packProductId?: string;
+        titleName?: string;
+        avatarUrl?: string;
+      };
+      premiumReward?: {
+        type: "gold" | "gems" | "xp" | "card" | "pack" | "title" | "avatar";
+        amount?: number;
+        cardId?: string;
+        packProductId?: string;
+        titleName?: string;
+        avatarUrl?: string;
+      };
+      isMilestone: boolean;
     }
   ) {
     return await ctx.runMutation(this.component.battlepass.defineTier, args);
   }
 
-  async getTiers(ctx: RunQueryCtx, args: { seasonId: string }) {
+  async getTiers(ctx: RunQueryCtx, args: { battlePassId: string }) {
     return await ctx.runQuery(this.component.battlepass.getTiers, args);
   }
 
@@ -257,7 +289,7 @@ export class BattlePassClient {
     ctx: RunQueryCtx,
     args: {
       userId: string;
-      seasonId?: string;
+      battlePassId?: string;
     }
   ) {
     return await ctx.runQuery(this.component.battlepass.getPlayerProgress, args);
@@ -267,7 +299,7 @@ export class BattlePassClient {
     ctx: RunMutationCtx,
     args: {
       userId: string;
-      seasonId?: string;
+      battlePassId?: string;
       amount: number;
     }
   ) {
@@ -278,8 +310,9 @@ export class BattlePassClient {
     ctx: RunMutationCtx,
     args: {
       userId: string;
-      seasonId?: string;
+      battlePassId?: string;
       tier: number;
+      isPremium: boolean;
     }
   ) {
     return await ctx.runMutation(this.component.battlepass.claimTier, args);
@@ -289,7 +322,7 @@ export class BattlePassClient {
     ctx: RunMutationCtx,
     args: {
       userId: string;
-      seasonId?: string;
+      battlePassId?: string;
     }
   ) {
     return await ctx.runMutation(this.component.battlepass.upgradeToPremium, args);
@@ -307,7 +340,6 @@ export class XPClient {
     args: {
       userId: string;
       amount: number;
-      metadata?: any;
     }
   ) {
     return await ctx.runMutation(this.component.xp.addXP, args);

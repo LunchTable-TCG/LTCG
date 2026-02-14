@@ -15,8 +15,8 @@ interface BuyNowResult {
 }
 
 interface UseMarketplaceReturn {
-  listings: ReturnType<typeof useQuery<typeof api.marketplace.getMarketplaceListings>> | undefined;
-  myListings: ReturnType<typeof useQuery<typeof api.marketplace.getUserListings>> | undefined;
+  listings: ReturnType<typeof useQuery<typeof api.economy.marketplace.getMarketplaceListings>> | undefined;
+  myListings: ReturnType<typeof useQuery<typeof api.economy.marketplace.getUserListings>> | undefined;
   isLoading: boolean;
   createListing: (params: {
     cardDefinitionId: Id<"cardDefinitions">;
@@ -89,16 +89,16 @@ export function useMarketplace(): UseMarketplaceReturn {
   const { isAuthenticated } = useAuth();
 
   // Queries
-  const listings = useQuery(api.marketplace.getMarketplaceListings, {});
+  const listings = useQuery(api.economy.marketplace.getMarketplaceListings, {});
 
-  const myListings = useQuery(api.marketplace.getUserListings, isAuthenticated ? {} : "skip");
+  const myListings = useQuery(api.economy.marketplace.getUserListings, isAuthenticated ? {} : "skip");
 
   // Mutations
-  const createListingMutation = useMutation(api.marketplace.createListing);
-  const cancelListingMutation = useMutation(api.marketplace.cancelListing);
-  const buyNowMutation = useMutation(api.marketplace.buyNow);
-  const placeBidMutation = useMutation(api.marketplace.placeBid);
-  const claimAuctionMutation = useMutation(api.marketplace.claimAuctionWin);
+  const createListingMutation = useMutation(api.economy.marketplace.createListing);
+  const cancelListingMutation = useMutation(api.economy.marketplace.cancelListing);
+  const buyNowMutation = useMutation(api.economy.marketplace.buyNow);
+  const placeBidMutation = useMutation(api.economy.marketplace.placeBid);
+  const claimAuctionMutation = useMutation(api.economy.marketplace.claimAuctionWin);
 
   // Actions
   const createListing = async (params: {

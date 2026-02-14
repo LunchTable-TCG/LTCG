@@ -7,26 +7,29 @@ const guildSearchResultValidator = v.object({
   name: v.string(),
   description: v.optional(v.string()),
   ownerId: v.string(),
-  tag: v.optional(v.string()),
-  imageUrl: v.optional(v.string()),
-  bannerUrl: v.optional(v.string()),
-  isPublic: v.boolean(),
-  maxMembers: v.number(),
+  profileImageId: v.optional(v.string()),
+  bannerImageId: v.optional(v.string()),
+  visibility: v.union(v.literal("public"), v.literal("private")),
   memberCount: v.number(),
-  level: v.optional(v.number()),
-  xp: v.optional(v.number()),
-  metadata: v.optional(v.any()),
+  createdAt: v.number(),
+  updatedAt: v.number(),
 });
 
 const joinRequestReturnValidator = v.object({
   _id: v.string(),
   _creationTime: v.number(),
   guildId: v.string(),
-  requesterId: v.string(),
-  status: v.string(),
+  userId: v.string(),
+  status: v.union(
+    v.literal("pending"),
+    v.literal("approved"),
+    v.literal("rejected"),
+    v.literal("cancelled")
+  ),
   message: v.optional(v.string()),
   createdAt: v.number(),
-  metadata: v.optional(v.any()),
+  respondedAt: v.optional(v.number()),
+  respondedBy: v.optional(v.string()),
 });
 
 export const searchGuilds = query({
@@ -42,7 +45,7 @@ export const searchGuilds = query({
     // Get all public guilds
     const allPublicGuilds = await ctx.db
       .query("guilds")
-      .withIndex("by_public", (q) => q.eq("isPublic", true))
+      .withIndex("by_visibility", (q) => q.eq("visibility", "public"))
       .collect();
 
     // Filter by name (partial match)
@@ -64,7 +67,7 @@ export const searchGuilds = query({
 export const submitJoinRequest = mutation({
   args: {
     guildId: v.id("guilds"),
-    requesterId: v.string(),
+    userId: v.string(),
     message: v.optional(v.string()),
   },
   returns: v.string(),
@@ -77,7 +80,7 @@ export const submitJoinRequest = mutation({
     // Check if user is already in a guild
     const existingMembership = await ctx.db
       .query("guildMembers")
-      .withIndex("by_user", (q) => q.eq("userId", args.requesterId))
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
       .first();
 
     if (existingMembership) {
@@ -87,20 +90,18 @@ export const submitJoinRequest = mutation({
     // Check if there's already a pending request
     const existingRequest = await ctx.db
       .query("guildJoinRequests")
-      .withIndex("by_guild", (q) => q.eq("guildId", args.guildId))
-      .collect();
+      .withIndex("by_guild_user", (q) =>
+        q.eq("guildId", args.guildId).eq("userId", args.userId)
+      )
+      .first();
 
-    const pendingRequest = existingRequest.find(
-      (req) => req.requesterId === args.requesterId && req.status === "pending"
-    );
-
-    if (pendingRequest) {
+    if (existingRequest && existingRequest.status === "pending") {
       throw new Error("You already have a pending join request for this guild");
     }
 
     const requestId = await ctx.db.insert("guildJoinRequests", {
       guildId: args.guildId,
-      requesterId: args.requesterId,
+      userId: args.userId,
       status: "pending",
       message: args.message,
       createdAt: Date.now(),
@@ -118,16 +119,15 @@ export const getJoinRequests = query({
   handler: async (ctx, args) => {
     const requests = await ctx.db
       .query("guildJoinRequests")
-      .withIndex("by_guild", (q) => q.eq("guildId", args.guildId))
+      .withIndex("by_guild", (q) =>
+        q.eq("guildId", args.guildId).eq("status", "pending")
+      )
       .collect();
 
-    // Filter to pending requests only
-    const pending = requests.filter((req) => req.status === "pending");
-
     // Sort by creation time
-    pending.sort((a, b) => a.createdAt - b.createdAt);
+    requests.sort((a, b) => a.createdAt - b.createdAt);
 
-    return pending.map((req) => ({
+    return requests.map((req) => ({
       ...req,
       _id: req._id as string,
       guildId: req.guildId as string,
@@ -137,14 +137,13 @@ export const getJoinRequests = query({
 
 export const getPlayerRequests = query({
   args: {
-    requesterId: v.string(),
+    userId: v.string(),
   },
   returns: v.array(joinRequestReturnValidator),
   handler: async (ctx, args) => {
-    const requests = await ctx.db
-      .query("guildJoinRequests")
-      .withIndex("by_requester", (q) => q.eq("requesterId", args.requesterId))
-      .collect();
+    // Get all requests and filter by userId
+    const allRequests = await ctx.db.query("guildJoinRequests").collect();
+    const requests = allRequests.filter((req) => req.userId === args.userId);
 
     // Sort by creation time descending
     requests.sort((a, b) => b.createdAt - a.createdAt);
@@ -173,7 +172,7 @@ export const approveJoinRequest = mutation({
       throw new Error("This request has already been processed");
     }
 
-    // Verify approver is admin or owner
+    // Verify approver is owner
     const approverMembership = await ctx.db
       .query("guildMembers")
       .withIndex("by_guild_user", (q) =>
@@ -185,36 +184,35 @@ export const approveJoinRequest = mutation({
       throw new Error("You are not a member of this guild");
     }
 
-    if (!["owner", "admin"].includes(approverMembership.role)) {
-      throw new Error("Only guild owners and admins can approve join requests");
-    }
-
-    // Check if guild is full
-    const guild = await ctx.db.get(request.guildId);
-    if (!guild) {
-      throw new Error("Guild not found");
-    }
-
-    if (guild.memberCount >= guild.maxMembers) {
-      throw new Error("Guild is full");
+    if (approverMembership.role !== "owner") {
+      throw new Error("Only guild owner can approve join requests");
     }
 
     // Check if requester is already in a guild
     const existingMembership = await ctx.db
       .query("guildMembers")
-      .withIndex("by_user", (q) => q.eq("userId", request.requesterId))
+      .withIndex("by_user", (q) => q.eq("userId", request.userId))
       .first();
 
     if (existingMembership) {
       // Update request status to rejected since they're already in a guild
-      await ctx.db.patch(args.requestId, { status: "rejected" });
+      await ctx.db.patch(args.requestId, {
+        status: "rejected",
+        respondedAt: Date.now(),
+        respondedBy: args.approvedBy,
+      });
       throw new Error("User is already in a guild");
+    }
+
+    const guild = await ctx.db.get(request.guildId);
+    if (!guild) {
+      throw new Error("Guild not found");
     }
 
     // Add member
     await ctx.db.insert("guildMembers", {
       guildId: request.guildId,
-      userId: request.requesterId,
+      userId: request.userId,
       role: "member",
       joinedAt: Date.now(),
     });
@@ -222,10 +220,15 @@ export const approveJoinRequest = mutation({
     // Update member count
     await ctx.db.patch(request.guildId, {
       memberCount: guild.memberCount + 1,
+      updatedAt: Date.now(),
     });
 
     // Update request status
-    await ctx.db.patch(args.requestId, { status: "approved" });
+    await ctx.db.patch(args.requestId, {
+      status: "approved",
+      respondedAt: Date.now(),
+      respondedBy: args.approvedBy,
+    });
 
     return null;
   },
@@ -247,7 +250,7 @@ export const rejectJoinRequest = mutation({
       throw new Error("This request has already been processed");
     }
 
-    // Verify rejecter is admin or owner
+    // Verify rejecter is owner
     const rejecterMembership = await ctx.db
       .query("guildMembers")
       .withIndex("by_guild_user", (q) =>
@@ -259,12 +262,16 @@ export const rejectJoinRequest = mutation({
       throw new Error("You are not a member of this guild");
     }
 
-    if (!["owner", "admin"].includes(rejecterMembership.role)) {
-      throw new Error("Only guild owners and admins can reject join requests");
+    if (rejecterMembership.role !== "owner") {
+      throw new Error("Only guild owner can reject join requests");
     }
 
     // Update request status
-    await ctx.db.patch(args.requestId, { status: "rejected" });
+    await ctx.db.patch(args.requestId, {
+      status: "rejected",
+      respondedAt: Date.now(),
+      respondedBy: args.rejectedBy,
+    });
 
     return null;
   },

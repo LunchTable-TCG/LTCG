@@ -655,7 +655,7 @@ export const seedQuests = internalMutation({
   handler: async (ctx) => {
     const now = Date.now();
 
-    const quests: QuestDefinitionInput[] = [
+    const DEFAULT_QUESTS: QuestDefinitionInput[] = [
       // Daily quests - Win games
       {
         questId: "daily_win_1",
@@ -788,6 +788,18 @@ export const seedQuests = internalMutation({
         createdAt: now,
       },
     ];
+
+    const quests: QuestDefinitionInput[] = (() => {
+      const envConfig = process.env["QUESTS_CONFIG"];
+      if (envConfig) {
+        try {
+          return JSON.parse(envConfig) as QuestDefinitionInput[];
+        } catch (e) {
+          console.error("Failed to parse QUESTS_CONFIG from env", e);
+        }
+      }
+      return DEFAULT_QUESTS;
+    })();
 
     // Insert quests if they don't exist
     for (const quest of quests) {

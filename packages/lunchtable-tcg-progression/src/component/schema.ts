@@ -3,98 +3,203 @@ import { v } from "convex/values";
 
 export default defineSchema({
   achievementDefinitions: defineTable({
-    key: v.string(),
+    achievementId: v.string(),
     name: v.string(),
     description: v.string(),
-    category: v.string(),
-    iconUrl: v.optional(v.string()),
-    requirement: v.any(),      // { type, target, threshold }
-    reward: v.optional(v.any()),
-    isHidden: v.optional(v.boolean()),
-    metadata: v.optional(v.any()),
+    category: v.union(
+      v.literal("wins"),
+      v.literal("games_played"),
+      v.literal("collection"),
+      v.literal("social"),
+      v.literal("story"),
+      v.literal("ranked"),
+      v.literal("special")
+    ),
+    rarity: v.union(
+      v.literal("common"),
+      v.literal("rare"),
+      v.literal("epic"),
+      v.literal("legendary")
+    ),
+    icon: v.string(),
+    requirementType: v.string(),
+    targetValue: v.number(),
+    rewards: v.optional(
+      v.object({
+        gold: v.optional(v.number()),
+        xp: v.optional(v.number()),
+        gems: v.optional(v.number()),
+        badge: v.optional(v.string()),
+        cardDefinitionId: v.optional(v.string()),
+      })
+    ),
+    isSecret: v.boolean(),
+    isActive: v.boolean(),
+    createdAt: v.number(),
   })
-    .index("by_key", ["key"])
-    .index("by_category", ["category"]),
+    .index("by_achievement_id", ["achievementId"])
+    .index("by_category", ["category"])
+    .index("by_rarity", ["rarity"])
+    .index("by_active", ["isActive"]),
 
   userAchievements: defineTable({
     userId: v.string(),
-    achievementKey: v.string(),
-    progress: v.number(),
-    completed: v.boolean(),
-    completedAt: v.optional(v.number()),
-    claimed: v.optional(v.boolean()),
-    metadata: v.optional(v.any()),
+    achievementId: v.string(),
+    currentProgress: v.number(),
+    isUnlocked: v.boolean(),
+    unlockedAt: v.optional(v.number()),
   })
     .index("by_user", ["userId"])
-    .index("by_user_achievement", ["userId", "achievementKey"]),
+    .index("by_user_unlocked", ["userId", "isUnlocked"])
+    .index("by_user_achievement", ["userId", "achievementId"])
+    .index("by_achievement", ["achievementId"]),
 
   questDefinitions: defineTable({
-    key: v.string(),
+    questId: v.string(),
     name: v.string(),
     description: v.string(),
-    type: v.string(),          // "daily" | "weekly" | "seasonal" | "permanent"
-    requirement: v.any(),      // { type, target, threshold }
-    reward: v.any(),           // { currency, amount } or { itemId, quantity }
+    questType: v.union(
+      v.literal("daily"),
+      v.literal("weekly"),
+      v.literal("achievement")
+    ),
+    requirementType: v.string(),
+    targetValue: v.number(),
+    rewards: v.object({
+      gold: v.number(),
+      xp: v.number(),
+      gems: v.optional(v.number()),
+    }),
+    filters: v.optional(
+      v.object({
+        gameMode: v.optional(
+          v.union(
+            v.literal("ranked"),
+            v.literal("casual"),
+            v.literal("story")
+          )
+        ),
+        archetype: v.optional(v.string()),
+        cardType: v.optional(v.string()),
+      })
+    ),
     isActive: v.boolean(),
-    metadata: v.optional(v.any()),
+    createdAt: v.number(),
   })
-    .index("by_key", ["key"])
-    .index("by_type", ["type"]),
+    .index("by_quest_id", ["questId"])
+    .index("by_type", ["questType"])
+    .index("by_active", ["isActive"]),
 
   userQuests: defineTable({
     userId: v.string(),
-    questKey: v.string(),
-    progress: v.number(),
-    completed: v.boolean(),
-    claimed: v.boolean(),
-    assignedAt: v.number(),
+    questId: v.string(),
+    currentProgress: v.number(),
+    status: v.union(
+      v.literal("active"),
+      v.literal("completed"),
+      v.literal("claimed")
+    ),
+    startedAt: v.number(),
+    completedAt: v.optional(v.number()),
+    claimedAt: v.optional(v.number()),
     expiresAt: v.optional(v.number()),
-    metadata: v.optional(v.any()),
   })
     .index("by_user", ["userId"])
-    .index("by_user_quest", ["userId", "questKey"]),
+    .index("by_user_status", ["userId", "status"])
+    .index("by_user_quest", ["userId", "questId"])
+    .index("by_quest", ["questId"])
+    .index("by_expires", ["expiresAt"]),
 
   battlePassSeasons: defineTable({
+    seasonId: v.string(),
     name: v.string(),
+    description: v.optional(v.string()),
+    status: v.union(
+      v.literal("upcoming"),
+      v.literal("active"),
+      v.literal("ended")
+    ),
+    totalTiers: v.number(),
+    xpPerTier: v.number(),
     startDate: v.number(),
     endDate: v.number(),
-    isActive: v.boolean(),
-    totalTiers: v.number(),
-    premiumPrice: v.optional(v.number()),
-    metadata: v.optional(v.any()),
-  })
-    .index("by_active", ["isActive"]),
-
-  battlePassTiers: defineTable({
-    seasonId: v.id("battlePassSeasons"),
-    tier: v.number(),
-    xpRequired: v.number(),
-    freeReward: v.optional(v.any()),
-    premiumReward: v.optional(v.any()),
-    metadata: v.optional(v.any()),
+    createdAt: v.number(),
+    createdBy: v.string(),
+    updatedAt: v.number(),
   })
     .index("by_season", ["seasonId"])
-    .index("by_season_tier", ["seasonId", "tier"]),
+    .index("by_status", ["status"]),
+
+  battlePassTiers: defineTable({
+    battlePassId: v.id("battlePassSeasons"),
+    tier: v.number(),
+    freeReward: v.optional(
+      v.object({
+        type: v.union(
+          v.literal("gold"),
+          v.literal("gems"),
+          v.literal("xp"),
+          v.literal("card"),
+          v.literal("pack"),
+          v.literal("title"),
+          v.literal("avatar")
+        ),
+        amount: v.optional(v.number()),
+        cardId: v.optional(v.string()),
+        packProductId: v.optional(v.string()),
+        titleName: v.optional(v.string()),
+        avatarUrl: v.optional(v.string()),
+      })
+    ),
+    premiumReward: v.optional(
+      v.object({
+        type: v.union(
+          v.literal("gold"),
+          v.literal("gems"),
+          v.literal("xp"),
+          v.literal("card"),
+          v.literal("pack"),
+          v.literal("title"),
+          v.literal("avatar")
+        ),
+        amount: v.optional(v.number()),
+        cardId: v.optional(v.string()),
+        packProductId: v.optional(v.string()),
+        titleName: v.optional(v.string()),
+        avatarUrl: v.optional(v.string()),
+      })
+    ),
+    isMilestone: v.boolean(),
+  })
+    .index("by_battlepass", ["battlePassId"])
+    .index("by_battlepass_tier", ["battlePassId", "tier"]),
 
   battlePassProgress: defineTable({
     userId: v.string(),
-    seasonId: v.id("battlePassSeasons"),
-    currentTier: v.number(),
+    battlePassId: v.id("battlePassSeasons"),
     currentXP: v.number(),
+    currentTier: v.number(),
     isPremium: v.boolean(),
-    claimedTiers: v.array(v.number()),
-    metadata: v.optional(v.any()),
+    premiumPurchasedAt: v.optional(v.number()),
+    claimedFreeTiers: v.array(v.number()),
+    claimedPremiumTiers: v.array(v.number()),
+    lastXPGainAt: v.optional(v.number()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
   })
     .index("by_user", ["userId"])
-    .index("by_user_season", ["userId", "seasonId"]),
+    .index("by_user_battlepass", ["userId", "battlePassId"])
+    .index("by_battlepass", ["battlePassId"])
+    .index("by_tier", ["currentTier"]),
 
   playerXP: defineTable({
     userId: v.string(),
-    totalXP: v.number(),
-    level: v.number(),
-    currentLevelXP: v.number(),
-    xpToNextLevel: v.number(),
-    metadata: v.optional(v.any()),
+    currentXP: v.number(),
+    currentLevel: v.number(),
+    lifetimeXP: v.number(),
+    lastUpdatedAt: v.number(),
   })
-    .index("by_user", ["userId"]),
+    .index("by_user", ["userId"])
+    .index("by_level", ["currentLevel"])
+    .index("by_lifetime_xp", ["lifetimeXP"]),
 });

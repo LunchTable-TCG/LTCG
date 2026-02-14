@@ -22,7 +22,9 @@ export default function ChapterPage({ params }: ChapterPageProps) {
       {/* UI extracted. Logic handled in useStoryChapter. */}
       <h1>Chapter: {chapterDetails.title}</h1>
       <pre>{JSON.stringify({ stages: chapterDetails.stages }, null, 2)}</pre>
-      <button onClick={() => startBattle()}>Start Battle (Test)</button>
+      <button type="button" onClick={() => startBattle()}>
+        Start Battle (Test)
+      </button>
     </div>
   );
 }

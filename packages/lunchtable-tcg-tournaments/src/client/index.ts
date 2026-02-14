@@ -60,17 +60,26 @@ export class TournamentsClient {
     args: {
       name: string;
       description?: string;
-      organizerId: string;
-      format: string;
-      maxPlayers: number;
-      entryFee?: number;
-      entryCurrency?: string;
-      prizePool?: any;
-      startTime: number;
-      checkInDeadline?: number;
-      totalRounds?: number;
-      rules?: any;
-      metadata?: any;
+      format: "single_elimination";
+      maxPlayers: 4 | 8 | 16 | 32;
+      entryFee: number;
+      mode: "ranked" | "casual";
+      prizePool: {
+        first: number;
+        second: number;
+        thirdFourth: number;
+      };
+      registrationStartsAt: number;
+      registrationEndsAt: number;
+      checkInStartsAt: number;
+      checkInEndsAt: number;
+      scheduledStartAt: number;
+      createdBy: string;
+      creatorType?: "admin" | "user";
+      visibility?: "public" | "private";
+      joinCode?: string;
+      autoStartOnFull?: boolean;
+      expiresAt?: number;
     }
   ) {
     return await ctx.runMutation(this.component.tournaments.create, args);
@@ -86,15 +95,21 @@ export class TournamentsClient {
     return await ctx.runQuery(this.component.tournaments.getActive, {});
   }
 
-  async getByOrganizer(ctx: RunQueryCtx, args: { organizerId: string }) {
-    return await ctx.runQuery(this.component.tournaments.getByOrganizer, args);
+  async getByCreator(
+    ctx: RunQueryCtx,
+    args: {
+      createdBy: string;
+      status?: "registration" | "checkin" | "active" | "completed" | "cancelled";
+    }
+  ) {
+    return await ctx.runQuery(this.component.tournaments.getByCreator, args);
   }
 
   async updateStatus(
     ctx: RunMutationCtx,
     args: {
       id: string;
-      status: string;
+      status: "registration" | "checkin" | "active" | "completed" | "cancelled";
     }
   ) {
     return await ctx.runMutation(this.component.tournaments.updateStatus, {
@@ -110,15 +125,14 @@ export class TournamentsClient {
       settings: {
         name?: string;
         description?: string;
-        maxPlayers?: number;
-        entryFee?: number;
-        entryCurrency?: string;
-        prizePool?: any;
-        startTime?: number;
-        checkInDeadline?: number;
-        totalRounds?: number;
-        rules?: any;
-        metadata?: any;
+        registrationStartsAt?: number;
+        registrationEndsAt?: number;
+        checkInStartsAt?: number;
+        checkInEndsAt?: number;
+        scheduledStartAt?: number;
+        visibility?: "public" | "private";
+        autoStartOnFull?: boolean;
+        expiresAt?: number;
       };
     }
   ) {
@@ -145,18 +159,16 @@ export class ParticipantsClient {
     ctx: RunMutationCtx,
     args: {
       tournamentId: string;
-      playerId: string;
-      playerName?: string;
-      deckId?: string;
-      metadata?: any;
+      userId: string;
+      username: string;
+      seedRating: number;
     }
   ) {
     return await ctx.runMutation(this.component.participants.register, {
       tournamentId: args.tournamentId as any,
-      playerId: args.playerId,
-      playerName: args.playerName,
-      deckId: args.deckId,
-      metadata: args.metadata,
+      userId: args.userId,
+      username: args.username,
+      seedRating: args.seedRating,
     });
   }
 
@@ -164,12 +176,12 @@ export class ParticipantsClient {
     ctx: RunMutationCtx,
     args: {
       tournamentId: string;
-      playerId: string;
+      userId: string;
     }
   ) {
     return await ctx.runMutation(this.component.participants.unregister, {
       tournamentId: args.tournamentId as any,
-      playerId: args.playerId,
+      userId: args.userId,
     });
   }
 
@@ -179,29 +191,31 @@ export class ParticipantsClient {
     });
   }
 
-  async getPlayerTournaments(ctx: RunQueryCtx, args: { playerId: string }) {
+  async getUserTournaments(ctx: RunQueryCtx, args: { userId: string }) {
     return await ctx.runQuery(
-      this.component.participants.getPlayerTournaments,
+      this.component.participants.getUserTournaments,
       args
     );
   }
 
-  async updateResult(
+  async updateStatus(
     ctx: RunMutationCtx,
     args: {
       tournamentId: string;
-      playerId: string;
-      wins?: number;
-      losses?: number;
-      tiebreaker?: number;
+      userId: string;
+      status: "registered" | "checked_in" | "active" | "eliminated" | "winner" | "forfeit" | "refunded";
+      currentRound?: number;
+      eliminatedInRound?: number;
+      finalPlacement?: number;
     }
   ) {
-    return await ctx.runMutation(this.component.participants.updateResult, {
+    return await ctx.runMutation(this.component.participants.updateStatus, {
       tournamentId: args.tournamentId as any,
-      playerId: args.playerId,
-      wins: args.wins,
-      losses: args.losses,
-      tiebreaker: args.tiebreaker,
+      userId: args.userId,
+      status: args.status,
+      currentRound: args.currentRound,
+      eliminatedInRound: args.eliminatedInRound,
+      finalPlacement: args.finalPlacement,
     });
   }
 
@@ -209,12 +223,14 @@ export class ParticipantsClient {
     ctx: RunMutationCtx,
     args: {
       tournamentId: string;
-      playerId: string;
+      userId: string;
+      eliminatedInRound: number;
     }
   ) {
     return await ctx.runMutation(this.component.participants.eliminate, {
       tournamentId: args.tournamentId as any,
-      playerId: args.playerId,
+      userId: args.userId,
+      eliminatedInRound: args.eliminatedInRound,
     });
   }
 
@@ -222,12 +238,27 @@ export class ParticipantsClient {
     ctx: RunMutationCtx,
     args: {
       tournamentId: string;
-      playerId: string;
+      userId: string;
     }
   ) {
     return await ctx.runMutation(this.component.participants.checkIn, {
       tournamentId: args.tournamentId as any,
-      playerId: args.playerId,
+      userId: args.userId,
+    });
+  }
+
+  async awardPrize(
+    ctx: RunMutationCtx,
+    args: {
+      tournamentId: string;
+      userId: string;
+      prizeAmount: number;
+    }
+  ) {
+    return await ctx.runMutation(this.component.participants.awardPrize, {
+      tournamentId: args.tournamentId as any,
+      userId: args.userId,
+      prizeAmount: args.prizeAmount,
     });
   }
 }
@@ -244,22 +275,32 @@ export class BracketsClient {
       tournamentId: string;
       round: number;
       matchNumber: number;
+      bracketPosition: number;
       player1Id?: string;
+      player1Username?: string;
+      player1ParticipantId?: string;
       player2Id?: string;
-      scheduledTime?: number;
-      nextMatchId?: string;
-      metadata?: any;
+      player2Username?: string;
+      player2ParticipantId?: string;
+      player1SourceMatchId?: string;
+      player2SourceMatchId?: string;
+      scheduledAt?: number;
     }
   ) {
     return await ctx.runMutation(this.component.brackets.createMatch, {
       tournamentId: args.tournamentId as any,
       round: args.round,
       matchNumber: args.matchNumber,
+      bracketPosition: args.bracketPosition,
       player1Id: args.player1Id,
+      player1Username: args.player1Username,
+      player1ParticipantId: args.player1ParticipantId as any,
       player2Id: args.player2Id,
-      scheduledTime: args.scheduledTime,
-      nextMatchId: args.nextMatchId,
-      metadata: args.metadata,
+      player2Username: args.player2Username,
+      player2ParticipantId: args.player2ParticipantId as any,
+      player1SourceMatchId: args.player1SourceMatchId as any,
+      player2SourceMatchId: args.player2SourceMatchId as any,
+      scheduledAt: args.scheduledAt,
     });
   }
 
@@ -293,16 +334,20 @@ export class BracketsClient {
     args: {
       id: string;
       winnerId: string;
+      winnerUsername: string;
       loserId?: string;
-      score?: string;
+      loserUsername?: string;
+      winReason?: "game_win" | "opponent_forfeit" | "opponent_no_show" | "bye";
       gameId?: string;
     }
   ) {
     return await ctx.runMutation(this.component.brackets.reportResult, {
       id: args.id as any,
       winnerId: args.winnerId,
+      winnerUsername: args.winnerUsername,
       loserId: args.loserId,
-      score: args.score,
+      loserUsername: args.loserUsername,
+      winReason: args.winReason,
       gameId: args.gameId,
     });
   }
@@ -324,7 +369,7 @@ export class BracketsClient {
     ctx: RunMutationCtx,
     args: {
       id: string;
-      status: string;
+      status: "pending" | "ready" | "active" | "completed" | "forfeit";
     }
   ) {
     return await ctx.runMutation(this.component.brackets.updateMatchStatus, {
@@ -343,21 +388,30 @@ export class HistoryClient {
   async recordHistory(
     ctx: RunMutationCtx,
     args: {
+      userId: string;
       tournamentId: string;
       tournamentName: string;
-      playerId: string;
+      maxPlayers: number;
       placement: number;
-      wins: number;
-      losses: number;
-      prizeWon?: any;
-      metadata?: any;
+      prizeWon: number;
+      matchesPlayed: number;
+      matchesWon: number;
     }
   ) {
-    return await ctx.runMutation(this.component.history.recordHistory, args);
+    return await ctx.runMutation(this.component.history.recordHistory, {
+      userId: args.userId,
+      tournamentId: args.tournamentId as any,
+      tournamentName: args.tournamentName,
+      maxPlayers: args.maxPlayers,
+      placement: args.placement,
+      prizeWon: args.prizeWon,
+      matchesPlayed: args.matchesPlayed,
+      matchesWon: args.matchesWon,
+    });
   }
 
-  async getPlayerHistory(ctx: RunQueryCtx, args: { playerId: string }) {
-    return await ctx.runQuery(this.component.history.getPlayerHistory, args);
+  async getUserHistory(ctx: RunQueryCtx, args: { userId: string }) {
+    return await ctx.runQuery(this.component.history.getUserHistory, args);
   }
 
   async getRecentHistory(ctx: RunQueryCtx, args?: { limit?: number }) {
@@ -365,10 +419,12 @@ export class HistoryClient {
   }
 
   async getTournamentHistory(ctx: RunQueryCtx, args: { tournamentId: string }) {
-    return await ctx.runQuery(this.component.history.getTournamentHistory, args);
+    return await ctx.runQuery(this.component.history.getTournamentHistory, {
+      tournamentId: args.tournamentId as any,
+    });
   }
 
-  async getPlayerStats(ctx: RunQueryCtx, args: { playerId: string }) {
-    return await ctx.runQuery(this.component.history.getPlayerStats, args);
+  async getUserStats(ctx: RunQueryCtx, args: { userId: string }) {
+    return await ctx.runQuery(this.component.history.getUserStats, args);
   }
 }

@@ -8,6 +8,8 @@ import { useMutation, useQuery } from "convex/react";
 import { toast } from "sonner";
 import { useAuth } from "../auth/useConvexAuthHook";
 
+import type { Id } from "@convex/_generated/dataModel";
+
 interface CardResult {
   cardDefinitionId: string;
   name: string;
@@ -19,6 +21,65 @@ interface CardResult {
   cost: number;
   imageUrl?: string;
   variant: "standard" | "foil" | "alt_art" | "full_art" | "numbered" | "first_edition";
+}
+
+interface ShopProduct {
+  _id: Id<"shopProducts">;
+  _creationTime: number;
+  productId: string;
+  name: string;
+  description: string;
+  productType: "pack" | "box" | "currency";
+  goldPrice?: number;
+  gemPrice?: number;
+  packConfig?: {
+    cardCount: number;
+    guaranteedRarity?: "common" | "uncommon" | "rare" | "epic" | "legendary";
+    guaranteedCount?: number;
+    allRareOrBetter?: boolean;
+    archetype?: string;
+    variantMultipliers?: {
+      foil: number;
+      altArt: number;
+      fullArt: number;
+    };
+  };
+  boxConfig?: {
+    packProductId: string;
+    packCount: number;
+    bonusCards?: number;
+  };
+  currencyConfig?: {
+    currencyType: "gold" | "gems";
+    amount: number;
+  };
+  isActive: boolean;
+  sortOrder: number;
+  createdAt: number;
+}
+
+interface PackHistoryEntry {
+  _id: Id<"packOpeningHistory">;
+  userId: Id<"users">;
+  productId: string;
+  packType: string;
+  cardsReceived: Array<{
+    cardDefinitionId: string;
+    name: string;
+    rarity: Rarity;
+    variant: "standard" | "foil" | "alt_art" | "full_art" | "numbered" | "first_edition";
+  }>;
+  currencyUsed: "gold" | "gems" | "token";
+  amountPaid: number;
+  openedAt: number;
+}
+
+interface PackHistoryResponse {
+  history: PackHistoryEntry[];
+  page: number;
+  pageSize: number;
+  total: number;
+  hasMore: boolean;
 }
 
 interface PackPurchaseResult {
@@ -47,10 +108,8 @@ interface CurrencyBundleResult {
 }
 
 interface UseShopReturn {
-  // biome-ignore lint/suspicious/noExplicitAny: TS2589 workaround — Convex query return types are too deeply nested
-  products: any;
-  // biome-ignore lint/suspicious/noExplicitAny: TS2589 workaround
-  packHistory: any;
+  products: ShopProduct[] | undefined;
+  packHistory: PackHistoryResponse | undefined;
   isLoading: boolean;
   purchasePack: (productId: string, useGems: boolean) => Promise<PackPurchaseResult>;
   purchaseBox: (productId: string, useGems: boolean) => Promise<BoxPurchaseResult>;
@@ -101,14 +160,16 @@ export function useShop(): UseShopReturn {
   const { isAuthenticated } = useAuth();
 
   // Queries
-  const products = useQuery(api.shop.getShopProducts, {});
+  const products = useQuery(api.economy.shop.getShopProducts, {}) as ShopProduct[] | undefined;
 
-  const packHistory = useQuery(api.shop.getPackOpeningHistory, isAuthenticated ? {} : "skip");
+  const packHistory = useQuery(api.economy.shop.getPackOpeningHistory, isAuthenticated ? {} : "skip") as
+    | PackHistoryResponse
+    | undefined;
 
   // Mutations
-  const purchasePackMutation = useMutation(api.shop.purchasePack);
-  const purchaseBoxMutation = useMutation(api.shop.purchaseBox);
-  const purchaseBundleMutation = useMutation(api.shop.purchaseCurrencyBundle);
+  const purchasePackMutation = useMutation(api.economy.shop.purchasePack);
+  const purchaseBoxMutation = useMutation(api.economy.shop.purchaseBox);
+  const purchaseBundleMutation = useMutation(api.economy.shop.purchaseCurrencyBundle);
 
   // Actions
   const purchasePack = async (productId: string, useGems: boolean) => {

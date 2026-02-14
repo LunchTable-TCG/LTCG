@@ -27,17 +27,17 @@ crons.interval(
 crons.interval(
   "refresh leaderboards",
   { minutes: 5 }, // Run every 5 minutes
-  internal.leaderboards.refreshAllSnapshots
+  internal.social.leaderboards.refreshAllSnapshots
 );
 
 // Run matchmaking every 30 seconds (reduced from 10s to lower compute cost)
-crons.interval("matchmaking", { seconds: 30 }, internal.matchmaking.findMatches);
+crons.interval("matchmaking", { seconds: 30 }, internal.social.matchmaking.findMatches);
 
 // Cleanup expired queue entries every minute
-crons.interval("cleanup-matchmaking", { seconds: 60 }, internal.matchmaking.cleanupExpiredEntries);
+crons.interval("cleanup-matchmaking", { seconds: 60 }, internal.social.matchmaking.cleanupExpiredEntries);
 
 // Finalize expired auctions every 5 minutes
-crons.interval("finalize-auctions", { minutes: 5 }, internal.marketplace.finalizeExpiredAuctions);
+crons.interval("finalize-auctions", { minutes: 5 }, internal.economy.marketplace.finalizeExpiredAuctions);
 
 // Cleanup expired quests every hour
 crons.interval(

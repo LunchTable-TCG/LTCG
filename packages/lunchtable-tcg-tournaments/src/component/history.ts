@@ -4,59 +4,60 @@ import { mutation, query } from "./_generated/server";
 const historyReturnValidator = v.object({
   _id: v.string(),
   _creationTime: v.number(),
+  userId: v.string(),
   tournamentId: v.string(),
   tournamentName: v.string(),
-  playerId: v.string(),
+  maxPlayers: v.number(),
   placement: v.number(),
-  wins: v.number(),
-  losses: v.number(),
-  prizeWon: v.optional(v.any()),
+  prizeWon: v.number(),
+  matchesPlayed: v.number(),
+  matchesWon: v.number(),
   completedAt: v.number(),
-  metadata: v.optional(v.any()),
 });
 
 export const recordHistory = mutation({
   args: {
-    tournamentId: v.string(),
+    userId: v.string(),
+    tournamentId: v.id("tournaments"),
     tournamentName: v.string(),
-    playerId: v.string(),
+    maxPlayers: v.number(),
     placement: v.number(),
-    wins: v.number(),
-    losses: v.number(),
-    prizeWon: v.optional(v.any()),
-    metadata: v.optional(v.any()),
+    prizeWon: v.number(),
+    matchesPlayed: v.number(),
+    matchesWon: v.number(),
   },
   returns: v.string(),
   handler: async (ctx, args) => {
-    const id = await ctx.db.insert("history", {
+    const id = await ctx.db.insert("tournamentHistory", {
+      userId: args.userId,
       tournamentId: args.tournamentId,
       tournamentName: args.tournamentName,
-      playerId: args.playerId,
+      maxPlayers: args.maxPlayers,
       placement: args.placement,
-      wins: args.wins,
-      losses: args.losses,
       prizeWon: args.prizeWon,
+      matchesPlayed: args.matchesPlayed,
+      matchesWon: args.matchesWon,
       completedAt: Date.now(),
-      metadata: args.metadata,
     });
 
     return id as string;
   },
 });
 
-export const getPlayerHistory = query({
-  args: { playerId: v.string() },
+export const getUserHistory = query({
+  args: { userId: v.string() },
   returns: v.array(historyReturnValidator),
   handler: async (ctx, args) => {
     const history = await ctx.db
-      .query("history")
-      .withIndex("by_player", (q) => q.eq("playerId", args.playerId))
+      .query("tournamentHistory")
+      .withIndex("by_user_completed", (q) => q.eq("userId", args.userId))
       .order("desc")
       .collect();
 
     return history.map((h) => ({
       ...h,
       _id: h._id as string,
+      tournamentId: h.tournamentId as string,
     }));
   },
 });
@@ -67,76 +68,75 @@ export const getRecentHistory = query({
   handler: async (ctx, args) => {
     const limit = args.limit ?? 20;
     const history = await ctx.db
-      .query("history")
+      .query("tournamentHistory")
       .order("desc")
       .take(limit);
 
     return history.map((h) => ({
       ...h,
       _id: h._id as string,
+      tournamentId: h.tournamentId as string,
     }));
   },
 });
 
 export const getTournamentHistory = query({
-  args: { tournamentId: v.string() },
+  args: { tournamentId: v.id("tournaments") },
   returns: v.array(historyReturnValidator),
   handler: async (ctx, args) => {
     const history = await ctx.db
-      .query("history")
+      .query("tournamentHistory")
       .withIndex("by_tournament", (q) => q.eq("tournamentId", args.tournamentId))
-      .order("asc")
       .collect();
 
     return history.map((h) => ({
       ...h,
       _id: h._id as string,
+      tournamentId: h.tournamentId as string,
     }));
   },
 });
 
-export const getPlayerStats = query({
-  args: { playerId: v.string() },
+export const getUserStats = query({
+  args: { userId: v.string() },
   returns: v.object({
     totalTournaments: v.number(),
-    totalWins: v.number(),
-    totalLosses: v.number(),
+    totalMatchesPlayed: v.number(),
+    totalMatchesWon: v.number(),
     averagePlacement: v.number(),
     bestPlacement: v.number(),
-    prizesWon: v.array(v.any()),
+    totalPrizesWon: v.number(),
   }),
   handler: async (ctx, args) => {
     const history = await ctx.db
-      .query("history")
-      .withIndex("by_player", (q) => q.eq("playerId", args.playerId))
+      .query("tournamentHistory")
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
       .collect();
 
     if (history.length === 0) {
       return {
         totalTournaments: 0,
-        totalWins: 0,
-        totalLosses: 0,
+        totalMatchesPlayed: 0,
+        totalMatchesWon: 0,
         averagePlacement: 0,
         bestPlacement: 0,
-        prizesWon: [],
+        totalPrizesWon: 0,
       };
     }
 
-    const totalWins = history.reduce((sum, h) => sum + h.wins, 0);
-    const totalLosses = history.reduce((sum, h) => sum + h.losses, 0);
+    const totalMatchesPlayed = history.reduce((sum, h) => sum + h.matchesPlayed, 0);
+    const totalMatchesWon = history.reduce((sum, h) => sum + h.matchesWon, 0);
     const totalPlacement = history.reduce((sum, h) => sum + h.placement, 0);
     const bestPlacement = Math.min(...history.map((h) => h.placement));
-    const prizesWon = history
-      .filter((h) => h.prizeWon)
-      .map((h) => h.prizeWon);
+    const totalPrizesWon = history.reduce((sum, h) => sum + h.prizeWon, 0);
 
     return {
       totalTournaments: history.length,
-      totalWins,
-      totalLosses,
+      totalMatchesPlayed,
+      totalMatchesWon,
       averagePlacement: totalPlacement / history.length,
       bestPlacement,
-      prizesWon,
+      totalPrizesWon,
     };
   },
 });

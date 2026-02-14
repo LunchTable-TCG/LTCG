@@ -2,7 +2,8 @@
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { useFriendsInteraction } from "@/hooks/social/useFriendsInteraction";
+import type { useFriendsInteraction } from "@/hooks/social/useFriendsInteraction";
+import type { Id } from "@convex/_generated/dataModel";
 import { Check, UserPlus, Users, X } from "lucide-react";
 import { EmptyState } from "./EmptyState";
 
@@ -11,9 +12,9 @@ interface FriendRequestsProps {
   outgoingRequests: ReturnType<typeof useFriendsInteraction>["outgoingRequests"];
   incomingCount: number;
   outgoingCount: number;
-  acceptFriendRequest: (id: any) => void;
-  declineFriendRequest: (id: any) => void;
-  cancelFriendRequest: (id: any) => void;
+  acceptFriendRequest: (id: Id<"users">) => void;
+  declineFriendRequest: (id: Id<"users">) => void;
+  cancelFriendRequest: (id: Id<"users">) => void;
 }
 
 export function FriendRequests({

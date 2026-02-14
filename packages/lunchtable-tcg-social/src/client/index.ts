@@ -58,7 +58,6 @@ export class FriendsClient {
     args: {
       fromUserId: string;
       toUserId: string;
-      metadata?: any;
     }
   ) {
     return await ctx.runMutation(this.component.friends.sendRequest, args);
@@ -105,7 +104,6 @@ export class FriendsClient {
     args: {
       userId: string;
       blockedUserId: string;
-      metadata?: any;
     }
   ) {
     return await ctx.runMutation(this.component.friends.blockUser, args);
@@ -150,9 +148,10 @@ export class MessagesClient {
     ctx: RunMutationCtx,
     args: {
       senderId: string;
+      senderUsername: string;
       recipientId: string;
-      content: string;
-      metadata?: any;
+      message: string;
+      isSystem?: boolean;
     }
   ) {
     return await ctx.runMutation(this.component.messages.sendMessage, args);
@@ -207,35 +206,35 @@ export class MessagesClient {
 export class PresenceClient {
   constructor(private component: typeof api) {}
 
-  async updatePresence(
-    ctx: RunMutationCtx,
-    args: {
-      userId: string;
-      status: string;
-      currentActivity?: string;
-      metadata?: any;
-    }
-  ) {
-    return await ctx.runMutation(this.component.presence.updatePresence, args);
-  }
+  // TODO: userPresence table removed - these methods need reimplementation or removal
+  // async updatePresence(
+  //   ctx: RunMutationCtx,
+  //   args: {
+  //     userId: string;
+  //     status: string;
+  //     currentActivity?: string;
+  //     metadata?: any;
+  //   }
+  // ) {
+  //   return await ctx.runMutation(this.component.presence.updatePresence, args);
+  // }
 
-  async getPresence(ctx: RunQueryCtx, args: { userId: string }) {
-    return await ctx.runQuery(this.component.presence.getPresence, args);
-  }
+  // async getPresence(ctx: RunQueryCtx, args: { userId: string }) {
+  //   return await ctx.runQuery(this.component.presence.getPresence, args);
+  // }
 
-  async getBulkPresence(ctx: RunQueryCtx, args: { userIds: string[] }) {
-    return await ctx.runQuery(this.component.presence.getBulkPresence, args);
-  }
+  // async getBulkPresence(ctx: RunQueryCtx, args: { userIds: string[] }) {
+  //   return await ctx.runQuery(this.component.presence.getBulkPresence, args);
+  // }
 
   async createNotification(
     ctx: RunMutationCtx,
     args: {
       userId: string;
-      type: string;
+      type: "achievement_unlocked" | "level_up" | "quest_completed" | "badge_earned";
       title: string;
       message: string;
       data?: any;
-      metadata?: any;
     }
   ) {
     return await ctx.runMutation(

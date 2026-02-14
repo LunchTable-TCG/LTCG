@@ -63,12 +63,9 @@ export class GuildsClient {
       ownerId: string;
       name: string;
       description?: string;
-      tag?: string;
-      imageUrl?: string;
-      bannerUrl?: string;
-      isPublic?: boolean;
-      maxMembers?: number;
-      metadata?: any;
+      profileImageId?: string;
+      bannerImageId?: string;
+      visibility?: "public" | "private";
     }
   ) {
     return await ctx.runMutation(this.component.guilds.create, args);
@@ -95,12 +92,9 @@ export class GuildsClient {
       ownerId: string;
       name?: string;
       description?: string;
-      tag?: string;
-      imageUrl?: string;
-      bannerUrl?: string;
-      isPublic?: boolean;
-      maxMembers?: number;
-      metadata?: any;
+      profileImageId?: string;
+      bannerImageId?: string;
+      visibility?: "public" | "private";
     }
   ) {
     return await ctx.runMutation(this.component.guilds.update, {
@@ -108,12 +102,9 @@ export class GuildsClient {
       ownerId: args.ownerId,
       name: args.name,
       description: args.description,
-      tag: args.tag,
-      imageUrl: args.imageUrl,
-      bannerUrl: args.bannerUrl,
-      isPublic: args.isPublic,
-      maxMembers: args.maxMembers,
-      metadata: args.metadata,
+      profileImageId: args.profileImageId,
+      bannerImageId: args.bannerImageId,
+      visibility: args.visibility,
     });
   }
 
@@ -165,7 +156,7 @@ export class MembersClient {
     args: {
       guildId: string;
       targetUserId: string;
-      newRole: string;
+      newRole: "owner" | "member";
       updatedBy: string;
     }
   ) {
@@ -219,14 +210,16 @@ export class InvitesClient {
     ctx: RunMutationCtx,
     args: {
       guildId: string;
-      inviterId: string;
-      inviteeId: string;
+      invitedBy: string;
+      invitedUserId: string;
+      expiresIn?: number;
     }
   ) {
     return await ctx.runMutation(this.component.invites.createInvite, {
       guildId: args.guildId as any,
-      inviterId: args.inviterId,
-      inviteeId: args.inviteeId,
+      invitedBy: args.invitedBy,
+      invitedUserId: args.invitedUserId,
+      expiresIn: args.expiresIn,
     });
   }
 
@@ -304,7 +297,7 @@ export class InvitesClient {
     ctx: RunQueryCtx,
     args: {
       guildId: string;
-      status?: string;
+      status?: "pending" | "accepted" | "declined" | "expired";
     }
   ) {
     return await ctx.runQuery(this.component.invites.getGuildInvites, {
@@ -313,9 +306,13 @@ export class InvitesClient {
     });
   }
 
-  async getGuildInviteLinks(ctx: RunQueryCtx, args: { guildId: string }) {
+  async getGuildInviteLinks(
+    ctx: RunQueryCtx,
+    args: { guildId: string; activeOnly?: boolean }
+  ) {
     return await ctx.runQuery(this.component.invites.getGuildInviteLinks, {
       guildId: args.guildId as any,
+      activeOnly: args.activeOnly,
     });
   }
 
@@ -343,18 +340,18 @@ export class ChatClient {
     ctx: RunMutationCtx,
     args: {
       guildId: string;
-      senderId: string;
-      senderName: string;
-      content: string;
-      metadata?: any;
+      userId: string;
+      username: string;
+      message: string;
+      isSystem?: boolean;
     }
   ) {
     return await ctx.runMutation(this.component.chat.sendMessage, {
       guildId: args.guildId as any,
-      senderId: args.senderId,
-      senderName: args.senderName,
-      content: args.content,
-      metadata: args.metadata,
+      userId: args.userId,
+      username: args.username,
+      message: args.message,
+      isSystem: args.isSystem,
     });
   }
 
@@ -420,13 +417,13 @@ export class DiscoveryClient {
     ctx: RunMutationCtx,
     args: {
       guildId: string;
-      requesterId: string;
+      userId: string;
       message?: string;
     }
   ) {
     return await ctx.runMutation(this.component.discovery.submitJoinRequest, {
       guildId: args.guildId as any,
-      requesterId: args.requesterId,
+      userId: args.userId,
       message: args.message,
     });
   }
@@ -445,7 +442,7 @@ export class DiscoveryClient {
   async getPlayerRequests(
     ctx: RunQueryCtx,
     args: {
-      requesterId: string;
+      userId: string;
     }
   ) {
     return await ctx.runQuery(this.component.discovery.getPlayerRequests, args);

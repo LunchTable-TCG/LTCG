@@ -76,7 +76,7 @@ export function useGlobalChat(): UseGlobalChatReturn {
     results: messages,
     status: paginationStatus,
     loadMore,
-  } = usePaginatedQuery(apiAny.globalChat.getPaginatedMessages, {}, { initialNumItems: 50 });
+  } = usePaginatedQuery(apiAny.social.globalChat.getPaginatedMessages, {}, { initialNumItems: 50 });
 
   // Use new presence system with automatic heartbeat
   const { users: onlineUsers, userCount: onlineCount } = useConvexPresence({
@@ -86,7 +86,7 @@ export function useGlobalChat(): UseGlobalChatReturn {
   });
 
   // Mutations
-  const sendMessageMutation = useMutation(apiAny.globalChat.sendMessage);
+  const sendMessageMutation = useMutation(apiAny.social.globalChat.sendMessage);
 
   // Actions
   const sendMessage = async (message: string) => {

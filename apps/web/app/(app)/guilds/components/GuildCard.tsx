@@ -30,9 +30,9 @@ export function GuildCard({
   const isPrivate = guild.visibility === "private";
 
   return (
-    <div className="group relative overflow-hidden rounded-xl bg-gradient-to-br from-[#1a1614] to-[#261f1c] border border-[#3d2b1f] hover:border-[#d4af37]/50 transition-all duration-300">
+    <div className="group relative overflow-hidden rounded-xl bg-card border border-border hover:border-primary/50 transition-all duration-300">
       {/* Hover glow effect */}
-      <div className="absolute inset-0 bg-gradient-to-t from-[#d4af37]/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+      <div className="absolute inset-0 bg-gradient-to-t from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
 
       <div className="relative p-5">
         {/* Header */}
@@ -43,16 +43,16 @@ export function GuildCard({
               <img
                 src={guild.profileImageUrl}
                 alt={guild.name}
-                className="w-14 h-14 rounded-xl object-cover border-2 border-[#d4af37]/20 group-hover:border-[#d4af37]/50 transition-colors"
+                className="w-14 h-14 rounded-xl object-cover border-2 border-primary/20 group-hover:border-primary/50 transition-colors"
               />
             ) : (
-              <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-[#8b4513] to-[#3d2b1f] border-2 border-[#d4af37]/20 group-hover:border-[#d4af37]/50 flex items-center justify-center transition-colors">
-                <Shield className="w-7 h-7 text-[#d4af37]" />
+              <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 border-2 border-primary/20 group-hover:border-primary/50 flex items-center justify-center transition-colors">
+                <Shield className="w-7 h-7 text-primary" />
               </div>
             )}
             {isPrivate && (
-              <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-[#1a1614] border border-[#3d2b1f] flex items-center justify-center">
-                <Lock className="w-3 h-3 text-[#a89f94]" />
+              <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-card border border-border flex items-center justify-center">
+                <Lock className="w-3 h-3 text-muted-foreground" />
               </div>
             )}
           </div>
@@ -60,14 +60,14 @@ export function GuildCard({
           {/* Guild Info */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <h3 className="font-bold text-[#e8e0d5] truncate group-hover:text-[#d4af37] transition-colors">
+              <h3 className="font-bold text-foreground truncate group-hover:text-primary transition-colors">
                 {guild.name}
               </h3>
             </div>
             {guild.ownerUsername && (
               <div className="flex items-center gap-1.5 mt-1">
-                <Crown className="w-3 h-3 text-[#d4af37]" />
-                <span className="text-xs text-[#a89f94]">{guild.ownerUsername}</span>
+                <Crown className="w-3 h-3 text-primary" />
+                <span className="text-xs text-muted-foreground">{guild.ownerUsername}</span>
               </div>
             )}
           </div>
@@ -75,7 +75,7 @@ export function GuildCard({
 
         {/* Description */}
         {guild.description && (
-          <p className="text-sm text-[#a89f94] line-clamp-2 mb-4 leading-relaxed">
+          <p className="text-sm text-muted-foreground line-clamp-2 mb-4 leading-relaxed">
             {guild.description}
           </p>
         )}
@@ -84,17 +84,17 @@ export function GuildCard({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-1.5">
-              <Users className="w-4 h-4 text-[#a89f94]" />
-              <span className="text-sm font-medium text-[#e8e0d5]">
+              <Users className="w-4 h-4 text-muted-foreground" />
+              <span className="text-sm font-medium text-foreground">
                 {guild.memberCount}
-                <span className="text-[#a89f94]">/50</span>
+                <span className="text-muted-foreground">/50</span>
               </span>
             </div>
             <div
               className={cn(
                 "px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider",
                 isPrivate
-                  ? "bg-[#a89f94]/10 text-[#a89f94] border border-[#a89f94]/20"
+                  ? "bg-muted/10 text-muted-foreground border border-muted/20"
                   : "bg-green-500/10 text-green-400 border border-green-500/20"
               )}
             >
@@ -110,8 +110,8 @@ export function GuildCard({
               className={cn(
                 "rounded-lg font-bold text-xs",
                 isPrivate
-                  ? "bg-[#d4af37]/10 border border-[#d4af37]/30 text-[#d4af37] hover:bg-[#d4af37]/20"
-                  : "tcg-button-primary"
+                  ? "bg-primary/10 border border-primary/30 text-primary hover:bg-primary/20"
+                  : "bg-primary text-primary-foreground hover:bg-primary/90"
               )}
             >
               {isJoining ? "..." : isPrivate ? "Request" : "Join"}

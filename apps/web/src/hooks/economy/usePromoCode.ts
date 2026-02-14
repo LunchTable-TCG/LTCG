@@ -35,7 +35,7 @@ import { useAuth } from "../auth/useConvexAuthHook";
 export function usePromoCode() {
   const { isAuthenticated } = useAuth();
 
-  const redeemMutation = useMutation(api.economy.redeemPromoCode);
+  const redeemMutation = useMutation(api.economy.economy.redeemPromoCode);
 
   const redeemCode = async (code: string) => {
     if (!isAuthenticated) throw new Error("Not authenticated");

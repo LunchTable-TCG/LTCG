@@ -6,6 +6,7 @@
  * This file lives in convex/lib/ and should only be used by backend code.
  */
 
+import { GAME_CONFIG } from "@ltcg/core";
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 
@@ -13,58 +14,18 @@ import type { MutationCtx, QueryCtx } from "../_generated/server";
 // Core Game Types (Backend-specific)
 // =============================================================================
 
-export type Archetype =
-  // Primary archetypes (from card CSV)
-  | "infernal_dragons"
-  | "abyssal_depths"
-  | "iron_legion"
-  | "necro_empire"
-  // Legacy archetypes (for backwards compatibility)
-  | "abyssal_horrors"
-  | "nature_spirits"
-  | "storm_elementals"
-  // Future/placeholder archetypes
-  | "shadow_assassins"
-  | "celestial_guardians"
-  | "undead_legion"
-  | "divine_knights"
-  | "arcane_mages"
-  | "mechanical_constructs"
-  | "neutral"
-  // Old archetypes (deprecated - for migration compatibility)
-  | "fire"
-  | "water"
-  | "earth"
-  | "wind";
-export type Rarity = "common" | "uncommon" | "rare" | "epic" | "legendary";
-export type CardType = "creature" | "spell" | "trap" | "equipment";
+export type Archetype = (typeof GAME_CONFIG.ARCHETYPES)[number];
+export type Rarity = (typeof GAME_CONFIG.RARITIES)[number];
+export type CardType = (typeof GAME_CONFIG.CARD_TYPES)[number];
 
 // Industry-standard TCG types
-export type Attribute =
-  | "fire"
-  | "water"
-  | "earth"
-  | "wind"
-  | "light"
-  | "dark"
-  | "divine"
-  | "neutral";
+export type Attribute = (typeof GAME_CONFIG.ATTRIBUTES)[number];
 
-export type MonsterType =
-  | "dragon"
-  | "spellcaster"
-  | "warrior"
-  | "beast"
-  | "fiend"
-  | "zombie"
-  | "machine"
-  | "aqua"
-  | "pyro"
-  | "divine_beast";
+export type MonsterType = (typeof GAME_CONFIG.MONSTER_TYPES)[number];
 
-export type SpellType = "normal" | "quick_play" | "continuous" | "field" | "equip" | "ritual";
+export type SpellType = (typeof GAME_CONFIG.SPELL_TYPES)[number];
 
-export type TrapType = "normal" | "continuous" | "counter";
+export type TrapType = (typeof GAME_CONFIG.TRAP_TYPES)[number];
 
 // =============================================================================
 // User & Session Types

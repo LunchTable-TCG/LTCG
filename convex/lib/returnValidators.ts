@@ -496,6 +496,9 @@ export const cardWithOwnershipValidator = v.object({
     v.literal("water"),
     v.literal("earth"),
     v.literal("wind"),
+    v.literal("light"),
+    v.literal("dark"),
+    v.literal("divine"),
     v.literal("neutral")
   ),
   cardType: v.union(
@@ -560,6 +563,9 @@ export const deckCardEntryValidator = v.object({
     v.literal("water"),
     v.literal("earth"),
     v.literal("wind"),
+    v.literal("light"),
+    v.literal("dark"),
+    v.literal("divine"),
     v.literal("neutral")
   ),
   cardType: v.union(

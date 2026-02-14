@@ -2,85 +2,71 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
 export default defineSchema({
-  listings: defineTable({
+  marketplaceListings: defineTable({
     sellerId: v.string(),
-    itemId: v.string(),
-    itemType: v.string(), // "card" | "pack" | "bundle" | "cosmetic"
-    itemName: v.string(),
-    price: v.number(),
-    currency: v.string(), // "gold" | "gems" | "token"
+    sellerUsername: v.string(),
+    listingType: v.union(v.literal("fixed"), v.literal("auction")),
+    cardDefinitionId: v.string(),
     quantity: v.number(),
-    isAuction: v.boolean(),
-    auctionEndTime: v.optional(v.number()),
-    minBid: v.optional(v.number()),
-    buyNowPrice: v.optional(v.number()),
-    status: v.string(), // "active" | "sold" | "cancelled" | "expired"
+    price: v.number(),
+    currentBid: v.optional(v.number()),
+    highestBidderId: v.optional(v.string()),
+    highestBidderUsername: v.optional(v.string()),
+    endsAt: v.optional(v.number()),
+    bidCount: v.number(),
+    status: v.union(
+      v.literal("active"),
+      v.literal("sold"),
+      v.literal("cancelled"),
+      v.literal("expired"),
+      v.literal("suspended")
+    ),
+    soldTo: v.optional(v.string()),
+    soldFor: v.optional(v.number()),
+    soldAt: v.optional(v.number()),
+    platformFee: v.optional(v.number()),
     createdAt: v.number(),
-    metadata: v.optional(v.any()),
+    updatedAt: v.number(),
+    currencyType: v.optional(v.union(v.literal("gold"), v.literal("token"))),
+    tokenPrice: v.optional(v.number()),
+    claimed: v.optional(v.boolean()),
   })
-    .index("by_seller", ["sellerId"])
-    .index("by_item_type", ["itemType"])
-    .index("by_status", ["status"])
-    .index("by_item", ["itemId"]),
+    .index("by_status", ["status", "createdAt"])
+    .index("by_seller", ["sellerId", "status"])
+    .index("by_card", ["cardDefinitionId", "status"])
+    .index("by_type", ["listingType", "status"])
+    .index("by_ends_at", ["endsAt"])
+    .index("by_status_listingType_endsAt", ["status", "listingType", "endsAt"]),
 
-  bids: defineTable({
-    listingId: v.id("listings"),
+  auctionBids: defineTable({
+    listingId: v.id("marketplaceListings"),
     bidderId: v.string(),
-    amount: v.number(),
-    currency: v.string(),
-    isWinning: v.boolean(),
+    bidderUsername: v.string(),
+    bidAmount: v.number(),
+    bidStatus: v.union(
+      v.literal("active"),
+      v.literal("outbid"),
+      v.literal("won"),
+      v.literal("refunded"),
+      v.literal("cancelled")
+    ),
+    refundedAt: v.optional(v.number()),
+    refunded: v.optional(v.boolean()),
     createdAt: v.number(),
-    metadata: v.optional(v.any()),
   })
-    .index("by_listing", ["listingId"])
-    .index("by_bidder", ["bidderId"]),
+    .index("by_listing", ["listingId", "createdAt"])
+    .index("by_bidder", ["bidderId", "bidStatus"]),
 
-  transactions: defineTable({
-    buyerId: v.string(),
-    sellerId: v.string(),
-    listingId: v.optional(v.string()),
-    itemId: v.string(),
-    itemType: v.string(),
-    amount: v.number(),
-    currency: v.string(),
-    type: v.string(), // "purchase" | "auction_win" | "shop_buy" | "trade"
-    timestamp: v.number(),
-    metadata: v.optional(v.any()),
-  })
-    .index("by_buyer", ["buyerId"])
-    .index("by_seller", ["sellerId"]),
-
-  shopProducts: defineTable({
-    name: v.string(),
-    description: v.string(),
-    category: v.string(), // "pack" | "bundle" | "currency" | "cosmetic"
-    price: v.number(),
-    currency: v.string(),
-    imageUrl: v.optional(v.string()),
-    stock: v.optional(v.number()),
+  marketplacePriceCaps: defineTable({
+    cardDefinitionId: v.string(),
+    maxPrice: v.number(),
+    reason: v.string(),
+    setBy: v.string(),
+    setByUsername: v.string(),
     isActive: v.boolean(),
-    saleId: v.optional(v.id("shopSales")),
-    metadata: v.optional(v.any()),
+    createdAt: v.number(),
+    updatedAt: v.number(),
   })
-    .index("by_category", ["category"])
-    .index("by_active", ["isActive"]),
-
-  shopSales: defineTable({
-    name: v.string(),
-    discountPercent: v.number(),
-    startTime: v.number(),
-    endTime: v.number(),
-    productIds: v.optional(v.array(v.string())),
-    isActive: v.boolean(),
-    metadata: v.optional(v.any()),
-  }).index("by_active", ["isActive"]),
-
-  priceHistory: defineTable({
-    itemId: v.string(),
-    price: v.number(),
-    currency: v.string(),
-    timestamp: v.number(),
-    type: v.string(), // "listing" | "sale" | "auction"
-    metadata: v.optional(v.any()),
-  }).index("by_item", ["itemId"]),
+    .index("by_card", ["cardDefinitionId"])
+    .index("by_active", ["isActive", "createdAt"]),
 });

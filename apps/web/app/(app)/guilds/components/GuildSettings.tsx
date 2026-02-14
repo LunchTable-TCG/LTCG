@@ -117,16 +117,16 @@ export function GuildSettings({ guildId }: GuildSettingsProps) {
   return (
     <div className="space-y-8 max-w-2xl">
       {/* Basic Info */}
-      <div className="space-y-6 p-6 rounded-xl bg-black/40 border border-[#3d2b1f]">
+      <div className="space-y-6 p-6 rounded-xl bg-card/40 border border-border">
         <div className="flex items-center gap-3 mb-4">
-          <Shield className="w-5 h-5 text-[#d4af37]" />
-          <h3 className="font-bold text-[#e8e0d5]">Guild Information</h3>
+          <Shield className="w-5 h-5 text-primary" />
+          <h3 className="font-bold text-foreground">Guild Information</h3>
         </div>
 
         <div className="space-y-4">
           {/* Name */}
           <div className="space-y-2">
-            <label htmlFor="guild-name" className="text-sm font-medium text-[#a89f94]">
+            <label htmlFor="guild-name" className="text-sm font-medium text-muted-foreground">
               Guild Name
             </label>
             <Input
@@ -135,16 +135,19 @@ export function GuildSettings({ guildId }: GuildSettingsProps) {
               onChange={(e) => setName(e.target.value)}
               placeholder="Enter guild name"
               maxLength={32}
-              className="bg-black/40 border-[#3d2b1f] text-[#e8e0d5] focus:border-[#d4af37]/50"
+              className="bg-card/40 border-border text-foreground focus:border-primary/50"
             />
-            <p className="text-xs text-[#a89f94]">
+            <p className="text-xs text-muted-foreground">
               3-32 characters, letters, numbers, spaces, and hyphens
             </p>
           </div>
 
           {/* Description */}
           <div className="space-y-2">
-            <label htmlFor="guild-description" className="text-sm font-medium text-[#a89f94]">
+            <label
+              htmlFor="guild-description"
+              className="text-sm font-medium text-muted-foreground"
+            >
               Description
             </label>
             <Textarea
@@ -154,14 +157,14 @@ export function GuildSettings({ guildId }: GuildSettingsProps) {
               placeholder="Tell others about your guild..."
               maxLength={500}
               rows={4}
-              className="bg-black/40 border-[#3d2b1f] text-[#e8e0d5] focus:border-[#d4af37]/50 resize-none"
+              className="bg-card/40 border-border text-foreground focus:border-primary/50 resize-none"
             />
-            <p className="text-xs text-[#a89f94]">{description.length}/500 characters</p>
+            <p className="text-xs text-muted-foreground">{description.length}/500 characters</p>
           </div>
 
           {/* Visibility */}
           <div className="space-y-3">
-            <p className="text-sm font-medium text-[#a89f94]">Visibility</p>
+            <p className="text-sm font-medium text-muted-foreground">Visibility</p>
             <div className="flex gap-3">
               {[
                 { value: "public" as const, icon: Eye, label: "Public", desc: "Anyone can join" },
@@ -177,25 +180,22 @@ export function GuildSettings({ guildId }: GuildSettingsProps) {
                     className={cn(
                       "flex-1 p-4 rounded-xl border transition-all text-left",
                       isSelected
-                        ? "bg-[#d4af37]/10 border-[#d4af37]/50"
-                        : "bg-black/20 border-[#3d2b1f] hover:border-[#d4af37]/30"
+                        ? "bg-primary/10 border-primary/50"
+                        : "bg-card/20 border-border hover:border-primary/30"
                     )}
                   >
                     <Icon
                       className={cn(
                         "w-5 h-5 mb-2",
-                        isSelected ? "text-[#d4af37]" : "text-[#a89f94]"
+                        isSelected ? "text-primary" : "text-muted-foreground"
                       )}
                     />
                     <p
-                      className={cn(
-                        "font-medium",
-                        isSelected ? "text-[#d4af37]" : "text-[#e8e0d5]"
-                      )}
+                      className={cn("font-medium", isSelected ? "text-primary" : "text-foreground")}
                     >
                       {option.label}
                     </p>
-                    <p className="text-xs text-[#a89f94]">{option.desc}</p>
+                    <p className="text-xs text-muted-foreground">{option.desc}</p>
                   </button>
                 );
               })}
@@ -209,7 +209,9 @@ export function GuildSettings({ guildId }: GuildSettingsProps) {
           disabled={!hasChanges || isSaving}
           className={cn(
             "w-full rounded-xl py-6 font-bold",
-            hasChanges ? "tcg-button-primary" : "bg-[#3d2b1f] text-[#a89f94] cursor-not-allowed"
+            hasChanges
+              ? "bg-primary text-primary-foreground hover:bg-primary/90"
+              : "bg-muted text-muted-foreground cursor-not-allowed"
           )}
         >
           {isSaving ? (
@@ -227,22 +229,25 @@ export function GuildSettings({ guildId }: GuildSettingsProps) {
       </div>
 
       {/* Images */}
-      <div className="space-y-6 p-6 rounded-xl bg-black/40 border border-[#3d2b1f]">
+      <div className="space-y-6 p-6 rounded-xl bg-card/40 border border-border">
         <div className="flex items-center gap-3 mb-4">
-          <ImageIcon className="w-5 h-5 text-[#d4af37]" />
-          <h3 className="font-bold text-[#e8e0d5]">Guild Images</h3>
+          <ImageIcon className="w-5 h-5 text-primary" />
+          <h3 className="font-bold text-foreground">Guild Images</h3>
         </div>
 
         <div className="grid md:grid-cols-2 gap-6">
           {/* Profile Image */}
           <div className="space-y-3">
-            <label htmlFor="guild-profile-image" className="text-sm font-medium text-[#a89f94]">
+            <label
+              htmlFor="guild-profile-image"
+              className="text-sm font-medium text-muted-foreground"
+            >
               Profile Image
             </label>
             <button
               type="button"
               onClick={() => profileInputRef.current?.click()}
-              className="relative aspect-square rounded-xl overflow-hidden border-2 border-dashed border-[#3d2b1f] hover:border-[#d4af37]/50 cursor-pointer transition-colors group"
+              className="relative aspect-square rounded-xl overflow-hidden border-2 border-dashed border-border hover:border-primary/50 cursor-pointer transition-colors group"
             >
               {guild.profileImageUrl ? (
                 <img
@@ -251,8 +256,8 @@ export function GuildSettings({ guildId }: GuildSettingsProps) {
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <div className="absolute inset-0 flex items-center justify-center bg-[#1a1614]">
-                  <Camera className="w-8 h-8 text-[#a89f94]" />
+                <div className="absolute inset-0 flex items-center justify-center bg-card">
+                  <Camera className="w-8 h-8 text-muted-foreground" />
                 </div>
               )}
               <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -278,13 +283,16 @@ export function GuildSettings({ guildId }: GuildSettingsProps) {
 
           {/* Banner Image */}
           <div className="space-y-3">
-            <label htmlFor="guild-banner-image" className="text-sm font-medium text-[#a89f94]">
+            <label
+              htmlFor="guild-banner-image"
+              className="text-sm font-medium text-muted-foreground"
+            >
               Banner Image
             </label>
             <button
               type="button"
               onClick={() => bannerInputRef.current?.click()}
-              className="relative aspect-[16/9] rounded-xl overflow-hidden border-2 border-dashed border-[#3d2b1f] hover:border-[#d4af37]/50 cursor-pointer transition-colors group"
+              className="relative aspect-[16/9] rounded-xl overflow-hidden border-2 border-dashed border-border hover:border-primary/50 cursor-pointer transition-colors group"
             >
               {guild.bannerImageUrl ? (
                 <img
@@ -293,8 +301,8 @@ export function GuildSettings({ guildId }: GuildSettingsProps) {
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <div className="absolute inset-0 flex items-center justify-center bg-[#1a1614]">
-                  <ImageIcon className="w-8 h-8 text-[#a89f94]" />
+                <div className="absolute inset-0 flex items-center justify-center bg-card">
+                  <ImageIcon className="w-8 h-8 text-muted-foreground" />
                 </div>
               )}
               <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
@@ -321,29 +329,29 @@ export function GuildSettings({ guildId }: GuildSettingsProps) {
       </div>
 
       {/* Danger Zone */}
-      <div className="space-y-6 p-6 rounded-xl bg-red-500/5 border border-red-500/20">
+      <div className="space-y-6 p-6 rounded-xl bg-destructive/5 border border-destructive/20">
         <div className="flex items-center gap-3 mb-4">
-          <AlertTriangle className="w-5 h-5 text-red-400" />
-          <h3 className="font-bold text-red-400">Danger Zone</h3>
+          <AlertTriangle className="w-5 h-5 text-destructive" />
+          <h3 className="font-bold text-destructive">Danger Zone</h3>
         </div>
 
         {showDeleteConfirm ? (
           <div className="space-y-4">
-            <p className="text-sm text-[#a89f94]">
+            <p className="text-sm text-muted-foreground">
               This action cannot be undone. Type{" "}
-              <strong className="text-red-400">{guild.name}</strong> to confirm.
+              <strong className="text-destructive">{guild.name}</strong> to confirm.
             </p>
             <Input
               value={deleteConfirmText}
               onChange={(e) => setDeleteConfirmText(e.target.value)}
               placeholder="Type guild name to confirm"
-              className="bg-black/40 border-red-500/30 text-[#e8e0d5] focus:border-red-500/50"
+              className="bg-card/40 border-destructive/30 text-foreground focus:border-destructive/50"
             />
             <div className="flex gap-3">
               <Button
                 onClick={handleDelete}
                 disabled={deleteConfirmText !== guild.name || isDeleting}
-                className="flex-1 bg-red-600 hover:bg-red-500 text-white rounded-xl py-5"
+                className="flex-1 bg-destructive hover:bg-destructive/90 text-destructive-foreground rounded-xl py-5"
               >
                 {isDeleting ? (
                   <>
@@ -363,7 +371,7 @@ export function GuildSettings({ guildId }: GuildSettingsProps) {
                   setDeleteConfirmText("");
                 }}
                 variant="ghost"
-                className="text-[#a89f94] hover:text-[#e8e0d5]"
+                className="text-muted-foreground hover:text-foreground"
               >
                 Cancel
               </Button>
@@ -372,15 +380,15 @@ export function GuildSettings({ guildId }: GuildSettingsProps) {
         ) : (
           <div className="flex items-center justify-between">
             <div>
-              <p className="font-medium text-[#e8e0d5]">Delete Guild</p>
-              <p className="text-sm text-[#a89f94]">
+              <p className="font-medium text-foreground">Delete Guild</p>
+              <p className="text-sm text-muted-foreground">
                 Permanently delete this guild and all its data
               </p>
             </div>
             <Button
               onClick={() => setShowDeleteConfirm(true)}
               variant="outline"
-              className="border-red-500/30 text-red-400 hover:bg-red-500/10 hover:border-red-500/50 rounded-xl"
+              className="border-destructive/30 text-destructive hover:bg-destructive/10 hover:border-destructive/50 rounded-xl"
             >
               <Trash2 className="w-4 h-4 mr-2" />
               Delete

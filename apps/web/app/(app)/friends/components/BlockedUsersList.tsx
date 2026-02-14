@@ -2,13 +2,14 @@
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { useFriendsInteraction } from "@/hooks/social/useFriendsInteraction";
+import type { useFriendsInteraction } from "@/hooks/social/useFriendsInteraction";
+import type { Id } from "@convex/_generated/dataModel";
 import { Ban, Shield } from "lucide-react";
 import { EmptyState } from "./EmptyState";
 
 interface BlockedUsersListProps {
   blockedUsers: ReturnType<typeof useFriendsInteraction>["blockedUsers"];
-  unblockUser: (id: any) => void;
+  unblockUser: (id: Id<"users">) => void;
 }
 
 export function BlockedUsersList({ blockedUsers, unblockUser }: BlockedUsersListProps) {

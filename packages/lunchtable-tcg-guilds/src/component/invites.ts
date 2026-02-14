@@ -5,11 +5,17 @@ const inviteReturnValidator = v.object({
   _id: v.string(),
   _creationTime: v.number(),
   guildId: v.string(),
-  inviterId: v.string(),
-  inviteeId: v.string(),
-  status: v.string(),
+  invitedBy: v.string(),
+  invitedUserId: v.string(),
+  status: v.union(
+    v.literal("pending"),
+    v.literal("accepted"),
+    v.literal("declined"),
+    v.literal("expired")
+  ),
   createdAt: v.number(),
-  metadata: v.optional(v.any()),
+  expiresAt: v.number(),
+  respondedAt: v.optional(v.number()),
 });
 
 const inviteLinkReturnValidator = v.object({
@@ -19,9 +25,10 @@ const inviteLinkReturnValidator = v.object({
   code: v.string(),
   createdBy: v.string(),
   maxUses: v.optional(v.number()),
-  currentUses: v.number(),
-  expiresAt: v.optional(v.number()),
-  metadata: v.optional(v.any()),
+  uses: v.number(),
+  expiresAt: v.number(),
+  isActive: v.boolean(),
+  createdAt: v.number(),
 });
 
 function generateInviteCode() {
@@ -36,8 +43,9 @@ function generateInviteCode() {
 export const createInvite = mutation({
   args: {
     guildId: v.id("guilds"),
-    inviterId: v.string(),
-    inviteeId: v.string(),
+    invitedBy: v.string(),
+    invitedUserId: v.string(),
+    expiresIn: v.optional(v.number()), // milliseconds
   },
   returns: v.string(),
   handler: async (ctx, args) => {
@@ -50,7 +58,7 @@ export const createInvite = mutation({
     const inviter = await ctx.db
       .query("guildMembers")
       .withIndex("by_guild_user", (q) =>
-        q.eq("guildId", args.guildId).eq("userId", args.inviterId)
+        q.eq("guildId", args.guildId).eq("userId", args.invitedBy)
       )
       .unique();
 
@@ -58,14 +66,14 @@ export const createInvite = mutation({
       throw new Error("Inviter is not a member of this guild");
     }
 
-    if (!["owner", "admin", "moderator"].includes(inviter.role)) {
-      throw new Error("Only moderators and above can send invites");
+    if (inviter.role !== "owner") {
+      throw new Error("Only guild owner can send invites");
     }
 
     // Check if invitee is already in a guild
     const inviteeMembership = await ctx.db
       .query("guildMembers")
-      .withIndex("by_user", (q) => q.eq("userId", args.inviteeId))
+      .withIndex("by_user", (q) => q.eq("userId", args.invitedUserId))
       .first();
 
     if (inviteeMembership) {
@@ -75,21 +83,26 @@ export const createInvite = mutation({
     // Check if there's already a pending invite
     const existingInvite = await ctx.db
       .query("guildInvites")
-      .withIndex("by_invitee", (q) => q.eq("inviteeId", args.inviteeId))
-      .filter((q) => q.eq(q.field("status"), "pending"))
+      .withIndex("by_invited_user", (q) =>
+        q.eq("invitedUserId", args.invitedUserId).eq("status", "pending")
+      )
       .first();
 
     if (existingInvite) {
       throw new Error("User already has a pending invite");
     }
 
+    const now = Date.now();
+    const expiresAt = args.expiresIn ? now + args.expiresIn : now + 7 * 24 * 60 * 60 * 1000; // default 7 days
+
     // Create invite
     const inviteId = await ctx.db.insert("guildInvites", {
       guildId: args.guildId,
-      inviterId: args.inviterId,
-      inviteeId: args.inviteeId,
+      invitedBy: args.invitedBy,
+      invitedUserId: args.invitedUserId,
       status: "pending",
-      createdAt: Date.now(),
+      createdAt: now,
+      expiresAt,
     });
 
     return inviteId as string;
@@ -122,8 +135,8 @@ export const createInviteLink = mutation({
       throw new Error("Creator is not a member of this guild");
     }
 
-    if (!["owner", "admin", "moderator"].includes(creator.role)) {
-      throw new Error("Only moderators and above can create invite links");
+    if (creator.role !== "owner") {
+      throw new Error("Only guild owner can create invite links");
     }
 
     // Generate unique code
@@ -142,15 +155,18 @@ export const createInviteLink = mutation({
         .first();
     }
 
-    const expiresAt = args.expiresIn ? Date.now() + args.expiresIn : undefined;
+    const now = Date.now();
+    const expiresAt = args.expiresIn ? now + args.expiresIn : now + 7 * 24 * 60 * 60 * 1000; // default 7 days
 
     const linkId = await ctx.db.insert("guildInviteLinks", {
       guildId: args.guildId,
       code,
       createdBy: args.createdBy,
       maxUses: args.maxUses,
-      currentUses: 0,
+      uses: 0,
       expiresAt,
+      isActive: true,
+      createdAt: now,
     });
 
     return code;
@@ -169,12 +185,18 @@ export const acceptInvite = mutation({
       throw new Error("Invite not found");
     }
 
-    if (invite.inviteeId !== args.userId) {
+    if (invite.invitedUserId !== args.userId) {
       throw new Error("This invite is not for you");
     }
 
     if (invite.status !== "pending") {
       throw new Error("Invite is no longer valid");
+    }
+
+    // Check if expired
+    if (invite.expiresAt < Date.now()) {
+      await ctx.db.patch(args.inviteId, { status: "expired" });
+      throw new Error("Invite has expired");
     }
 
     const guild = await ctx.db.get(invite.guildId);
@@ -192,11 +214,6 @@ export const acceptInvite = mutation({
       throw new Error("You are already in a guild");
     }
 
-    // Check if guild is full
-    if (guild.memberCount >= guild.maxMembers) {
-      throw new Error("Guild is full");
-    }
-
     // Add member
     const memberId = await ctx.db.insert("guildMembers", {
       guildId: invite.guildId,
@@ -206,11 +223,15 @@ export const acceptInvite = mutation({
     });
 
     // Update invite status
-    await ctx.db.patch(args.inviteId, { status: "accepted" });
+    await ctx.db.patch(args.inviteId, {
+      status: "accepted",
+      respondedAt: Date.now(),
+    });
 
     // Update member count
     await ctx.db.patch(invite.guildId, {
       memberCount: guild.memberCount + 1,
+      updatedAt: Date.now(),
     });
 
     return memberId as string;
@@ -233,16 +254,19 @@ export const useInviteLink = mutation({
       throw new Error("Invalid invite code");
     }
 
+    if (!inviteLink.isActive) {
+      throw new Error("Invite link is no longer active");
+    }
+
     // Check if expired
-    if (inviteLink.expiresAt && inviteLink.expiresAt < Date.now()) {
+    if (inviteLink.expiresAt < Date.now()) {
+      await ctx.db.patch(inviteLink._id, { isActive: false });
       throw new Error("Invite link has expired");
     }
 
     // Check if max uses reached
-    if (
-      inviteLink.maxUses &&
-      inviteLink.currentUses >= inviteLink.maxUses
-    ) {
+    if (inviteLink.maxUses && inviteLink.uses >= inviteLink.maxUses) {
+      await ctx.db.patch(inviteLink._id, { isActive: false });
       throw new Error("Invite link has reached maximum uses");
     }
 
@@ -261,11 +285,6 @@ export const useInviteLink = mutation({
       throw new Error("You are already in a guild");
     }
 
-    // Check if guild is full
-    if (guild.memberCount >= guild.maxMembers) {
-      throw new Error("Guild is full");
-    }
-
     // Add member
     const memberId = await ctx.db.insert("guildMembers", {
       guildId: inviteLink.guildId,
@@ -275,13 +294,17 @@ export const useInviteLink = mutation({
     });
 
     // Increment use count
+    const newUses = inviteLink.uses + 1;
+    const shouldDeactivate = inviteLink.maxUses && newUses >= inviteLink.maxUses;
     await ctx.db.patch(inviteLink._id, {
-      currentUses: inviteLink.currentUses + 1,
+      uses: newUses,
+      isActive: shouldDeactivate ? false : inviteLink.isActive,
     });
 
     // Update member count
     await ctx.db.patch(inviteLink.guildId, {
       memberCount: guild.memberCount + 1,
+      updatedAt: Date.now(),
     });
 
     return memberId as string;
@@ -300,7 +323,7 @@ export const declineInvite = mutation({
       throw new Error("Invite not found");
     }
 
-    if (invite.inviteeId !== args.userId) {
+    if (invite.invitedUserId !== args.userId) {
       throw new Error("This invite is not for you");
     }
 
@@ -308,7 +331,10 @@ export const declineInvite = mutation({
       throw new Error("Invite is no longer valid");
     }
 
-    await ctx.db.patch(args.inviteId, { status: "declined" });
+    await ctx.db.patch(args.inviteId, {
+      status: "declined",
+      respondedAt: Date.now(),
+    });
     return null;
   },
 });
@@ -337,19 +363,16 @@ export const cancelInvite = mutation({
       throw new Error("You are not a member of this guild");
     }
 
-    // Must be the inviter or have admin/owner role
-    if (
-      invite.inviterId !== args.cancelledBy &&
-      !["owner", "admin"].includes(canceller.role)
-    ) {
-      throw new Error("Only the inviter or guild admins can cancel invites");
+    // Must be the inviter or owner
+    if (invite.invitedBy !== args.cancelledBy && canceller.role !== "owner") {
+      throw new Error("Only the inviter or guild owner can cancel invites");
     }
 
     if (invite.status !== "pending") {
       throw new Error("Invite is no longer valid");
     }
 
-    await ctx.db.patch(args.inviteId, { status: "cancelled" });
+    await ctx.db.patch(args.inviteId, { status: "expired" });
     return null;
   },
 });
@@ -360,8 +383,9 @@ export const getPendingInvites = query({
   handler: async (ctx, args) => {
     const invites = await ctx.db
       .query("guildInvites")
-      .withIndex("by_invitee", (q) => q.eq("inviteeId", args.userId))
-      .filter((q) => q.eq(q.field("status"), "pending"))
+      .withIndex("by_invited_user", (q) =>
+        q.eq("invitedUserId", args.userId).eq("status", "pending")
+      )
       .collect();
     return invites.map((invite) => ({
       ...invite,
@@ -374,18 +398,36 @@ export const getPendingInvites = query({
 export const getGuildInvites = query({
   args: {
     guildId: v.id("guilds"),
-    status: v.optional(v.string()),
+    status: v.optional(
+      v.union(
+        v.literal("pending"),
+        v.literal("accepted"),
+        v.literal("declined"),
+        v.literal("expired")
+      )
+    ),
   },
   returns: v.array(inviteReturnValidator),
   handler: async (ctx, args) => {
-    let invites = await ctx.db
-      .query("guildInvites")
-      .withIndex("by_guild", (q) => q.eq("guildId", args.guildId))
-      .collect();
-
     if (args.status) {
-      invites = invites.filter((invite) => invite.status === args.status);
+      const invites = await ctx.db
+        .query("guildInvites")
+        .withIndex("by_guild", (q) =>
+          q.eq("guildId", args.guildId).eq("status", args.status!)
+        )
+        .collect();
+      return invites.map((invite) => ({
+        ...invite,
+        _id: invite._id as string,
+        guildId: invite.guildId as string,
+      }));
     }
+
+    // If no status filter, collect all and filter manually
+    const allInvites = await ctx.db
+      .query("guildInvites")
+      .collect();
+    const invites = allInvites.filter((invite) => invite.guildId === args.guildId);
 
     return invites.map((invite) => ({
       ...invite,
@@ -396,13 +438,29 @@ export const getGuildInvites = query({
 });
 
 export const getGuildInviteLinks = query({
-  args: { guildId: v.id("guilds") },
+  args: {
+    guildId: v.id("guilds"),
+    activeOnly: v.optional(v.boolean()),
+  },
   returns: v.array(inviteLinkReturnValidator),
   handler: async (ctx, args) => {
-    const links = await ctx.db
-      .query("guildInviteLinks")
-      .withIndex("by_guild", (q) => q.eq("guildId", args.guildId))
-      .collect();
+    if (args.activeOnly) {
+      const links = await ctx.db
+        .query("guildInviteLinks")
+        .withIndex("by_guild", (q) =>
+          q.eq("guildId", args.guildId).eq("isActive", true)
+        )
+        .collect();
+      return links.map((link) => ({
+        ...link,
+        _id: link._id as string,
+        guildId: link.guildId as string,
+      }));
+    }
+
+    // If no filter, collect all for this guild
+    const allLinks = await ctx.db.query("guildInviteLinks").collect();
+    const links = allLinks.filter((link) => link.guildId === args.guildId);
     return links.map((link) => ({
       ...link,
       _id: link._id as string,

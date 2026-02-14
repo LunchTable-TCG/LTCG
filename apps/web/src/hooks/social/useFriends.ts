@@ -8,7 +8,7 @@ import { useMutation, useQuery } from "convex/react";
 import { toast } from "sonner";
 import { useAuth } from "../auth/useConvexAuthHook";
 
-interface UseFriendsReturn {
+export interface UseFriendsReturn {
   friends: Friend[] | undefined;
   incomingRequests: FriendRequest[] | undefined;
   outgoingRequests: FriendRequest[] | undefined;

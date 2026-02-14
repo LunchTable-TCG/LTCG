@@ -1,8 +1,13 @@
 "use client";
 
 import { useCurrency } from "@/hooks/economy/useCurrency";
+import type {
+  TournamentHistoryEntry,
+  TournamentSummary,
+  UserTournamentStats,
+} from "@/hooks/social/useTournament";
 import { useTournament, useTournamentHistory, useTournaments } from "@/hooks/social/useTournament";
-import type { TournamentSummary } from "@/hooks/social/useTournament";
+import type { HostedTournament, UserTournamentSummary } from "@/hooks/social/useUserTournaments";
 import {
   useJoinUserTournament,
   useMyHostedTournament,
@@ -13,7 +18,33 @@ import type { Id } from "@convex/_generated/dataModel";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
-export function useTournamentInteraction() {
+interface UseTournamentInteractionReturn {
+  activeTab: TournamentTab;
+  setActiveTab: (tab: TournamentTab) => void;
+  registeringForTournament: Id<"tournaments"> | null;
+  setRegisteringForTournament: (id: Id<"tournaments"> | null) => void;
+  showCreateModal: boolean;
+  setShowCreateModal: (show: boolean) => void;
+  showJoinCodeModal: boolean;
+  setShowJoinCodeModal: (show: boolean) => void;
+  gold: number;
+  tournaments: TournamentSummary[];
+  activeTournaments: TournamentSummary[];
+  communityTournaments: UserTournamentSummary[];
+  myHostedTournament: HostedTournament | null;
+  history: TournamentHistoryEntry[];
+  stats: UserTournamentStats | null;
+  selectedTournament: TournamentSummary | undefined;
+  tournamentsLoading: boolean;
+  historyLoading: boolean;
+  communityLoading: boolean;
+  hostedLoading: boolean;
+  handleRegister: () => Promise<void>;
+  handleJoinCommunityTournament: (tournamentId: Id<"tournaments">) => Promise<void>;
+  canCreateTournament: boolean;
+}
+
+export function useTournamentInteraction(): UseTournamentInteractionReturn {
   const [activeTab, setActiveTab] = useState<TournamentTab>("active");
   const [registeringForTournament, setRegisteringForTournament] =
     useState<Id<"tournaments"> | null>(null);

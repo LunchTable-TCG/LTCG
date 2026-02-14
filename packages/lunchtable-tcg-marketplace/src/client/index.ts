@@ -59,20 +59,27 @@ export class ListingsClient {
     ctx: RunMutationCtx,
     args: {
       sellerId: string;
-      itemId: string;
-      itemType: string;
-      itemName: string;
-      price: number;
-      currency: string;
+      sellerUsername: string;
+      listingType: "fixed" | "auction";
+      cardDefinitionId: string;
       quantity: number;
-      isAuction: boolean;
-      auctionEndTime?: number;
-      minBid?: number;
-      buyNowPrice?: number;
-      metadata?: any;
+      price: number;
+      endsAt?: number;
+      currencyType?: "gold" | "token";
+      tokenPrice?: number;
     }
   ) {
-    return await ctx.runMutation(this.component.listings.createListing, args);
+    return await ctx.runMutation(this.component.listings.createListing, {
+      sellerId: args.sellerId as any,
+      sellerUsername: args.sellerUsername,
+      listingType: args.listingType,
+      cardDefinitionId: args.cardDefinitionId as any,
+      quantity: args.quantity,
+      price: args.price,
+      endsAt: args.endsAt,
+      currencyType: args.currencyType,
+      tokenPrice: args.tokenPrice,
+    });
   }
 
   async cancelListing(
@@ -84,7 +91,7 @@ export class ListingsClient {
   ) {
     return await ctx.runMutation(this.component.listings.cancelListing, {
       listingId: args.listingId as any,
-      sellerId: args.sellerId,
+      sellerId: args.sellerId as any,
     });
   }
 
@@ -93,26 +100,37 @@ export class ListingsClient {
     args: {
       listingId: string;
       buyerId: string;
+      buyerUsername: string;
     }
   ) {
     return await ctx.runMutation(this.component.listings.purchaseListing, {
       listingId: args.listingId as any,
-      buyerId: args.buyerId,
+      buyerId: args.buyerId as any,
+      buyerUsername: args.buyerUsername,
     });
   }
 
   async getActive(
     ctx: RunQueryCtx,
     args?: {
-      itemType?: string;
-      currency?: string;
+      listingType?: "fixed" | "auction";
+      currencyType?: "gold" | "token";
     }
   ) {
     return await ctx.runQuery(this.component.listings.getActive, args || {});
   }
 
-  async getBySeller(ctx: RunQueryCtx, args: { sellerId: string }) {
-    return await ctx.runQuery(this.component.listings.getBySeller, args);
+  async getBySeller(
+    ctx: RunQueryCtx,
+    args: {
+      sellerId: string;
+      status?: "active" | "sold" | "cancelled" | "expired" | "suspended";
+    }
+  ) {
+    return await ctx.runQuery(this.component.listings.getBySeller, {
+      sellerId: args.sellerId as any,
+      status: args.status,
+    });
   }
 
   async getById(ctx: RunQueryCtx, args: { id: string }) {
@@ -137,13 +155,15 @@ export class BidsClient {
     args: {
       listingId: string;
       bidderId: string;
-      amount: number;
+      bidderUsername: string;
+      bidAmount: number;
     }
   ) {
     return await ctx.runMutation(this.component.bids.placeBid, {
       listingId: args.listingId as any,
-      bidderId: args.bidderId,
-      amount: args.amount,
+      bidderId: args.bidderId as any,
+      bidderUsername: args.bidderUsername,
+      bidAmount: args.bidAmount,
     });
   }
 
@@ -153,8 +173,17 @@ export class BidsClient {
     });
   }
 
-  async getPlayerBids(ctx: RunQueryCtx, args: { bidderId: string }) {
-    return await ctx.runQuery(this.component.bids.getPlayerBids, args);
+  async getPlayerBids(
+    ctx: RunQueryCtx,
+    args: {
+      bidderId: string;
+      bidStatus?: "active" | "outbid" | "won" | "refunded" | "cancelled";
+    }
+  ) {
+    return await ctx.runQuery(this.component.bids.getPlayerBids, {
+      bidderId: args.bidderId as any,
+      bidStatus: args.bidStatus,
+    });
   }
 
   async resolveAuction(ctx: RunMutationCtx, args: { listingId: string }) {
@@ -165,125 +194,46 @@ export class BidsClient {
 }
 
 /**
- * Client for in-game shop operations.
+ * Client for marketplace price caps.
+ * NOTE: Shop products/sales features removed - tables no longer exist in schema.
  */
 export class ShopClient {
   constructor(private component: typeof api) {}
 
-  async getProducts(ctx: RunQueryCtx, args?: { category?: string }) {
-    return await ctx.runQuery(this.component.shop.getProducts, args || {});
-  }
-
-  async getProductById(ctx: RunQueryCtx, args: { id: string }) {
-    return await ctx.runQuery(this.component.shop.getProductById, {
-      id: args.id as any,
+  async getPriceCaps(
+    ctx: RunQueryCtx,
+    args?: {
+      cardDefinitionId?: string;
+      isActive?: boolean;
+    }
+  ) {
+    return await ctx.runQuery(this.component.shop.getPriceCaps, {
+      cardDefinitionId: args?.cardDefinitionId
+        ? (args.cardDefinitionId as any)
+        : undefined,
+      isActive: args?.isActive,
     });
-  }
-
-  async purchaseProduct(
-    ctx: RunMutationCtx,
-    args: {
-      productId: string;
-      buyerId: string;
-      quantity: number;
-    }
-  ) {
-    return await ctx.runMutation(this.component.shop.purchaseProduct, {
-      productId: args.productId as any,
-      buyerId: args.buyerId,
-      quantity: args.quantity,
-    });
-  }
-
-  async createProduct(
-    ctx: RunMutationCtx,
-    args: {
-      name: string;
-      description: string;
-      category: string;
-      price: number;
-      currency: string;
-      imageUrl?: string;
-      stock?: number;
-      metadata?: any;
-    }
-  ) {
-    return await ctx.runMutation(this.component.shop.createProduct, args);
-  }
-
-  async updateProduct(
-    ctx: RunMutationCtx,
-    args: {
-      id: string;
-      fields: {
-        name?: string;
-        description?: string;
-        category?: string;
-        price?: number;
-        currency?: string;
-        imageUrl?: string;
-        stock?: number;
-        isActive?: boolean;
-        saleId?: string;
-        metadata?: any;
-      };
-    }
-  ) {
-    return await ctx.runMutation(this.component.shop.updateProduct, {
-      id: args.id as any,
-      fields: {
-        ...args.fields,
-        saleId: args.fields.saleId ? (args.fields.saleId as any) : undefined,
-      },
-    });
-  }
-
-  async createSale(
-    ctx: RunMutationCtx,
-    args: {
-      name: string;
-      discountPercent: number;
-      startTime: number;
-      endTime: number;
-      productIds?: string[];
-      metadata?: any;
-    }
-  ) {
-    return await ctx.runMutation(this.component.shop.createSale, args);
-  }
-
-  async getActiveSales(ctx: RunQueryCtx) {
-    return await ctx.runQuery(this.component.shop.getActiveSales, {});
   }
 }
 
 /**
  * Client for marketplace analytics and price tracking.
+ * NOTE: Now uses sold listings instead of removed transactions/priceHistory tables.
  */
 export class AnalyticsClient {
   constructor(private component: typeof api) {}
 
-  async recordPrice(
-    ctx: RunMutationCtx,
-    args: {
-      itemId: string;
-      price: number;
-      currency: string;
-      type: string;
-      metadata?: any;
-    }
-  ) {
-    return await ctx.runMutation(this.component.analytics.recordPrice, args);
-  }
-
   async getPriceHistory(
     ctx: RunQueryCtx,
     args: {
-      itemId: string;
+      cardDefinitionId: string;
       limit?: number;
     }
   ) {
-    return await ctx.runQuery(this.component.analytics.getPriceHistory, args);
+    return await ctx.runQuery(this.component.analytics.getPriceHistory, {
+      cardDefinitionId: args.cardDefinitionId as any,
+      limit: args.limit,
+    });
   }
 
   async getTransactionHistory(
@@ -294,10 +244,11 @@ export class AnalyticsClient {
       limit?: number;
     }
   ) {
-    return await ctx.runQuery(
-      this.component.analytics.getTransactionHistory,
-      args
-    );
+    return await ctx.runQuery(this.component.analytics.getTransactionHistory, {
+      userId: args.userId as any,
+      role: args.role,
+      limit: args.limit,
+    });
   }
 
   async getRecentTransactions(ctx: RunQueryCtx, args?: { limit?: number }) {

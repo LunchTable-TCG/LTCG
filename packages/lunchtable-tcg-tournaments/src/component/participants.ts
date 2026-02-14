@@ -5,30 +5,37 @@ const participantReturnValidator = v.object({
   _id: v.string(),
   _creationTime: v.number(),
   tournamentId: v.string(),
-  playerId: v.string(),
-  playerName: v.optional(v.string()),
-  deckId: v.optional(v.string()),
-  seed: v.optional(v.number()),
-  checkedIn: v.boolean(),
-  eliminated: v.boolean(),
-  wins: v.number(),
-  losses: v.number(),
-  tiebreaker: v.optional(v.number()),
+  userId: v.string(),
+  username: v.string(),
   registeredAt: v.number(),
-  metadata: v.optional(v.any()),
+  seedRating: v.number(),
+  status: v.union(
+    v.literal("registered"),
+    v.literal("checked_in"),
+    v.literal("active"),
+    v.literal("eliminated"),
+    v.literal("winner"),
+    v.literal("forfeit"),
+    v.literal("refunded")
+  ),
+  checkedInAt: v.optional(v.number()),
+  currentRound: v.optional(v.number()),
+  bracket: v.optional(v.number()),
+  eliminatedInRound: v.optional(v.number()),
+  finalPlacement: v.optional(v.number()),
+  prizeAwarded: v.optional(v.number()),
+  prizeAwardedAt: v.optional(v.number()),
 });
 
 export const register = mutation({
   args: {
     tournamentId: v.id("tournaments"),
-    playerId: v.string(),
-    playerName: v.optional(v.string()),
-    deckId: v.optional(v.string()),
-    metadata: v.optional(v.any()),
+    userId: v.string(),
+    username: v.string(),
+    seedRating: v.number(),
   },
   returns: v.string(),
   handler: async (ctx, args) => {
-    // Check if tournament exists and has space
     const tournament = await ctx.db.get(args.tournamentId);
     if (!tournament) {
       throw new Error(`Tournament not found: ${args.tournamentId}`);
@@ -36,15 +43,14 @@ export const register = mutation({
     if (tournament.status !== "registration") {
       throw new Error("Tournament registration is closed");
     }
-    if (tournament.currentPlayers >= tournament.maxPlayers) {
+    if (tournament.registeredCount >= tournament.maxPlayers) {
       throw new Error("Tournament is full");
     }
 
-    // Check if player is already registered
     const existing = await ctx.db
-      .query("participants")
-      .withIndex("by_tournament_player", (q) =>
-        q.eq("tournamentId", args.tournamentId).eq("playerId", args.playerId)
+      .query("tournamentParticipants")
+      .withIndex("by_tournament_user", (q) =>
+        q.eq("tournamentId", args.tournamentId).eq("userId", args.userId)
       )
       .unique();
 
@@ -52,23 +58,18 @@ export const register = mutation({
       throw new Error("Player is already registered for this tournament");
     }
 
-    // Create participant
-    const id = await ctx.db.insert("participants", {
+    const id = await ctx.db.insert("tournamentParticipants", {
       tournamentId: args.tournamentId,
-      playerId: args.playerId,
-      playerName: args.playerName,
-      deckId: args.deckId,
-      checkedIn: false,
-      eliminated: false,
-      wins: 0,
-      losses: 0,
+      userId: args.userId,
+      username: args.username,
       registeredAt: Date.now(),
-      metadata: args.metadata,
+      seedRating: args.seedRating,
+      status: "registered",
     });
 
-    // Update tournament player count
     await ctx.db.patch(args.tournamentId, {
-      currentPlayers: tournament.currentPlayers + 1,
+      registeredCount: tournament.registeredCount + 1,
+      updatedAt: Date.now(),
     });
 
     return id as string;
@@ -78,7 +79,7 @@ export const register = mutation({
 export const unregister = mutation({
   args: {
     tournamentId: v.id("tournaments"),
-    playerId: v.string(),
+    userId: v.string(),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -91,9 +92,9 @@ export const unregister = mutation({
     }
 
     const participant = await ctx.db
-      .query("participants")
-      .withIndex("by_tournament_player", (q) =>
-        q.eq("tournamentId", args.tournamentId).eq("playerId", args.playerId)
+      .query("tournamentParticipants")
+      .withIndex("by_tournament_user", (q) =>
+        q.eq("tournamentId", args.tournamentId).eq("userId", args.userId)
       )
       .unique();
 
@@ -103,7 +104,8 @@ export const unregister = mutation({
 
     await ctx.db.delete(participant._id);
     await ctx.db.patch(args.tournamentId, {
-      currentPlayers: tournament.currentPlayers - 1,
+      registeredCount: tournament.registeredCount - 1,
+      updatedAt: Date.now(),
     });
 
     return null;
@@ -115,7 +117,7 @@ export const getParticipants = query({
   returns: v.array(participantReturnValidator),
   handler: async (ctx, args) => {
     const participants = await ctx.db
-      .query("participants")
+      .query("tournamentParticipants")
       .withIndex("by_tournament", (q) => q.eq("tournamentId", args.tournamentId))
       .collect();
 
@@ -127,13 +129,13 @@ export const getParticipants = query({
   },
 });
 
-export const getPlayerTournaments = query({
-  args: { playerId: v.string() },
+export const getUserTournaments = query({
+  args: { userId: v.string() },
   returns: v.array(participantReturnValidator),
   handler: async (ctx, args) => {
     const participants = await ctx.db
-      .query("participants")
-      .withIndex("by_player", (q) => q.eq("playerId", args.playerId))
+      .query("tournamentParticipants")
+      .withIndex("by_user", (q) => q.eq("userId", args.userId))
       .collect();
 
     return participants.map((p) => ({
@@ -144,20 +146,29 @@ export const getPlayerTournaments = query({
   },
 });
 
-export const updateResult = mutation({
+export const updateStatus = mutation({
   args: {
     tournamentId: v.id("tournaments"),
-    playerId: v.string(),
-    wins: v.optional(v.number()),
-    losses: v.optional(v.number()),
-    tiebreaker: v.optional(v.number()),
+    userId: v.string(),
+    status: v.union(
+      v.literal("registered"),
+      v.literal("checked_in"),
+      v.literal("active"),
+      v.literal("eliminated"),
+      v.literal("winner"),
+      v.literal("forfeit"),
+      v.literal("refunded")
+    ),
+    currentRound: v.optional(v.number()),
+    eliminatedInRound: v.optional(v.number()),
+    finalPlacement: v.optional(v.number()),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
     const participant = await ctx.db
-      .query("participants")
-      .withIndex("by_tournament_player", (q) =>
-        q.eq("tournamentId", args.tournamentId).eq("playerId", args.playerId)
+      .query("tournamentParticipants")
+      .withIndex("by_tournament_user", (q) =>
+        q.eq("tournamentId", args.tournamentId).eq("userId", args.userId)
       )
       .unique();
 
@@ -165,10 +176,10 @@ export const updateResult = mutation({
       throw new Error("Participant not found");
     }
 
-    const updates: any = {};
-    if (args.wins !== undefined) updates.wins = args.wins;
-    if (args.losses !== undefined) updates.losses = args.losses;
-    if (args.tiebreaker !== undefined) updates.tiebreaker = args.tiebreaker;
+    const updates: any = { status: args.status };
+    if (args.currentRound !== undefined) updates.currentRound = args.currentRound;
+    if (args.eliminatedInRound !== undefined) updates.eliminatedInRound = args.eliminatedInRound;
+    if (args.finalPlacement !== undefined) updates.finalPlacement = args.finalPlacement;
 
     await ctx.db.patch(participant._id, updates);
     return null;
@@ -178,14 +189,15 @@ export const updateResult = mutation({
 export const eliminate = mutation({
   args: {
     tournamentId: v.id("tournaments"),
-    playerId: v.string(),
+    userId: v.string(),
+    eliminatedInRound: v.number(),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
     const participant = await ctx.db
-      .query("participants")
-      .withIndex("by_tournament_player", (q) =>
-        q.eq("tournamentId", args.tournamentId).eq("playerId", args.playerId)
+      .query("tournamentParticipants")
+      .withIndex("by_tournament_user", (q) =>
+        q.eq("tournamentId", args.tournamentId).eq("userId", args.userId)
       )
       .unique();
 
@@ -193,7 +205,10 @@ export const eliminate = mutation({
       throw new Error("Participant not found");
     }
 
-    await ctx.db.patch(participant._id, { eliminated: true });
+    await ctx.db.patch(participant._id, {
+      status: "eliminated",
+      eliminatedInRound: args.eliminatedInRound,
+    });
     return null;
   },
 });
@@ -201,14 +216,19 @@ export const eliminate = mutation({
 export const checkIn = mutation({
   args: {
     tournamentId: v.id("tournaments"),
-    playerId: v.string(),
+    userId: v.string(),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
+    const tournament = await ctx.db.get(args.tournamentId);
+    if (!tournament) {
+      throw new Error(`Tournament not found: ${args.tournamentId}`);
+    }
+
     const participant = await ctx.db
-      .query("participants")
-      .withIndex("by_tournament_player", (q) =>
-        q.eq("tournamentId", args.tournamentId).eq("playerId", args.playerId)
+      .query("tournamentParticipants")
+      .withIndex("by_tournament_user", (q) =>
+        q.eq("tournamentId", args.tournamentId).eq("userId", args.userId)
       )
       .unique();
 
@@ -216,7 +236,44 @@ export const checkIn = mutation({
       throw new Error("Participant not found");
     }
 
-    await ctx.db.patch(participant._id, { checkedIn: true });
+    await ctx.db.patch(participant._id, {
+      status: "checked_in",
+      checkedInAt: Date.now(),
+    });
+
+    await ctx.db.patch(args.tournamentId, {
+      checkedInCount: tournament.checkedInCount + 1,
+      updatedAt: Date.now(),
+    });
+
+    return null;
+  },
+});
+
+export const awardPrize = mutation({
+  args: {
+    tournamentId: v.id("tournaments"),
+    userId: v.string(),
+    prizeAmount: v.number(),
+  },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const participant = await ctx.db
+      .query("tournamentParticipants")
+      .withIndex("by_tournament_user", (q) =>
+        q.eq("tournamentId", args.tournamentId).eq("userId", args.userId)
+      )
+      .unique();
+
+    if (!participant) {
+      throw new Error("Participant not found");
+    }
+
+    await ctx.db.patch(participant._id, {
+      prizeAwarded: args.prizeAmount,
+      prizeAwardedAt: Date.now(),
+    });
+
     return null;
   },
 });

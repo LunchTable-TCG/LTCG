@@ -5,8 +5,8 @@ import { useQuery } from "convex/react";
 import { useAuth } from "../auth/useConvexAuthHook";
 
 interface UseCurrencyReturn {
-  balance: ReturnType<typeof useQuery<typeof api.economy.getPlayerBalance>> | undefined;
-  transactions: ReturnType<typeof useQuery<typeof api.economy.getTransactionHistory>> | undefined;
+  balance: ReturnType<typeof useQuery<typeof api.economy.economy.getPlayerBalance>> | undefined;
+  transactions: ReturnType<typeof useQuery<typeof api.economy.economy.getTransactionHistory>> | undefined;
   isLoading: boolean;
   gold: number;
   gems: number;
@@ -51,9 +51,9 @@ export function useCurrency(): UseCurrencyReturn {
   const { isAuthenticated } = useAuth();
 
   // Queries
-  const balance = useQuery(api.economy.getPlayerBalance, isAuthenticated ? {} : "skip");
+  const balance = useQuery(api.economy.economy.getPlayerBalance, isAuthenticated ? {} : "skip");
 
-  const transactions = useQuery(api.economy.getTransactionHistory, isAuthenticated ? {} : "skip");
+  const transactions = useQuery(api.economy.economy.getTransactionHistory, isAuthenticated ? {} : "skip");
 
   return {
     balance,

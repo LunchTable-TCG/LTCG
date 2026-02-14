@@ -11,21 +11,26 @@ interface CurrencyCardProps {
 
 export function CurrencyCard({ item, onPurchase }: CurrencyCardProps) {
   return (
-    <div className="p-4 rounded-xl border border-[#3d2b1f] bg-black/40 hover:bg-black/60 transition-all">
-      <div className="aspect-square rounded-lg bg-yellow-500/10 flex items-center justify-center mb-4 relative">
-        <Coins className="w-20 h-20 text-yellow-400" />
-        <Sparkles className="absolute top-2 right-2 w-6 h-6 text-yellow-300 animate-pulse" />
+    <div className="group p-4 rounded-xl border border-border bg-card/40 hover:bg-card/60 hover:border-primary/50 transition-all relative overflow-hidden">
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+      <div className="aspect-square rounded-lg bg-primary/10 flex items-center justify-center mb-4 relative overflow-hidden group-hover:bg-primary/15 transition-colors">
+        <Coins className="w-20 h-20 text-primary drop-shadow-[0_2px_10px_rgba(212,175,55,0.3)]" />
+        <Sparkles className="absolute top-2 right-2 w-6 h-6 text-primary animate-pulse" />
+        <div className="absolute inset-0 bg-gradient-to-t from-primary/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
       </div>
-      <h3 className="font-bold text-[#e8e0d5] mb-1">{item.name}</h3>
-      <p className="text-2xl font-bold text-yellow-400 mb-1">+{item.quantity?.toLocaleString()}</p>
-      <p className="text-sm text-[#a89f94] mb-3">{item.description}</p>
+      <h3 className="font-bold text-foreground mb-1">{item.name}</h3>
+      <p className="text-2xl font-bold text-primary mb-1">+{item.quantity?.toLocaleString()}</p>
+      <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{item.description}</p>
       {item.gemPrice && (
         <Button
           onClick={onPurchase}
-          className="w-full justify-between bg-purple-600/20 border border-purple-500/30 text-purple-300 hover:bg-purple-600/30"
+          className="w-full justify-between bg-purple-600/20 border border-purple-500/30 text-purple-300 hover:bg-purple-600/30 font-medium"
         >
-          <Gem className="w-4 h-4" />
-          <span>{item.gemPrice.toLocaleString()}</span>
+          <div className="flex items-center gap-2">
+            <Gem className="w-4 h-4" />
+            <span>{item.gemPrice.toLocaleString()}</span>
+          </div>
+          <span className="text-xs uppercase tracking-wider text-purple-400/70">Buy</span>
         </Button>
       )}
     </div>

@@ -36,104 +36,15 @@ export type { api };
  * ```
  */
 export class LTCGWager {
-  public escrow: EscrowClient;
   public transactions: TransactionsClient;
 
   constructor(private component: typeof api) {
-    this.escrow = new EscrowClient(component);
     this.transactions = new TransactionsClient(component);
   }
 }
 
 /**
- * Client for wager escrow management.
- */
-export class EscrowClient {
-  constructor(private component: typeof api) {}
-
-  async create(
-    ctx: RunMutationCtx,
-    args: {
-      gameId: string;
-      player1Id: string;
-      player2Id: string;
-      amount: number;
-      currency: string;
-      expiresAt?: number;
-      metadata?: any;
-    }
-  ) {
-    return await ctx.runMutation(this.component.escrow.createEscrow, args);
-  }
-
-  async get(ctx: RunQueryCtx, args: { id: string }) {
-    return await ctx.runQuery(this.component.escrow.getEscrow, {
-      id: args.id as any,
-    });
-  }
-
-  async getForGame(ctx: RunQueryCtx, args: { gameId: string }) {
-    return await ctx.runQuery(this.component.escrow.getEscrowForGame, args);
-  }
-
-  async releaseToWinner(
-    ctx: RunMutationCtx,
-    args: {
-      escrowId: string;
-      winnerId: string;
-      txSignature?: string;
-    }
-  ) {
-    return await ctx.runMutation(this.component.escrow.releaseToWinner, {
-      escrowId: args.escrowId as any,
-      winnerId: args.winnerId,
-      txSignature: args.txSignature,
-    });
-  }
-
-  async refund(
-    ctx: RunMutationCtx,
-    args: {
-      escrowId: string;
-      txSignature1?: string;
-      txSignature2?: string;
-    }
-  ) {
-    return await ctx.runMutation(this.component.escrow.refundEscrow, {
-      escrowId: args.escrowId as any,
-      txSignature1: args.txSignature1,
-      txSignature2: args.txSignature2,
-    });
-  }
-
-  async getPlayerEscrows(
-    ctx: RunQueryCtx,
-    args: {
-      playerId: string;
-      status?: string;
-    }
-  ) {
-    return await ctx.runQuery(this.component.escrow.getPlayerEscrows, args);
-  }
-
-  async markDeposited(
-    ctx: RunMutationCtx,
-    args: {
-      escrowId: string;
-      playerId: string;
-      txSignature?: string;
-    }
-  ) {
-    return await ctx.runMutation(this.component.escrow.markDeposited, {
-      escrowId: args.escrowId as any,
-      playerId: args.playerId,
-      txSignature: args.txSignature,
-    });
-  }
-}
-
-/**
- * Client for wager transaction tracking.
+ * Client for crypto wager transaction tracking.
  */
 export class TransactionsClient {
   constructor(private component: typeof api) {}
@@ -141,48 +52,62 @@ export class TransactionsClient {
   async record(
     ctx: RunMutationCtx,
     args: {
-      escrowId: string;
-      playerId: string;
-      type: string;
+      lobbyId: string;
+      userId: string;
+      walletAddress: string;
+      type: "deposit" | "payout" | "treasury_fee";
+      currency: "sol" | "usdc";
       amount: number;
-      currency: string;
+      amountAtomic: string;
+      escrowPda: string;
       txSignature?: string;
-      metadata?: any;
+      status?: "pending" | "confirmed" | "failed";
     }
   ) {
     return await ctx.runMutation(this.component.transactions.recordTransaction, {
-      escrowId: args.escrowId as any,
-      playerId: args.playerId,
+      lobbyId: args.lobbyId as any,
+      userId: args.userId as any,
+      walletAddress: args.walletAddress,
       type: args.type,
-      amount: args.amount,
       currency: args.currency,
+      amount: args.amount,
+      amountAtomic: args.amountAtomic,
+      escrowPda: args.escrowPda,
       txSignature: args.txSignature,
-      metadata: args.metadata,
+      status: args.status,
     });
   }
 
   async getForPlayer(
     ctx: RunQueryCtx,
     args: {
-      playerId: string;
+      userId: string;
       limit?: number;
     }
   ) {
-    return await ctx.runQuery(this.component.transactions.getPlayerTransactions, args);
+    return await ctx.runQuery(this.component.transactions.getPlayerTransactions, {
+      userId: args.userId as any,
+      limit: args.limit,
+    });
   }
 
-  async getForGame(ctx: RunQueryCtx, args: { gameId: string }) {
-    return await ctx.runQuery(this.component.transactions.getTransactionsByGame, args);
+  async getForLobby(ctx: RunQueryCtx, args: { lobbyId: string }) {
+    return await ctx.runQuery(this.component.transactions.getTransactionsByLobby, {
+      lobbyId: args.lobbyId as any,
+    });
   }
 
   async getPlayerBalance(
     ctx: RunQueryCtx,
     args: {
-      playerId: string;
-      currency?: string;
+      userId: string;
+      currency?: "sol" | "usdc";
     }
   ) {
-    return await ctx.runQuery(this.component.transactions.getPlayerBalance, args);
+    return await ctx.runQuery(this.component.transactions.getPlayerBalance, {
+      userId: args.userId as any,
+      currency: args.currency,
+    });
   }
 
   async getById(ctx: RunQueryCtx, args: { id: string }) {
@@ -191,9 +116,18 @@ export class TransactionsClient {
     });
   }
 
-  async getForEscrow(ctx: RunQueryCtx, args: { escrowId: string }) {
-    return await ctx.runQuery(this.component.transactions.getEscrowTransactions, {
-      escrowId: args.escrowId as any,
+  async updateStatus(
+    ctx: RunMutationCtx,
+    args: {
+      id: string;
+      status: "pending" | "confirmed" | "failed";
+      txSignature?: string;
+    }
+  ) {
+    return await ctx.runMutation(this.component.transactions.updateTransactionStatus, {
+      id: args.id as any,
+      status: args.status,
+      txSignature: args.txSignature,
     });
   }
 }

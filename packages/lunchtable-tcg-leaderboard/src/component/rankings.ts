@@ -1,226 +1,141 @@
 import { v } from "convex/values";
-import { mutation, query } from "../_generated/server";
+import { query } from "./_generated/server";
 
-const leaderboardEntryValidator = v.object({
-  _id: v.string(),
-  _creationTime: v.number(),
-  boardId: v.string(),
-  playerId: v.string(),
-  playerName: v.optional(v.string()),
-  score: v.number(),
-  rank: v.optional(v.number()),
-  wins: v.optional(v.number()),
-  losses: v.optional(v.number()),
-  streak: v.optional(v.number()),
-  rating: v.optional(v.number()),
-  lastUpdated: v.number(),
-  metadata: v.optional(v.any()),
+const rankingEntryValidator = v.object({
+  userId: v.string(),
+  username: v.string(),
+  rank: v.number(),
+  rating: v.number(),
+  level: v.optional(v.number()),
+  wins: v.number(),
+  losses: v.number(),
+  winRate: v.number(),
+  isAiAgent: v.boolean(),
 });
 
-export const submitScore = mutation({
-  args: {
-    boardId: v.string(),
-    playerId: v.string(),
-    playerName: v.optional(v.string()),
-    score: v.number(),
-    wins: v.optional(v.number()),
-    losses: v.optional(v.number()),
-    streak: v.optional(v.number()),
-    rating: v.optional(v.number()),
-    metadata: v.optional(v.any()),
-  },
-  returns: v.string(),
-  handler: async (ctx, args) => {
-    const existing = await ctx.db
-      .query("leaderboardEntries")
-      .withIndex("by_board_player", (q) =>
-        q.eq("boardId", args.boardId).eq("playerId", args.playerId)
-      )
-      .unique();
-
-    const now = Date.now();
-
-    if (existing) {
-      await ctx.db.patch(existing._id, {
-        score: args.score,
-        playerName: args.playerName ?? existing.playerName,
-        wins: args.wins ?? existing.wins,
-        losses: args.losses ?? existing.losses,
-        streak: args.streak ?? existing.streak,
-        rating: args.rating ?? existing.rating,
-        lastUpdated: now,
-        metadata: args.metadata ?? existing.metadata,
-      });
-      return existing._id as string;
-    }
-
-    const id = await ctx.db.insert("leaderboardEntries", {
-      boardId: args.boardId,
-      playerId: args.playerId,
-      playerName: args.playerName,
-      score: args.score,
-      wins: args.wins,
-      losses: args.losses,
-      streak: args.streak,
-      rating: args.rating,
-      lastUpdated: now,
-      metadata: args.metadata,
-    });
-    return id as string;
-  },
+const leaderboardValidator = v.object({
+  _id: v.string(),
+  _creationTime: v.number(),
+  leaderboardType: v.union(v.literal("ranked"), v.literal("casual"), v.literal("story")),
+  playerSegment: v.union(v.literal("all"), v.literal("humans"), v.literal("ai")),
+  rankings: v.array(rankingEntryValidator),
+  lastUpdated: v.number(),
 });
 
 export const getTopPlayers = query({
   args: {
-    boardId: v.string(),
+    leaderboardType: v.union(v.literal("ranked"), v.literal("casual"), v.literal("story")),
+    playerSegment: v.optional(v.union(v.literal("all"), v.literal("humans"), v.literal("ai"))),
     limit: v.optional(v.number()),
   },
-  returns: v.array(leaderboardEntryValidator),
+  returns: v.array(rankingEntryValidator),
   handler: async (ctx, args) => {
+    const segment = args.playerSegment ?? "all";
     const limit = args.limit ?? 100;
-    const entries = await ctx.db
-      .query("leaderboardEntries")
-      .withIndex("by_board_score", (q) => q.eq("boardId", args.boardId))
-      .order("desc")
-      .take(limit);
 
-    return entries.map((entry, index) => ({
-      ...entry,
-      _id: entry._id as string,
-      rank: index + 1,
-    }));
+    const snapshot = await ctx.db
+      .query("leaderboardSnapshots")
+      .withIndex("by_leaderboard", (q) =>
+        q.eq("leaderboardType", args.leaderboardType).eq("playerSegment", segment)
+      )
+      .first();
+
+    if (!snapshot) return [];
+
+    return snapshot.rankings.slice(0, limit);
   },
 });
 
 export const getPlayerRank = query({
   args: {
-    boardId: v.string(),
+    leaderboardType: v.union(v.literal("ranked"), v.literal("casual"), v.literal("story")),
     playerId: v.string(),
+    playerSegment: v.optional(v.union(v.literal("all"), v.literal("humans"), v.literal("ai"))),
   },
-  returns: v.union(leaderboardEntryValidator, v.null()),
+  returns: v.union(rankingEntryValidator, v.null()),
   handler: async (ctx, args) => {
-    const entry = await ctx.db
-      .query("leaderboardEntries")
-      .withIndex("by_board_player", (q) =>
-        q.eq("boardId", args.boardId).eq("playerId", args.playerId)
+    const segment = args.playerSegment ?? "all";
+
+    const snapshot = await ctx.db
+      .query("leaderboardSnapshots")
+      .withIndex("by_leaderboard", (q) =>
+        q.eq("leaderboardType", args.leaderboardType).eq("playerSegment", segment)
       )
-      .unique();
+      .first();
 
-    if (!entry) return null;
+    if (!snapshot) return null;
 
-    const higherScores = await ctx.db
-      .query("leaderboardEntries")
-      .withIndex("by_board_score", (q) => q.eq("boardId", args.boardId))
-      .filter((q) => q.gt(q.field("score"), entry.score))
-      .collect();
-
-    const rank = higherScores.length + 1;
-
-    return {
-      ...entry,
-      _id: entry._id as string,
-      rank,
-    };
+    const playerEntry = snapshot.rankings.find((r) => r.userId === args.playerId);
+    return playerEntry ?? null;
   },
 });
 
 export const getAroundPlayer = query({
   args: {
-    boardId: v.string(),
+    leaderboardType: v.union(v.literal("ranked"), v.literal("casual"), v.literal("story")),
     playerId: v.string(),
+    playerSegment: v.optional(v.union(v.literal("all"), v.literal("humans"), v.literal("ai"))),
     range: v.optional(v.number()),
   },
   returns: v.object({
-    player: v.union(leaderboardEntryValidator, v.null()),
-    above: v.array(leaderboardEntryValidator),
-    below: v.array(leaderboardEntryValidator),
+    player: v.union(rankingEntryValidator, v.null()),
+    above: v.array(rankingEntryValidator),
+    below: v.array(rankingEntryValidator),
   }),
   handler: async (ctx, args) => {
+    const segment = args.playerSegment ?? "all";
     const range = args.range ?? 5;
 
-    const entry = await ctx.db
-      .query("leaderboardEntries")
-      .withIndex("by_board_player", (q) =>
-        q.eq("boardId", args.boardId).eq("playerId", args.playerId)
+    const snapshot = await ctx.db
+      .query("leaderboardSnapshots")
+      .withIndex("by_leaderboard", (q) =>
+        q.eq("leaderboardType", args.leaderboardType).eq("playerSegment", segment)
       )
-      .unique();
+      .first();
 
-    if (!entry) {
+    if (!snapshot) {
       return { player: null, above: [], below: [] };
     }
 
-    const higherScores = await ctx.db
-      .query("leaderboardEntries")
-      .withIndex("by_board_score", (q) => q.eq("boardId", args.boardId))
-      .filter((q) => q.gt(q.field("score"), entry.score))
-      .order("desc")
-      .take(range);
+    const playerIndex = snapshot.rankings.findIndex((r) => r.userId === args.playerId);
 
-    const lowerScores = await ctx.db
-      .query("leaderboardEntries")
-      .withIndex("by_board_score", (q) => q.eq("boardId", args.boardId))
-      .filter((q) => q.lt(q.field("score"), entry.score))
-      .order("desc")
-      .take(range);
+    if (playerIndex === -1) {
+      return { player: null, above: [], below: [] };
+    }
 
-    const playerRank = higherScores.length + 1;
+    const player = snapshot.rankings[playerIndex];
+    const above = snapshot.rankings.slice(Math.max(0, playerIndex - range), playerIndex);
+    const below = snapshot.rankings.slice(playerIndex + 1, playerIndex + 1 + range);
 
     return {
-      player: {
-        ...entry,
-        _id: entry._id as string,
-        rank: playerRank,
-      },
-      above: higherScores.reverse().map((e, i) => ({
-        ...e,
-        _id: e._id as string,
-        rank: playerRank - higherScores.length + i,
-      })),
-      below: lowerScores.map((e, i) => ({
-        ...e,
-        _id: e._id as string,
-        rank: playerRank + i + 1,
-      })),
+      player,
+      above,
+      below,
     };
   },
 });
 
-export const getByCategory = query({
+export const getLeaderboard = query({
   args: {
-    boardId: v.string(),
+    leaderboardType: v.union(v.literal("ranked"), v.literal("casual"), v.literal("story")),
+    playerSegment: v.optional(v.union(v.literal("all"), v.literal("humans"), v.literal("ai"))),
   },
-  returns: v.array(leaderboardEntryValidator),
+  returns: v.union(leaderboardValidator, v.null()),
   handler: async (ctx, args) => {
-    const entries = await ctx.db
-      .query("leaderboardEntries")
-      .withIndex("by_board", (q) => q.eq("boardId", args.boardId))
-      .collect();
+    const segment = args.playerSegment ?? "all";
 
-    return entries
-      .sort((a, b) => b.score - a.score)
-      .map((entry, index) => ({
-        ...entry,
-        _id: entry._id as string,
-        rank: index + 1,
-      }));
-  },
-});
+    const snapshot = await ctx.db
+      .query("leaderboardSnapshots")
+      .withIndex("by_leaderboard", (q) =>
+        q.eq("leaderboardType", args.leaderboardType).eq("playerSegment", segment)
+      )
+      .first();
 
-export const resetCategory = mutation({
-  args: {
-    boardId: v.string(),
-  },
-  returns: v.number(),
-  handler: async (ctx, args) => {
-    const entries = await ctx.db
-      .query("leaderboardEntries")
-      .withIndex("by_board", (q) => q.eq("boardId", args.boardId))
-      .collect();
+    if (!snapshot) return null;
 
-    for (const entry of entries) {
-      await ctx.db.delete(entry._id);
-    }
-
-    return entries.length;
+    return {
+      ...snapshot,
+      _id: snapshot._id as string,
+    };
   },
 });

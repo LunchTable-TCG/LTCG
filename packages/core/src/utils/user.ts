@@ -2,7 +2,7 @@
  * @module @ltcg/core/utils/user
  */
 
-import { RankName, UserRankInfo } from "../types/user";
+import type { UserRankInfo } from "../types/user";
 
 /**
  * Calculates user rank based on total games won.

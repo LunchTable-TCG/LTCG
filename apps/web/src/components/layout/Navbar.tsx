@@ -167,16 +167,18 @@ export function Navbar() {
         <div className="container mx-auto px-4">
           <nav className="flex items-center justify-between">
             <div className="flex items-center gap-4">
+              {/* Mobile Menu Toggle - Only visible on mobile */}
               <button
                 type="button"
                 onClick={toggle}
-                className="tcg-button w-12 h-12 rounded-lg flex items-center justify-center"
+                className="tcg-button w-12 h-12 rounded-lg flex md:hidden items-center justify-center"
                 aria-label="Toggle menu"
               >
                 <Menu className="w-5 h-5 text-primary" />
               </button>
 
-              <Link href="/" className="flex items-center gap-3 group">
+              {/* Logo - Only visible on mobile or if sidebar is hidden (but sidebar is always visible on desktop now) */}
+              <Link href="/" className="flex md:hidden items-center gap-3 group">
                 <div className="relative">
                   <div className="absolute inset-0 bg-primary/30 rounded-lg blur-lg opacity-50 group-hover:opacity-100 transition-opacity" />
                   <div className="relative w-10 h-10 flex items-center justify-center">
@@ -190,38 +192,27 @@ export function Navbar() {
                     />
                   </div>
                 </div>
-                <div className="hidden sm:flex sm:items-center sm:gap-2">
-                  <span className="text-xl font-bold gold-gradient">Lunchtable</span>
-                  <span className="px-2 py-0.5 text-[10px] font-bold bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded-full uppercase tracking-wider">
-                    Alpha
-                  </span>
-                </div>
               </Link>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 ml-auto">
               {isAuthenticated ? (
                 <>
-                  {/* Only show "The Table" button on landing page */}
-                  {pathname === "/" && (
-                    <Button
-                      asChild
-                      className="hidden sm:flex tcg-button-primary rounded-lg px-4 py-2 text-sm"
-                    >
-                      <Link href="/lunchtable">
-                        <Swords className="w-3.5 h-3.5 mr-1.5" />
-                        The Table
-                      </Link>
-                    </Button>
-                  )}
+                  {/* Desktop Header Actions */}
+                  <div className="hidden md:flex items-center gap-6 mr-6">
+                    <div className="flex items-center gap-2 px-3 py-1.5 bg-black/40 border border-border/50 rounded-full">
+                      <div className="w-2 h-2 rounded-full bg-yellow-400 animate-pulse" />
+                      <span className="text-xs font-mono text-primary/80">Online</span>
+                    </div>
+                  </div>
 
                   <WalletButton expandable className="hidden sm:flex" />
 
                   <InboxDropdown className="hidden sm:block" />
 
-                  <Link href="/profile" className="group">
+                  {/* Profile Link - distinct from Sidebar's footprint */}
+                  <Link href="/profile" className="group md:hidden">
                     <div className="relative">
-                      <div className="absolute inset-0 bg-primary/20 rounded-full blur-md opacity-0 group-hover:opacity-100 transition-opacity" />
                       <Avatar className="relative w-10 h-10 border-2 border-border group-hover:border-primary/50 transition-colors">
                         {currentUser?.image && (
                           <AvatarImage

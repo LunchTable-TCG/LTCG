@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { GuildMember } from "@/types/guilds";
 import type { Id } from "@convex/_generated/dataModel";
-import { Circle, Crown, Loader2, MoreVertical, Shield, UserMinus, UserPlus } from "lucide-react";
+import { Circle, Crown, Loader2, MoreVertical, Shield, UserPlus } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 
@@ -55,7 +55,7 @@ export function GuildMemberList({
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-16">
-        <Loader2 className="w-8 h-8 text-[#d4af37] animate-spin" />
+        <Loader2 className="w-8 h-8 text-primary animate-spin" />
       </div>
     );
   }
@@ -69,8 +69,8 @@ export function GuildMemberList({
       {owner && (
         <div className="space-y-3">
           <div className="flex items-center gap-2">
-            <Crown className="w-4 h-4 text-[#d4af37]" />
-            <span className="text-xs font-bold text-[#a89f94] uppercase tracking-wider">
+            <Crown className="w-4 h-4 text-primary" />
+            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
               Guild Leader
             </span>
           </div>
@@ -82,8 +82,8 @@ export function GuildMemberList({
       {regularMembers.length > 0 && (
         <div className="space-y-3">
           <div className="flex items-center gap-2">
-            <Shield className="w-4 h-4 text-[#a89f94]" />
-            <span className="text-xs font-bold text-[#a89f94] uppercase tracking-wider">
+            <Shield className="w-4 h-4 text-muted-foreground" />
+            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
               Members — {regularMembers.length}
             </span>
           </div>
@@ -112,10 +112,10 @@ export function GuildMemberList({
                     />
 
                     {/* Menu */}
-                    <div className="absolute right-0 top-full mt-2 z-50 w-48 rounded-xl bg-[#1a1614] border border-[#3d2b1f] shadow-2xl overflow-hidden">
+                    <div className="absolute right-0 top-full mt-2 z-50 w-48 rounded-xl bg-popover border border-border shadow-2xl overflow-hidden">
                       {confirmAction?.userId === member.userId ? (
                         <div className="p-3 space-y-3">
-                          <p className="text-sm text-[#e8e0d5] font-medium">
+                          <p className="text-sm text-foreground font-medium">
                             {confirmAction.action === "kick"
                               ? `Remove ${member.username}?`
                               : `Transfer ownership to ${member.username}?`}
@@ -133,17 +133,16 @@ export function GuildMemberList({
                               className={cn(
                                 "flex-1 rounded-lg",
                                 confirmAction.action === "kick"
-                                  ? "bg-red-600 hover:bg-red-500"
-                                  : "bg-[#d4af37] hover:bg-[#f9e29f] text-[#1a1614]"
+                                  ? "bg-destructive hover:bg-destructive/90"
+                                  : "bg-primary hover:bg-primary/90 text-primary-foreground"
                               )}
                             >
                               Confirm
                             </Button>
                             <Button
                               size="sm"
-                              variant="ghost"
                               onClick={() => setConfirmAction(null)}
-                              className="flex-1 text-[#a89f94]"
+                              className="flex-1 text-muted-foreground hover:text-foreground"
                             >
                               Cancel
                             </Button>
@@ -156,7 +155,7 @@ export function GuildMemberList({
                             onClick={() =>
                               setConfirmAction({ userId: member.userId, action: "transfer" })
                             }
-                            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-[#e8e0d5] hover:bg-[#d4af37]/10 hover:text-[#d4af37] transition-all"
+                            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-foreground hover:bg-primary/10 hover:text-primary transition-all"
                           >
                             <Crown className="w-4 h-4" />
                             Transfer Ownership
@@ -168,7 +167,6 @@ export function GuildMemberList({
                             }
                             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-[#e8e0d5] hover:bg-red-500/10 hover:text-red-400 transition-all"
                           >
-                            <UserMinus className="w-4 h-4" />
                             Remove Member
                           </button>
                         </div>
@@ -184,10 +182,12 @@ export function GuildMemberList({
 
       {/* Empty state */}
       {regularMembers.length === 0 && (
-        <div className="text-center py-12 rounded-xl bg-black/40 border border-[#3d2b1f]">
-          <UserPlus className="w-12 h-12 mx-auto mb-3 text-[#a89f94]/50" />
-          <p className="text-[#a89f94]">No other members yet</p>
-          <p className="text-sm text-[#a89f94]/60 mt-1">Invite players to join your guild!</p>
+        <div className="text-center py-12 rounded-xl bg-card/40 border border-border">
+          <UserPlus className="w-12 h-12 mx-auto mb-3 text-muted-foreground/50" />
+          <p className="text-muted-foreground">No other members yet</p>
+          <p className="text-sm text-muted-foreground/60 mt-1">
+            Invite players to join your guild!
+          </p>
         </div>
       )}
     </div>
@@ -225,36 +225,36 @@ function MemberCard({
   return (
     <div
       className={cn(
-        "flex items-center gap-4 p-4 rounded-xl bg-black/40 border transition-all",
-        isOwner ? "border-[#d4af37]/30" : "border-[#3d2b1f]",
-        "hover:bg-black/50"
+        "flex items-center gap-4 p-4 rounded-xl bg-card/40 border transition-all",
+        isOwner ? "border-primary/30" : "border-border",
+        "hover:bg-card/60"
       )}
     >
       {/* Avatar */}
       <div className="relative">
-        <Avatar className="w-12 h-12 border-2 border-[#3d2b1f]">
+        <Avatar className="w-12 h-12 border-2 border-border">
           {member.image && <AvatarImage src={member.image} alt={member.username || "Member"} />}
           <AvatarFallback
             className={cn(
               "font-bold",
-              isOwner ? "bg-[#d4af37]/20 text-[#d4af37]" : "bg-[#1a1614] text-[#d4af37]"
+              isOwner ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"
             )}
           >
             {member.username[0]?.toUpperCase() || "?"}
           </AvatarFallback>
         </Avatar>
         {member.isOnline && (
-          <div className="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full bg-green-500 border-2 border-[#1a1614]" />
+          <div className="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full bg-green-500 border-2 border-background" />
         )}
       </div>
 
       {/* Info */}
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <span className="font-bold text-[#e8e0d5] truncate">{member.username}</span>
-          {isOwner && <Crown className="w-4 h-4 text-[#d4af37] shrink-0" />}
+          <span className="font-bold text-foreground truncate">{member.username}</span>
+          {isOwner && <Crown className="w-4 h-4 text-primary shrink-0" />}
         </div>
-        <p className="text-xs text-[#a89f94]">
+        <p className="text-xs text-muted-foreground">
           {member.isOnline ? (
             <span className="flex items-center gap-1">
               <Circle className="w-2 h-2 fill-green-500 text-green-500" />
@@ -273,8 +273,8 @@ function MemberCard({
           size="sm"
           onClick={onActionClick}
           className={cn(
-            "text-[#a89f94] hover:text-[#e8e0d5]",
-            isActionOpen && "bg-[#d4af37]/10 text-[#d4af37]"
+            "text-muted-foreground hover:text-foreground",
+            isActionOpen && "bg-primary/10 text-primary"
           )}
           aria-label={`Member actions for ${member.username}`}
           aria-expanded={isActionOpen}
