@@ -13,6 +13,7 @@
  * Rarity distribution weights (out of 1000)
  * Used for pack opening and random card generation
  * → config.economy.rarityWeights
+ * @deprecated Use getGameConfig(ctx).economy.rarityWeights instead
  */
 export const RARITY_WEIGHTS = {
   common: 550, // 55%
@@ -26,6 +27,7 @@ export const RARITY_WEIGHTS = {
  * Card Variant System
  * Variants are cosmetic versions with different drop rates
  * Applied as multipliers on top of base rarity rates
+ * @deprecated Use getGameConfig(ctx).economy.variantBaseRates for base rates
  */
 export const VARIANT_CONFIG = {
   /** Base variant drop rates (out of 10,000 for precision) */
@@ -62,6 +64,7 @@ export const VARIANT_CONFIG = {
  * Pity System Configuration
  * Guarantees rare drops after X packs without one
  * Resets counter when target is pulled
+ * @deprecated Use getGameConfig(ctx).economy.pityThresholds instead
  */
 export const PITY_THRESHOLDS = {
   /** Guaranteed Epic after this many packs without one */
@@ -76,6 +79,7 @@ export const PITY_THRESHOLDS = {
 
 /**
  * Marketplace Configuration
+ * @deprecated Use getGameConfig(ctx).marketplace instead
  */
 export const MARKETPLACE = {
   /** Platform fee percentage (0.05 = 5%) */
@@ -97,6 +101,7 @@ export const MARKETPLACE = {
 /**
  * Economy Configuration
  * → config.economy.startingCurrency (WELCOME_BONUS_GOLD)
+ * @deprecated Use getGameConfig(ctx).economy.startingGold / startingGems instead
  */
 export const ECONOMY = {
   /** Starting gold for new players → config.economy.startingCurrency */
@@ -122,6 +127,7 @@ export const PAGINATION = {
 
 /**
  * Chat Configuration
+ * @deprecated Use getGameConfig(ctx).social.chat instead
  */
 export const CHAT = {
   /** Rate limit: max messages per time window (per user) */
@@ -151,6 +157,7 @@ export const LEADERBOARD = {
 /**
  * XP and Level Progression System
  * → config.progression.xp
+ * @deprecated Use getGameConfig(ctx).progression.xp instead
  */
 export const XP_SYSTEM = {
   /** Base XP required for level 2 */
@@ -183,6 +190,7 @@ export const XP_SYSTEM = {
 
 /**
  * ELO Rating System
+ * @deprecated Use getGameConfig(ctx).competitive.elo instead
  */
 export const ELO_SYSTEM = {
   /** Default starting rating for new players */
@@ -197,6 +205,7 @@ export const ELO_SYSTEM = {
 
 /**
  * Rank Thresholds - ELO boundaries for competitive tiers
+ * @deprecated Use getGameConfig(ctx).competitive.rankThresholds instead
  */
 export const RANK_THRESHOLDS = {
   Bronze: 0,
@@ -210,6 +219,7 @@ export const RANK_THRESHOLDS = {
 
 /**
  * Spectator System Configuration
+ * @deprecated Use getGameConfig(ctx).social.spectator instead
  */
 export const SPECTATOR = {
   /** Maximum spectators per game */
@@ -280,8 +290,9 @@ export const TOKEN = {
 
 /**
  * Daily and Weekly Rewards Configuration
+ * @deprecated Use gameConfig table for runtime overrides instead of GAME_ECONOMY_CONFIG env var
  */
-const DEFAULT_DAILY_REWARDS = {
+export const DAILY_REWARDS = {
   /** Number of cards in daily free pack */
   DAILY_PACK_CARDS: 3,
 
@@ -311,26 +322,12 @@ const DEFAULT_DAILY_REWARDS = {
   },
 } as const;
 
-export const DAILY_REWARDS = (() => {
-  const envConfig = process.env["GAME_ECONOMY_CONFIG"];
-  if (envConfig) {
-    try {
-      const config = JSON.parse(envConfig);
-      if (config.dailyRewards) {
-        return { ...DEFAULT_DAILY_REWARDS, ...config.dailyRewards };
-      }
-    } catch (e) {
-      console.error("Failed to parse GAME_ECONOMY_CONFIG for DAILY_REWARDS", e);
-    }
-  }
-  return DEFAULT_DAILY_REWARDS;
-})();
-
 /**
  * Gem Package Definitions
  * Token → Gems conversion with bonus tiers
+ * @deprecated Use gameConfig table for runtime overrides instead of GAME_ECONOMY_CONFIG env var
  */
-const DEFAULT_GEM_PACKAGES = [
+export const GEM_PACKAGES = [
   { id: "gem_starter", name: "Starter", gems: 300, usdCents: 299, bonus: 0 },
   { id: "gem_basic", name: "Basic", gems: 650, usdCents: 499, bonus: 8 },
   { id: "gem_standard", name: "Standard", gems: 1200, usdCents: 999, bonus: 20 },
@@ -345,25 +342,11 @@ const DEFAULT_GEM_PACKAGES = [
   { id: "gem_ultimate", name: "Ultimate", gems: 5000000, usdCents: 999999, bonus: 400 },
 ] as const;
 
-export const GEM_PACKAGES = (() => {
-  const envConfig = process.env["GAME_ECONOMY_CONFIG"];
-  if (envConfig) {
-    try {
-      const config = JSON.parse(envConfig);
-      if (config.gemPackages) {
-        return config.gemPackages;
-      }
-    } catch (e) {
-      console.error("Failed to parse GAME_ECONOMY_CONFIG for GEM_PACKAGES", e);
-    }
-  }
-  return DEFAULT_GEM_PACKAGES;
-})();
-
 /**
  * Gold Earning Rates (F2P economy)
+ * @deprecated Use gameConfig table for runtime overrides instead of GAME_ECONOMY_CONFIG env var
  */
-const DEFAULT_GOLD_REWARDS = {
+export const GOLD_REWARDS = {
   /** Ranked match win (varies by opponent ELO) */
   RANKED_WIN_BASE: 50,
   RANKED_WIN_MAX: 100, // Against higher rated opponent
@@ -392,25 +375,11 @@ const DEFAULT_GOLD_REWARDS = {
   SEASON_REWARD_LEGEND: 10000,
 } as const;
 
-export const GOLD_REWARDS = (() => {
-  const envConfig = process.env["GAME_ECONOMY_CONFIG"];
-  if (envConfig) {
-    try {
-      const config = JSON.parse(envConfig);
-      if (config.goldRewards) {
-        return { ...DEFAULT_GOLD_REWARDS, ...config.goldRewards };
-      }
-    } catch (e) {
-      console.error("Failed to parse GAME_ECONOMY_CONFIG for GOLD_REWARDS", e);
-    }
-  }
-  return DEFAULT_GOLD_REWARDS;
-})();
-
 /**
  * Gems → Gold Conversion Bundles
+ * @deprecated Use gameConfig table for runtime overrides instead of GAME_ECONOMY_CONFIG env var
  */
-const DEFAULT_GOLD_BUNDLES = [
+export const GOLD_BUNDLES = [
   { id: "gold_pouch", name: "Gold Pouch", gems: 100, gold: 400 },
   { id: "gold_sack", name: "Gold Sack", gems: 250, gold: 1100 },
   { id: "gold_chest", name: "Gold Chest", gems: 500, gold: 2500 },
@@ -418,26 +387,12 @@ const DEFAULT_GOLD_BUNDLES = [
   { id: "gold_hoard", name: "Gold Hoard", gems: 2500, gold: 15000 },
 ] as const;
 
-export const GOLD_BUNDLES = (() => {
-  const envConfig = process.env["GAME_ECONOMY_CONFIG"];
-  if (envConfig) {
-    try {
-      const config = JSON.parse(envConfig);
-      if (config.goldBundles) {
-        return config.goldBundles;
-      }
-    } catch (e) {
-      console.error("Failed to parse GAME_ECONOMY_CONFIG for GOLD_BUNDLES", e);
-    }
-  }
-  return DEFAULT_GOLD_BUNDLES;
-})();
-
 /**
  * Shop Pack Definitions
  * Products available for purchase
+ * @deprecated Use gameConfig table for runtime overrides instead of GAME_ECONOMY_CONFIG env var
  */
-const DEFAULT_SHOP_PACKS = {
+export const SHOP_PACKS = {
   basic: {
     id: "pack_basic",
     name: "Basic Pack",
@@ -488,22 +443,6 @@ const DEFAULT_SHOP_PACKS = {
     guaranteedLegendary: 1,
   },
 } as const;
-
-export const SHOP_PACKS = (() => {
-  const envConfig = process.env["GAME_ECONOMY_CONFIG"];
-  if (envConfig) {
-    try {
-      const config = JSON.parse(envConfig);
-      if (config.shopPacks) {
-        // Deep merge or replacement logic could be needed, but simple replacement for now
-        return { ...DEFAULT_SHOP_PACKS, ...config.shopPacks };
-      }
-    } catch (e) {
-      console.error("Failed to parse GAME_ECONOMY_CONFIG for SHOP_PACKS", e);
-    }
-  }
-  return DEFAULT_SHOP_PACKS;
-})();
 
 /**
  * Sales System Configuration
