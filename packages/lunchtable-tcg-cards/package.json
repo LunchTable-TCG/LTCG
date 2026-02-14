@@ -1,7 +1,7 @@
 {
-  "name": "@lunchtable-tcg/social",
+  "name": "@lunchtable-tcg/cards",
   "version": "0.1.0",
-  "description": "Friends & social: friend requests, DMs, presence, notifications",
+  "description": "Card definitions, player inventory, and deck management component",
   "type": "module",
   "exports": {
     "./package.json": "./package.json",
@@ -28,23 +28,17 @@
     "build": "tsc --project ./tsconfig.build.json",
     "dev:build": "tsc --project ./tsconfig.build.json --watch",
     "clean": "rm -rf dist",
-    "type-check": "tsc --noEmit",
-    "test": "vitest run",
-    "test:watch": "vitest"
+    "type-check": "tsc --noEmit"
   },
   "peerDependencies": {
     "convex": "^1.24.8"
   },
-  "dependencies": {
-  },
   "devDependencies": {
     "convex": "^1.31.6",
-    "convex-test": "^0.0.38",
-    "typescript": "^5.7.3",
-    "vitest": "^3.2.4"
+    "typescript": "^5.7.3"
   },
   "files": ["dist", "src"],
   "types": "./dist/client/index.d.ts",
   "module": "./dist/client/index.js",
-  "keywords": ["tcg", "convex", "component", "card-game", "social"]
+  "keywords": ["tcg", "convex", "component", "card-game", "cards", "decks"]
 }
