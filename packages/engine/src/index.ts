@@ -6,3 +6,5 @@ export type { CardLookup, DeckValidation } from "./cards.js";
 export { createEngine } from "./engine.js";
 export type { Engine, EngineOptions } from "./engine.js";
 export { loadCardsFromArray, loadCardsFromJSON } from "./loader.js";
+export { defineCardSet, mergeCardSets } from "./cardSet.js";
+export type { CardSet, CardSetInput } from "./cardSet.js";
