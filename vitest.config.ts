@@ -12,6 +12,7 @@ export default defineConfig({
       "apps/admin",
       "convex",
       "packages/engine",
+      "packages/config",
     ],
     globals: true,
     coverage: {

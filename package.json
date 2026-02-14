@@ -101,6 +101,7 @@
     "@lunchtable-tcg/branding": "workspace:*",
     "@lunchtable-tcg/cards": "workspace:*",
     "@lunchtable-tcg/competitive": "workspace:*",
+    "@lunchtable-tcg/config": "workspace:*",
     "@lunchtable-tcg/content": "workspace:*",
     "@lunchtable-tcg/economy": "workspace:*",
     "@lunchtable-tcg/email": "workspace:*",
