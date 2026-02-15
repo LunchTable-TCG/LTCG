@@ -3,7 +3,7 @@
 export * from "./types/index.js";
 export { defineCards, validateDeck } from "./cards.js";
 export type { CardLookup, DeckValidation } from "./cards.js";
-export { createEngine } from "./engine.js";
+export { createEngine, createInitialState, decide, evolve, mask, legalMoves } from "./engine.js";
 export type { Engine, EngineOptions } from "./engine.js";
 export { loadCardsFromArray, loadCardsFromJSON } from "./loader.js";
 export { defineCardSet, mergeCardSets } from "./cardSet.js";

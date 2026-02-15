@@ -208,7 +208,7 @@ export function legalMoves(state: GameState, seat: Seat): Command[] {
   return moves;
 }
 
-function decide(state: GameState, command: Command, seat: Seat): EngineEvent[] {
+export function decide(state: GameState, command: Command, seat: Seat): EngineEvent[] {
   if (state.gameOver) return [];
 
   const events: EngineEvent[] = [];
@@ -282,7 +282,7 @@ function decide(state: GameState, command: Command, seat: Seat): EngineEvent[] {
   return events;
 }
 
-function evolve(state: GameState, events: EngineEvent[]): GameState {
+export function evolve(state: GameState, events: EngineEvent[]): GameState {
   let newState = { ...state };
 
   for (const event of events) {
