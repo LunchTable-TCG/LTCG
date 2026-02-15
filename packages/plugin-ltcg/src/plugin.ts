@@ -41,6 +41,7 @@ import { z } from "zod";
 
 // Import LTCG actions, providers, and evaluators
 import { ltcgActions } from "./actions";
+import { operatorActions } from "./actions/operator";
 import { controlRoutes } from "./api/controlRoutes";
 import { panelRoutes } from "./api/routes";
 import { ltcgEvaluators } from "./evaluators";
@@ -190,7 +191,7 @@ const plugin: LTCGPlugin = {
   // - LTCGPollingService: Polls for updates when no webhook URL is configured
   // - StateAggregator: Aggregates service state for panel APIs
   services: [TurnOrchestrator, LTCGPollingService, StateAggregator],
-  actions: ltcgActions,
+  actions: [...ltcgActions, ...operatorActions],
   providers: ltcgProviders,
   evaluators: ltcgEvaluators,
   // UI panels for agent monitoring and analytics

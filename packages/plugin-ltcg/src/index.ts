@@ -35,6 +35,9 @@ export {
   ggAction,
 } from "./actions";
 
+// Operator Actions - Game management and configuration
+export { operatorActions, updateConfigAction, seedCardsAction } from "./actions/operator";
+
 // Providers - Context data for LLM
 export { ltcgProviders } from "./providers";
 export {
@@ -43,6 +46,7 @@ export {
   boardAnalysisProvider,
   legalActionsProvider,
   strategyProvider,
+  configProvider,
 } from "./providers";
 
 // Evaluators - Response filtering

@@ -107,7 +107,7 @@ Respond with ONLY a JSON array of card objects.`;
       const rows = toConvexCardRows(cards);
 
       // Seed via admin API
-      const result = await client.seedCards(rows as Array<Record<string, unknown>>);
+      const result = await client.seedCards(rows as unknown as Array<Record<string, unknown>>);
 
       const cardNames = cards
         .slice(0, 5)

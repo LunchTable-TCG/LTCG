@@ -6,6 +6,7 @@
 
 import { boardAnalysisProvider } from "./boardAnalysisProvider";
 import { cardDatabaseProvider } from "./cardDatabaseProvider";
+import { configProvider } from "./configProvider";
 import { deckProvider } from "./deckProvider";
 import { gameStateProvider } from "./gameStateProvider";
 import { globalChatProvider } from "./globalChatProvider";
@@ -29,6 +30,7 @@ import { winConditionProvider } from "./winConditionProvider";
  * 8. globalChatProvider - Recent chat messages and online users (Tavern Hall)
  * 9. opponentModelingProvider - Opponent behavior patterns and predictions
  * 10. winConditionProvider - Win paths, lethal detection, and threat assessment
+ * 11. configProvider - Game configuration settings (economy, progression, competitive, social)
  */
 export const ltcgProviders = [
   cardDatabaseProvider,
@@ -41,10 +43,12 @@ export const ltcgProviders = [
   globalChatProvider,
   opponentModelingProvider,
   winConditionProvider,
+  configProvider,
 ];
 
 // Export individual providers for selective use
 export { cardDatabaseProvider } from "./cardDatabaseProvider";
+export { configProvider } from "./configProvider";
 export { deckProvider } from "./deckProvider";
 export { gameStateProvider } from "./gameStateProvider";
 export { handProvider } from "./handProvider";
