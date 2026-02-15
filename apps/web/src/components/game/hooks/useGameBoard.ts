@@ -368,7 +368,7 @@ export function useGameBoard(lobbyId: Id<"gameLobbies">, currentPlayerId: Id<"us
   ) as ChainState | undefined | null;
 
   // Current user query for player name
-  const currentUser = useConvexQuery(typedApi.core.users.currentUser, {}) as
+  const currentUser = useConvexQuery(typedApi.auth.currentUser, {}) as
     | CurrentUser
     | undefined
     | null;

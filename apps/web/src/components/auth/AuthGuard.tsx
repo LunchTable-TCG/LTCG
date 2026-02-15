@@ -66,11 +66,11 @@ export function AuthGuard({
   // Find embedded wallet for auto-sync
   const embeddedWallet = wallets.find((w) => isPrivyEmbeddedWallet(w));
 
-  // User data - only query when Convex is authenticated
-  const currentUser = useQuery(typedApi.core.users.currentUser, convexAuthenticated ? {} : "skip");
+  // User data - only query when Convex is authenticated (JWT-based, no args needed)
+  const currentUser = useQuery(typedApi.auth.currentUser, convexAuthenticated ? {} : "skip");
 
-  // Mutation to create user - useRef to prevent re-creation on every render
-  const createOrGetUser = useMutation(typedApi.auth.syncUser.createOrGetUser);
+  // Mutation to create user - JWT-based, no privyId arg needed
+  const createOrGetUser = useMutation(typedApi.auth.syncUser);
   const syncInProgress = useRef(false);
   const syncCompleted = useRef(false);
 
@@ -103,32 +103,11 @@ export function AuthGuard({
       ) {
         syncInProgress.current = true;
         try {
-          // Read referral data from sessionStorage (set by invite/referral landing pages)
-          let referralSource: string | undefined;
-          let referralGuildInviteCode: string | undefined;
-          let referralCode: string | undefined;
-          try {
-            const referralData = sessionStorage.getItem("referral");
-            if (referralData) {
-              const parsed = JSON.parse(referralData);
-              referralSource = parsed.source;
-              referralGuildInviteCode = parsed.code;
-              referralCode = parsed.referralCode;
-              // Clear after reading so it's only used once
-              sessionStorage.removeItem("referral");
-            }
-          } catch {
-            // Ignore sessionStorage errors
-          }
-
-          // Auto-sync wallet during user creation
+          // JWT-based sync — privyId comes from the token, not args
           await createOrGetUser({
             email: privyUser?.email?.address,
             walletAddress: embeddedWallet?.address,
             walletType: embeddedWallet ? "privy_embedded" : undefined,
-            referralSource,
-            referralGuildInviteCode,
-            referralCode,
           });
           syncCompleted.current = true;
         } catch (error) {
@@ -214,10 +193,11 @@ function deriveAuthState(params: {
     return "syncing";
   }
 
-  // Stage 6: User exists but missing username OR starter deck
+  // Stage 6: User exists but needs onboarding (placeholder username or no deck)
   if (currentUser && typeof currentUser === "object") {
     const user = currentUser as { username?: string; activeDeckId?: string };
-    if (!user.username || !user.activeDeckId) {
+    const hasRealUsername = user.username && !user.username.startsWith("player_");
+    if (!hasRealUsername || !user.activeDeckId) {
       return "needs_onboarding";
     }
   }

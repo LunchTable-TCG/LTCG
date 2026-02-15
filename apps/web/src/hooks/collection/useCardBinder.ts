@@ -23,7 +23,7 @@ export function useCardBinder(): UseCardBinderReturn {
   const { isAuthenticated } = useAuth();
 
   // Fetch current user details to get the userId for queries
-  const currentUser = useQuery(typedApi.core.users.currentUser, isAuthenticated ? {} : "skip");
+  const currentUser = useQuery(typedApi.auth.currentUser, isAuthenticated ? {} : "skip");
 
   const userId = currentUser?._id;
 

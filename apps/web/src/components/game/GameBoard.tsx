@@ -67,7 +67,7 @@ export function GameBoard({
   useDebugLifecycle("GameBoard", { lobbyId, gameMode });
 
   // Get player ID from auth if not provided (story mode)
-  const authUser = useConvexQuery(typedApi.core.users.currentUser, {});
+  const authUser = useConvexQuery(typedApi.auth.currentUser, {});
   const playerId = providedPlayerId || (authUser?._id as Id<"users"> | undefined);
 
   log.debug("GameBoard rendered", { lobbyId, playerId, gameMode });

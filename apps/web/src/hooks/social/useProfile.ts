@@ -9,8 +9,8 @@ import { useQuery } from "convex/react";
 import { useAuth } from "../auth/useConvexAuthHook";
 
 // Module-scope references to avoid TS2589
-const currentUserQuery = typedApi.core.users.currentUser;
-const getUserQuery = typedApi.core.users.getUser;
+const currentUserQuery = typedApi.auth.currentUser;
+const getUserQuery = typedApi.auth.getUser;
 
 /**
  * Type-safe profile with optional stats fields

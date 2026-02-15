@@ -60,7 +60,7 @@ export function useAIChat(): UseAIChatReturn {
 
   // Get the current user from Convex for the userId
   const currentUser = useConvexQuery(
-    typedApi.core.users.currentUser,
+    typedApi.auth.currentUser,
     isAuthenticated ? {} : "skip"
   );
   const userId = currentUser?._id;

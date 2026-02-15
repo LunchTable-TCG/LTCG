@@ -14,6 +14,16 @@ export default defineSchema(
     })
       .index("by_privyId", ["privyId"])
       .index("by_username", ["username"]),
+    agents: defineTable({
+      name: v.string(),
+      apiKeyHash: v.string(),
+      apiKeyPrefix: v.string(),
+      userId: v.id("users"),
+      isActive: v.boolean(),
+      createdAt: v.number(),
+    })
+      .index("by_apiKeyHash", ["apiKeyHash"])
+      .index("by_userId", ["userId"]),
   },
   { schemaValidation: false },
 );

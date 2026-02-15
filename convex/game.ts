@@ -2,7 +2,7 @@ import { v } from "convex/values";
 import { components } from "./_generated/api";
 import { mutation, query, internalMutation } from "./_generated/server";
 import { internal } from "./_generated/api";
-import { getUser } from "./auth";
+import { requireUser } from "./auth";
 import { LTCGCards } from "@lunchtable-tcg/cards";
 import { LTCGMatch } from "@lunchtable-tcg/match";
 import { LTCGStory } from "@lunchtable-tcg/story";
@@ -21,17 +21,17 @@ export const getAllCards = query({
 });
 
 export const getUserCards = query({
-  args: { privyId: v.string() },
-  handler: async (ctx, args) => {
-    const user = await getUser(ctx, args.privyId);
+  args: {},
+  handler: async (ctx) => {
+    const user = await requireUser(ctx);
     return cards.cards.getUserCards(ctx, user._id);
   },
 });
 
 export const getUserDecks = query({
-  args: { privyId: v.string() },
-  handler: async (ctx, args) => {
-    const user = await getUser(ctx, args.privyId);
+  args: {},
+  handler: async (ctx) => {
+    const user = await requireUser(ctx);
     return cards.decks.getUserDecks(ctx, user._id);
   },
 });
@@ -44,9 +44,9 @@ export const getDeckWithCards = query({
 // ── Deck Mutations ─────────────────────────────────────────────────
 
 export const createDeck = mutation({
-  args: { privyId: v.string(), name: v.string() },
+  args: { name: v.string() },
   handler: async (ctx, args) => {
-    const user = await getUser(ctx, args.privyId);
+    const user = await requireUser(ctx);
     return cards.decks.createDeck(ctx, user._id, args.name);
   },
 });
@@ -60,18 +60,18 @@ export const saveDeck = mutation({
 });
 
 export const setActiveDeck = mutation({
-  args: { privyId: v.string(), deckId: v.string() },
+  args: { deckId: v.string() },
   handler: async (ctx, args) => {
-    const user = await getUser(ctx, args.privyId);
+    const user = await requireUser(ctx);
     await cards.decks.setActiveDeck(ctx, user._id, args.deckId);
     await ctx.db.patch(user._id, { activeDeckId: args.deckId });
   },
 });
 
 export const selectStarterDeck = mutation({
-  args: { privyId: v.string(), deckCode: v.string() },
+  args: { deckCode: v.string() },
   handler: async (ctx, args) => {
-    const user = await getUser(ctx, args.privyId);
+    const user = await requireUser(ctx);
     const allCards = await cards.cards.getAllCards(ctx);
     await cards.decks.selectStarterDeck(ctx, user._id, args.deckCode, allCards);
   },
@@ -90,17 +90,17 @@ export const getChapterStages = query({
 });
 
 export const getStoryProgress = query({
-  args: { privyId: v.string() },
-  handler: async (ctx, args) => {
-    const user = await getUser(ctx, args.privyId);
+  args: {},
+  handler: async (ctx) => {
+    const user = await requireUser(ctx);
     return story.progress.getProgress(ctx, user._id);
   },
 });
 
 export const getStageProgress = query({
-  args: { privyId: v.string() },
-  handler: async (ctx, args) => {
-    const user = await getUser(ctx, args.privyId);
+  args: {},
+  handler: async (ctx) => {
+    const user = await requireUser(ctx);
     return story.progress.getStageProgress(ctx, user._id);
   },
 });
@@ -109,12 +109,11 @@ export const getStageProgress = query({
 
 export const startStoryBattle = mutation({
   args: {
-    privyId: v.string(),
     chapterId: v.string(),
     stageNumber: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
-    const user = await getUser(ctx, args.privyId);
+    const user = await requireUser(ctx);
 
     if (!user.activeDeckId) throw new Error("No active deck set");
     const deckData = await cards.decks.getDeckWithCards(ctx, user.activeDeckId);

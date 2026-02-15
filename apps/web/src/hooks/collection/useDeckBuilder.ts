@@ -76,7 +76,7 @@ export function useDeckBuilder(): UseDeckBuilderReturn {
   const { isAuthenticated } = useAuth();
 
   // Fetch current user details
-  const currentUser = useQuery(typedApi.core.users.currentUser, isAuthenticated ? {} : "skip");
+  const currentUser = useQuery(typedApi.auth.currentUser, isAuthenticated ? {} : "skip");
 
   const userId = currentUser?._id;
 
@@ -225,7 +225,7 @@ export function useDeck(deckId: Id<"userDecks"> | null) {
   const { isAuthenticated } = useAuth();
 
   // Fetch current user details
-  const currentUser = useQuery(typedApi.core.users.currentUser, isAuthenticated ? {} : "skip");
+  const currentUser = useQuery(typedApi.auth.currentUser, isAuthenticated ? {} : "skip");
 
   const userId = currentUser?._id;
 
@@ -269,7 +269,7 @@ export function useValidateDeck(deckId: Id<"userDecks"> | null) {
   const { isAuthenticated } = useAuth();
 
   // Fetch current user details
-  const currentUser = useQuery(typedApi.core.users.currentUser, isAuthenticated ? {} : "skip");
+  const currentUser = useQuery(typedApi.auth.currentUser, isAuthenticated ? {} : "skip");
 
   const userId = currentUser?._id;
 

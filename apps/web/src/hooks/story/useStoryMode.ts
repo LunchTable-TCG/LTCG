@@ -9,7 +9,7 @@ export function useStoryMode() {
   const { isAuthenticated } = useAuth();
 
   const currentUser = useConvexQuery(
-    typedApi.core.users.currentUser,
+    typedApi.auth.currentUser,
     isAuthenticated ? {} : "skip"
   );
 

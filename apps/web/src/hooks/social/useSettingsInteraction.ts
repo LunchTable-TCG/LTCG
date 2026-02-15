@@ -21,7 +21,7 @@ export function useSettingsInteraction() {
 
   // Data Fetching
   const currentUser = useConvexQuery(
-    typedApi.core.users.currentUser,
+    typedApi.auth.currentUser,
     isAuthenticated ? {} : "skip"
   );
   const preferences = useConvexQuery(

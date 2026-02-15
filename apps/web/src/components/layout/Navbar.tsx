@@ -61,7 +61,7 @@ export function Navbar() {
   const { logout } = useLogout();
 
   const currentUser = useConvexQuery(
-    typedApi.core.users.currentUser,
+    typedApi.auth.currentUser,
     isAuthenticated ? {} : "skip"
   );
 

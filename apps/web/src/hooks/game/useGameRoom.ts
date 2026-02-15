@@ -11,7 +11,7 @@ export function useGameRoom(lobbyId: Id<"gameLobbies">) {
   const { isAuthenticated } = useAuth();
 
   const currentUser = useConvexQuery(
-    typedApi.core.users.currentUser,
+    typedApi.auth.currentUser,
     isAuthenticated ? {} : "skip"
   );
 
