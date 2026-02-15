@@ -24,10 +24,115 @@ export type { api };
  * import { LTCGMatch } from "@lunchtable-tcg/match";
  *
  * const match = new LTCGMatch(components.ltcgMatch);
+ *
+ * // In a mutation:
+ * const matchId = await match.createMatch(ctx, { hostId, awayId, ... });
+ * await match.startMatch(ctx, { matchId, initialState: JSON.stringify(state) });
+ *
+ * // In a query:
+ * const view = await match.getPlayerView(ctx, { matchId, seat: "host" });
  * ```
  */
 export class LTCGMatch {
   constructor(private component: typeof api) {}
 
-  // Methods will be added in Task 15
+  // ---------------------------------------------------------------------------
+  // Mutations
+  // ---------------------------------------------------------------------------
+
+  async createMatch(
+    ctx: RunMutationCtx,
+    args: {
+      hostId: string;
+      awayId: string;
+      mode: "pvp" | "story";
+      hostDeck: string[];
+      awayDeck: string[];
+      isAIOpponent: boolean;
+    }
+  ) {
+    return await ctx.runMutation(this.component.mutations.createMatch, args);
+  }
+
+  async startMatch(
+    ctx: RunMutationCtx,
+    args: {
+      matchId: string;
+      initialState: string;
+    }
+  ) {
+    return await ctx.runMutation(this.component.mutations.startMatch, {
+      matchId: args.matchId as any,
+      initialState: args.initialState,
+    });
+  }
+
+  async submitAction(
+    ctx: RunMutationCtx,
+    args: {
+      matchId: string;
+      command: string;
+      seat: "host" | "away";
+      cardLookup?: string;
+    }
+  ) {
+    return await ctx.runMutation(this.component.mutations.submitAction, {
+      matchId: args.matchId as any,
+      command: args.command,
+      seat: args.seat,
+      cardLookup: args.cardLookup,
+    });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Queries
+  // ---------------------------------------------------------------------------
+
+  async getMatchMeta(
+    ctx: RunQueryCtx,
+    args: { matchId: string }
+  ) {
+    return await ctx.runQuery(this.component.queries.getMatchMeta, {
+      matchId: args.matchId as any,
+    });
+  }
+
+  async getPlayerView(
+    ctx: RunQueryCtx,
+    args: {
+      matchId: string;
+      seat: "host" | "away";
+    }
+  ) {
+    return await ctx.runQuery(this.component.queries.getPlayerView, {
+      matchId: args.matchId as any,
+      seat: args.seat,
+    });
+  }
+
+  async getRecentEvents(
+    ctx: RunQueryCtx,
+    args: {
+      matchId: string;
+      sinceVersion: number;
+    }
+  ) {
+    return await ctx.runQuery(this.component.queries.getRecentEvents, {
+      matchId: args.matchId as any,
+      sinceVersion: args.sinceVersion,
+    });
+  }
+
+  async getOpenPrompt(
+    ctx: RunQueryCtx,
+    args: {
+      matchId: string;
+      seat: "host" | "away";
+    }
+  ) {
+    return await ctx.runQuery(this.component.queries.getOpenPrompt, {
+      matchId: args.matchId as any,
+      seat: args.seat,
+    });
+  }
 }
