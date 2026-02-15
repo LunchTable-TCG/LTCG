@@ -4,8 +4,9 @@
  * Actions for game operators to manage their white-label TCG deployment.
  */
 
+import { seedCardsAction } from "./seedCardsAction";
 import { updateConfigAction } from "./updateConfigAction";
 
-export const operatorActions = [updateConfigAction];
+export const operatorActions = [updateConfigAction, seedCardsAction];
 
-export { updateConfigAction };
+export { seedCardsAction, updateConfigAction };
