@@ -3,7 +3,7 @@
 import { useAuth } from "@/hooks/auth/useConvexAuthHook";
 import { typedApi, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers";
 import { useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 export function useStoryChapter(chapterId: string) {
@@ -34,9 +34,14 @@ export function useStoryChapter(chapterId: string) {
   };
 
   const [selectedStage, setSelectedStage] = useState<StageData | null>(null);
+  const [isStarting, setIsStarting] = useState(false);
 
   const initializeStageProgress = useConvexMutation(
     typedApi.progression.storyStages.initializeChapterStageProgress
+  );
+
+  const initializeStoryBattle = useConvexMutation(
+    typedApi.progression.storyBattle.initializeStoryBattle
   );
 
   // Initialize stage progress when chapter loads
@@ -59,8 +64,8 @@ export function useStoryChapter(chapterId: string) {
     setSelectedStage(stageData);
   };
 
-  const startBattle = () => {
-    if (!selectedStage) return;
+  const startBattle = useCallback(async () => {
+    if (!selectedStage || isStarting) return;
 
     if (!currentUser?.activeDeckId) {
       const shouldNavigate = confirm(
@@ -72,9 +77,22 @@ export function useStoryChapter(chapterId: string) {
       return;
     }
 
-    const battleUrl = `/play/story/${chapterId}/battle/${selectedStage.stageNumber}`;
-    navigate({ to: battleUrl });
-  };
+    setIsStarting(true);
+    try {
+      const result = await initializeStoryBattle({
+        chapterId,
+        stageNumber: selectedStage.stageNumber,
+      });
+      // Navigate to the game board with the lobby ID
+      navigate({ to: "/play/$matchId", params: { matchId: result.lobbyId } });
+    } catch (error) {
+      console.error("Failed to start story battle:", error);
+      const message = error instanceof Error ? error.message : "Failed to start battle";
+      toast.error(message);
+    } finally {
+      setIsStarting(false);
+    }
+  }, [selectedStage, isStarting, currentUser, chapterId, initializeStoryBattle, navigate]);
 
   const isLoading = !currentUser || chapterDetails === undefined;
   const isMissing = !chapterDetails;

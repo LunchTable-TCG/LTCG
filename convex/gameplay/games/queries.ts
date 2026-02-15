@@ -896,6 +896,7 @@ export const getGameStateForPlayer = query({
       // Metadata
       mode: lobby.mode,
       lastMoveAt: gameState.lastMoveAt,
+      isAIOpponent: gameState.isAIOpponent ?? false,
     };
   },
 });

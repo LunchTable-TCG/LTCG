@@ -790,8 +790,8 @@ export function useGameBoard(lobbyId: Id<"gameLobbies">, currentPlayerId: Id<"us
 
     return {
       playerId: gameState.opponentId,
-      playerName: gameState.opponentUsername,
-      playerType: "human",
+      playerName: gameState.isAIOpponent ? (gameState.opponentUsername || "CPU") : gameState.opponentUsername,
+      playerType: gameState.isAIOpponent ? "ai" : "human",
       isActivePlayer: !gameState.isYourTurn,
       lifePoints: gameState.opponentLifePoints,
       maxLifePoints: 8000,

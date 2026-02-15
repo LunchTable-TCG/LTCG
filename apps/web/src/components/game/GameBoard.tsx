@@ -52,10 +52,16 @@ interface ChainLink {
 export function GameBoard({
   lobbyId,
   playerId: providedPlayerId,
-  gameMode = "pvp",
+  gameMode: gameModeOverride,
 }: GameBoardProps) {
   const log = componentLogger("GameBoard");
   const navigate = useNavigate();
+
+  // First check lobby status - MUST be called before any conditional returns
+  const lobbyDetails = useConvexQuery(typedApi.gameplay.games.queries.getLobbyDetails, { lobbyId });
+
+  // Auto-detect game mode from lobby if not explicitly set
+  const gameMode = gameModeOverride ?? (lobbyDetails?.mode === "story" ? "story" : "pvp");
 
   // Debug lifecycle
   useDebugLifecycle("GameBoard", { lobbyId, gameMode });
@@ -65,9 +71,6 @@ export function GameBoard({
   const playerId = providedPlayerId || (authUser?._id as Id<"users"> | undefined);
 
   log.debug("GameBoard rendered", { lobbyId, playerId, gameMode });
-
-  // First check lobby status - MUST be called before any conditional returns
-  const lobbyDetails = useConvexQuery(typedApi.gameplay.games.queries.getLobbyDetails, { lobbyId });
 
   const gameBoard = useGameBoard(lobbyId, playerId ?? ("" as Id<"users">));
   const {
