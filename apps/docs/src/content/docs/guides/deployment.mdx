@@ -1,0 +1,240 @@
+---
+title: Deployment
+description: Deploy your LunchTable TCG game to production with Convex and Vercel.
+---
+
+import { Steps, Tabs, TabItem, Aside } from "@astrojs/starlight/components";
+
+This guide covers deploying your game's backend to Convex and your frontend to Vercel, along with optional integrations for payments, blockchain, and AI agents.
+
+## Backend deployment (Convex)
+
+Convex hosts your game's backend -- all gameplay logic, matchmaking, economy, and real-time data sync.
+
+<Steps>
+
+1. **Log in to Convex**
+
+   ```bash
+   bunx convex login
+   ```
+
+2. **Deploy to production**
+
+   ```bash
+   bunx convex deploy
+   ```
+
+   This pushes your backend functions and schema to your production Convex deployment. The CLI will confirm the deployment URL.
+
+3. **Seed initial data**
+
+   After the first production deployment, run the setup scripts to initialize your game:
+
+   ```bash
+   bun run setup
+   ```
+
+   This seeds default configurations, starter cards, and creates the initial admin account.
+
+</Steps>
+
+<Aside type="caution">
+Always run `bunx convex deploy` before deploying your frontend. The frontend depends on a live Convex backend.
+</Aside>
+
+## Frontend deployment (Vercel)
+
+The frontend is a Next.js application that deploys to Vercel.
+
+<Steps>
+
+1. **Install the Vercel CLI** (if you have not already)
+
+   ```bash
+   bun add -g vercel
+   ```
+
+2. **Link your project**
+
+   ```bash
+   bunx vercel link
+   ```
+
+   Follow the prompts to connect your local project to a Vercel project.
+
+3. **Set environment variables**
+
+   In your Vercel project settings (or via the CLI), add the following environment variables:
+
+   ```bash
+   bunx vercel env add CONVEX_DEPLOYMENT
+   bunx vercel env add NEXT_PUBLIC_CONVEX_URL
+   ```
+
+4. **Deploy**
+
+   ```bash
+   bunx vercel --prod
+   ```
+
+</Steps>
+
+## Environment variables checklist
+
+Ensure all required environment variables are set in your hosting provider before deploying.
+
+### Required
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `CONVEX_DEPLOYMENT` | Your Convex deployment identifier. | `prod:your-project-abc123` |
+| `NEXT_PUBLIC_CONVEX_URL` | Public Convex URL for the frontend client. | `https://your-project.convex.cloud` |
+
+### Authentication
+
+| Variable | Description | Required when |
+|----------|-------------|---------------|
+| `PRIVY_APP_ID` | Your Privy application ID. | Always (authentication) |
+| `PRIVY_APP_SECRET` | Your Privy app secret for server-side auth verification. | Always (authentication) |
+| `NEXT_PUBLIC_PRIVY_APP_ID` | Public Privy app ID for the client. | Always (authentication) |
+
+### Optional integrations
+
+| Variable | Description | Required when |
+|----------|-------------|---------------|
+| `STRIPE_SECRET_KEY` | Stripe secret key for payment processing. | Payments enabled |
+| `STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret. | Payments enabled |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Stripe public key for the client. | Payments enabled |
+| `SOLANA_RPC_URL` | Solana RPC endpoint for blockchain operations. | Blockchain enabled (Solana) |
+| `TOKEN_MINT_ADDRESS` | Token mint address for your game's token. | Blockchain enabled |
+| `LIVEKIT_API_KEY` | LiveKit API key for real-time voice/video. | Social features |
+| `LIVEKIT_API_SECRET` | LiveKit API secret. | Social features |
+| `NEXT_PUBLIC_LIVEKIT_URL` | LiveKit server URL. | Social features |
+
+<Aside type="caution">
+Never expose secret keys (anything without `NEXT_PUBLIC_` prefix) to the client. These should only be set as server-side environment variables in Vercel.
+</Aside>
+
+## Optional: Stripe setup
+
+If your game uses the payments component (gem purchases, premium features), configure Stripe:
+
+<Steps>
+
+1. **Create a Stripe account** at [stripe.com](https://stripe.com) and obtain your API keys.
+
+2. **Set environment variables** in Vercel:
+
+   ```
+   STRIPE_SECRET_KEY=sk_live_...
+   STRIPE_WEBHOOK_SECRET=whsec_...
+   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=pk_live_...
+   ```
+
+3. **Configure the Stripe webhook** in the Stripe dashboard to point to your Convex HTTP endpoint:
+
+   ```
+   https://your-project.convex.cloud/stripe/webhook
+   ```
+
+   Subscribe to the following events:
+   - `checkout.session.completed`
+   - `payment_intent.succeeded`
+   - `customer.subscription.updated`
+   - `customer.subscription.deleted`
+
+4. **Redeploy** your Convex backend to pick up the new environment variables:
+
+   ```bash
+   bunx convex deploy
+   ```
+
+</Steps>
+
+## Optional: Blockchain configuration
+
+If your game uses on-chain card ownership or token gating:
+
+<Steps>
+
+1. **Set `blockchain.enabled: true`** in your game configuration and specify the target chain:
+
+   ```typescript
+   blockchain: {
+     enabled: true,
+     chain: "solana",  // or "ethereum" or "base"
+   }
+   ```
+
+2. **Configure chain-specific environment variables.**
+
+   <Tabs>
+   <TabItem label="Solana">
+   ```
+   SOLANA_RPC_URL=https://api.mainnet-beta.solana.com
+   TOKEN_MINT_ADDRESS=YourTokenMintAddress...
+   ```
+   </TabItem>
+   <TabItem label="Ethereum / Base">
+   ```
+   ETH_RPC_URL=https://mainnet.infura.io/v3/YOUR_KEY
+   TOKEN_CONTRACT_ADDRESS=0xYourContractAddress...
+   ```
+   </TabItem>
+   </Tabs>
+
+3. **Deploy your token contract** (if minting new tokens) using your preferred toolchain.
+
+4. **Redeploy** both the Convex backend and the frontend to enable blockchain features.
+
+</Steps>
+
+## Optional: AI agent with ElizaOS
+
+LunchTable TCG includes an ElizaOS plugin for creating AI-powered game agents that can play matches, interact with players, and provide coaching.
+
+<Steps>
+
+1. **Configure the AI provider** by setting the appropriate API key:
+
+   ```
+   ANTHROPIC_API_KEY=sk-ant-...
+   ```
+
+   Or, if using OpenRouter:
+
+   ```
+   OPENROUTER_API_KEY=sk-or-...
+   ```
+
+2. **Start the agent** in development:
+
+   ```bash
+   bun run dev:agent
+   ```
+
+3. **For production**, deploy the agent as a separate process or serverless function, ensuring it has access to the Convex backend URL and AI provider credentials.
+
+</Steps>
+
+## Deployment checklist
+
+Before going live, verify the following:
+
+- [ ] Convex backend deployed to production (`bunx convex deploy`)
+- [ ] Initial data seeded (`bun run setup`)
+- [ ] All required environment variables set in Vercel
+- [ ] Frontend deployed to Vercel (`bunx vercel --prod`)
+- [ ] Authentication working (test sign-in flow)
+- [ ] Game engine functional (create a test match)
+- [ ] Economy operational (test pack opening, if applicable)
+- [ ] Stripe webhooks active (if payments enabled)
+- [ ] Blockchain integration tested (if enabled)
+- [ ] Custom domain configured (optional)
+- [ ] SSL certificate active (automatic with Vercel)
+
+## Next steps
+
+- **[Card Authoring](/guides/card-authoring)** -- Continue refining your card sets.
+- **[Configuration Reference](/reference/config)** -- Tune economy, progression, and competitive settings.

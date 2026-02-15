@@ -1,0 +1,476 @@
+---
+title: Card Authoring
+description: Design cards, effects, and complete sets for your LunchTable TCG game.
+---
+
+import { Steps, Tabs, TabItem, Aside, Code } from "@astrojs/starlight/components";
+
+This guide covers everything you need to define cards for your game -- from basic stereotypes to complex effect chains.
+
+## Card types
+
+Every card in LunchTable TCG has one of three types:
+
+| Type | Description | Analogous to |
+|------|-------------|--------------|
+| **Stereotype** | Creatures that occupy the board, attack, and defend. | Monsters |
+| **Spell** | One-shot or persistent effects activated from your hand. | Spells/Magic |
+| **Trap** | Cards set face-down that activate in response to game events. | Traps |
+
+## Card definition
+
+All cards share the `CardDefinition` interface. Here is the full set of properties:
+
+```typescript
+import type { CardDefinition } from "@lunchtable-tcg/engine";
+
+const myCard: CardDefinition = {
+  // Required for all cards
+  id: "unique-card-id",          // Unique string identifier
+  name: "Card Display Name",     // Human-readable name
+  type: "stereotype",            // "stereotype" | "spell" | "trap"
+  description: "What this card does.",
+  rarity: "common",              // See Rarity Tiers below
+
+  // Stereotype-only (required for stereotypes)
+  attack: 1800,                  // Reputation (ATK) value
+  defense: 800,                  // Stability (DEF) value
+  level: 4,                      // Level 1-12 (determines summoning cost)
+  attribute: "fire",             // Element attribute
+
+  // Optional metadata
+  archetype: "dropout",          // Archetype grouping
+  cost: 1,                       // Resource cost
+  viceType: "rage",              // Vice mechanic type
+  flavorText: "Flavor text.",    // Lore text displayed on card
+  imageUrl: "/cards/my-card.png",
+
+  // Spell-specific
+  spellType: "normal",           // Required for spells
+
+  // Trap-specific
+  trapType: "normal",            // Required for traps
+
+  // Effects (optional, see Effect System below)
+  effects: [],
+};
+```
+
+## Rarity tiers
+
+Every card has a rarity that affects pack pull rates and economy:
+
+| Rarity | Typical usage |
+|--------|---------------|
+| `common` | Bulk of your card pool. Staple effects and vanilla stereotypes. |
+| `uncommon` | Slightly stronger cards or niche utility. |
+| `rare` | Powerful effects, key archetype support. |
+| `epic` | Build-around cards, boss stereotypes. |
+| `legendary` | Flagship cards with game-defining effects. |
+
+Rarity weights for packs are configured in your game's economy settings. See the [Configuration Reference](/reference/config) for details.
+
+## Stereotype cards
+
+Stereotypes are the backbone of any deck. They occupy the board, battle each other, and reduce the opponent's life points.
+
+### Required properties
+
+Every stereotype **must** have `attack`, `defense`, and `level`:
+
+```typescript
+{
+  id: "dropout-brawler",
+  name: "Dropout Brawler",
+  type: "stereotype",
+  description: "A reckless fighter who dropped out to pursue street brawling.",
+  rarity: "common",
+  attack: 1800,
+  defense: 800,
+  level: 4,
+  attribute: "fire",
+  archetype: "dropout",
+}
+```
+
+### Attributes
+
+Each stereotype has an attribute that determines its element and archetype color:
+
+| Attribute | Color |
+|-----------|-------|
+| `fire` | Red |
+| `water` | Blue |
+| `earth` | Yellow |
+| `wind` | Green |
+| `dark` | Purple |
+| `light` | White |
+| `neutral` | Grey |
+
+### Summoning tiers
+
+A stereotype's level determines how it can be summoned:
+
+| Tier | Levels | Tributes required |
+|------|--------|-------------------|
+| Freshman | 1--3 | 0 (normal summon) |
+| Junior | 4--6 | 0 (normal summon) |
+| Senior | 7--12 | 1 tribute |
+
+<Aside type="tip">
+Each player may only perform one normal summon per turn. Special summon effects bypass this restriction.
+</Aside>
+
+### Balance guidelines
+
+Use these ATK/DEF curves as a starting point for balanced card design:
+
+| Level | Typical ATK range | Typical DEF range | Notes |
+|-------|-------------------|-------------------|-------|
+| 1 | 200--500 | 200--500 | Token-level, combo enablers |
+| 2 | 500--1000 | 400--800 | Early game utility |
+| 3 | 800--1400 | 600--1200 | Solid early drops |
+| 4 | 1400--1800 | 800--1500 | Core normal-summon beaters |
+| 5 | 1600--2000 | 1000--1800 | Strong normal summons |
+| 6 | 1800--2200 | 1200--2000 | Top-end no-tribute |
+| 7 | 2200--2600 | 1800--2200 | Tribute summon threshold |
+| 8 | 2400--2800 | 2000--2400 | Strong tribute monsters |
+| 9 | 2600--3000 | 2200--2600 | Boss-tier |
+| 10 | 2800--3200 | 2400--2800 | Near-legendary power |
+| 11 | 3000--3500 | 2600--3000 | Legendary |
+| 12 | 3200--4000 | 2800--3500 | Ultimate boss monsters |
+
+Cards with powerful effects should sit at the lower end of their level's stat range, while vanilla (effect-less) stereotypes can reach the upper end.
+
+## Spell cards
+
+Spells activate from your hand during your main phase (or in response to actions, for quick-play spells).
+
+### Spell subtypes
+
+| Subtype | Behavior |
+|---------|----------|
+| `normal` | Resolves once then goes to the graveyard. |
+| `continuous` | Stays on the field. Its effect persists while face-up. |
+| `equip` | Attaches to a stereotype, modifying its stats. |
+| `field` | Occupies the dedicated field spell zone. Only one can be active at a time. |
+| `quick-play` | Can be activated during either player's turn, including in response to other actions. |
+| `ritual` | Used to ritual summon specific stereotypes (advanced). |
+
+```typescript
+{
+  id: "cram-session",
+  name: "Cram Session",
+  type: "spell",
+  description: "Draw 2 cards.",
+  rarity: "rare",
+  spellType: "normal",
+  cost: 1,
+  effects: [
+    {
+      id: "cram-draw",
+      type: "ignition",
+      description: "Draw 2 cards",
+      actions: [{ type: "draw", count: 2 }],
+    },
+  ],
+}
+```
+
+## Trap cards
+
+Traps are set face-down during your turn, then activated later in response to opponent actions.
+
+### Trap subtypes
+
+| Subtype | Behavior |
+|---------|----------|
+| `normal` | Activates once in response to a trigger, then goes to the graveyard. |
+| `continuous` | Remains on the field after activation. Effect persists while face-up. |
+| `counter` | Activates in direct response to an effect or summon, negating it. |
+
+```typescript
+{
+  id: "pop-quiz",
+  name: "Pop Quiz",
+  type: "trap",
+  description: "Destroy 1 attacking stereotype.",
+  rarity: "uncommon",
+  trapType: "normal",
+  cost: 1,
+  effects: [
+    {
+      id: "quiz-destroy",
+      type: "trigger",
+      description: "Destroy 1 attacking stereotype",
+      actions: [{ type: "destroy", target: "selected" }],
+    },
+  ],
+}
+```
+
+## Effect system
+
+Effects are the core of card interactivity. Each card can have one or more effects, and each effect has a type, an optional cost, targeting rules, and one or more actions.
+
+### Effect types
+
+| Effect type | When it activates |
+|-------------|-------------------|
+| `on_summon` | Automatically when the card is summoned to the board. |
+| `ignition` | Manually activated by the controlling player during their main phase. |
+| `trigger` | Automatically activates when a specific game condition is met. |
+| `continuous` | Passive effect that applies while the card is face-up on the field. |
+| `quick` | Can be activated during either player's turn, in response to actions. |
+| `flip` | Activates when a face-down stereotype is flipped face-up. |
+
+### Effect definition
+
+```typescript
+import type { EffectDefinition } from "@lunchtable-tcg/engine";
+
+const effect: EffectDefinition = {
+  id: "unique-effect-id",
+  type: "ignition",
+  description: "Human-readable effect text",
+
+  // Optional: cost to activate
+  cost: {
+    type: "discard",      // "tribute" | "discard" | "pay_lp" | "remove_vice" | "banish"
+    count: 1,             // Number of cards/units
+    amount: 500,          // LP amount (for pay_lp)
+  },
+
+  // Optional: targeting
+  targetCount: 1,
+  targetFilter: {
+    zone: "board",        // Where to select targets
+    owner: "opponent",    // Whose cards to target
+    cardType: "stereotype",
+  },
+
+  // Required: what the effect does
+  actions: [
+    { type: "destroy", target: "selected" },
+  ],
+
+  // Optional: usage restrictions
+  oncePerTurn: true,      // Standard once-per-turn
+  hardOncePerTurn: false,  // Hard OPT (even if card leaves/returns)
+};
+```
+
+### Available actions
+
+| Action | Parameters | Description |
+|--------|------------|-------------|
+| `draw` | `count: number` | Draw cards from your deck. |
+| `destroy` | `target: "selected" \| "all_opponent_monsters" \| "all_spells_traps"` | Destroy target card(s). |
+| `damage` | `amount: number`, `target: "opponent"` | Deal direct damage to opponent's life points. |
+| `heal` | `amount: number`, `target: "self"` | Restore life points. |
+| `boost_attack` | `amount: number`, `duration: "turn" \| "permanent"` | Modify a stereotype's ATK. Use negative values to debuff. |
+| `boost_defense` | `amount: number`, `duration: "turn" \| "permanent"` | Modify a stereotype's DEF. Use negative values to debuff. |
+| `discard` | `count: number`, `target: "opponent"` | Force opponent to discard cards. |
+| `banish` | `target: "selected"` | Remove a card from play entirely. |
+| `return_to_hand` | `target: "selected"` | Return a card to its owner's hand. |
+| `special_summon` | `from: "hand" \| "graveyard" \| "deck" \| "banished"` | Summon a stereotype outside normal summoning rules. |
+| `add_vice` | `count: number`, `target: "selected"` | Place vice counters on a card. |
+| `remove_vice` | `count: number`, `target: "selected"` | Remove vice counters from a card. |
+| `negate` | `target: "last_chain_link"` | Negate the most recent effect in the chain. |
+| `change_position` | `target: "selected"` | Switch a stereotype between attack and defense position. |
+
+### Targeting
+
+When an effect requires the player to choose targets, use `targetFilter`:
+
+```typescript
+targetFilter: {
+  zone: "board",          // "board" | "hand" | "graveyard" | "banished" | "deck"
+  owner: "opponent",      // "self" | "opponent" | "any"
+  cardType: "stereotype", // Optional: filter by card type
+  attribute: "fire",      // Optional: filter by attribute
+}
+```
+
+### Effect costs
+
+Some effects require a cost before activation:
+
+| Cost type | Description |
+|-----------|-------------|
+| `tribute` | Send stereotypes you control to the graveyard. |
+| `discard` | Discard cards from your hand. |
+| `pay_lp` | Pay life points. |
+| `remove_vice` | Remove vice counters from cards you control. |
+| `banish` | Banish cards from your graveyard. |
+
+## Complete example: a 6-card set
+
+Here is a complete, balanced card set demonstrating all card types:
+
+```typescript
+import type { CardDefinition } from "@lunchtable-tcg/engine";
+import { defineCardSet } from "@lunchtable-tcg/engine";
+
+const cards: CardDefinition[] = [
+  // --- Stereotypes ---
+  {
+    id: "dropout-brawler",
+    name: "Dropout Brawler",
+    type: "stereotype",
+    description: "A reckless fighter who dropped out to pursue street brawling.",
+    rarity: "common",
+    attack: 1800,
+    defense: 800,
+    level: 4,
+    attribute: "fire",
+    archetype: "dropout",
+    viceType: "rage",
+    flavorText: "Fists first, questions never.",
+    cost: 1,
+  },
+  {
+    id: "prep-valedictorian",
+    name: "Prep Valedictorian",
+    type: "stereotype",
+    description: "The overachieving prep who dominates every field.",
+    rarity: "epic",
+    attack: 2500,
+    defense: 2000,
+    level: 7,
+    attribute: "water",
+    archetype: "prep",
+    flavorText: "4.0 GPA, zero chill.",
+    cost: 2,
+    effects: [
+      {
+        id: "val-draw",
+        type: "on_summon",
+        description: "Draw 1 card when summoned.",
+        actions: [{ type: "draw", count: 1 }],
+      },
+    ],
+  },
+
+  // --- Spells ---
+  {
+    id: "cram-session",
+    name: "Cram Session",
+    type: "spell",
+    description: "Draw 2 cards.",
+    rarity: "rare",
+    spellType: "normal",
+    cost: 1,
+    effects: [
+      {
+        id: "cram-draw",
+        type: "ignition",
+        description: "Draw 2 cards.",
+        actions: [{ type: "draw", count: 2 }],
+      },
+    ],
+  },
+  {
+    id: "study-hall",
+    name: "Study Hall",
+    type: "spell",
+    description: "All Geek stereotypes gain 300 ATK.",
+    rarity: "uncommon",
+    spellType: "field",
+    archetype: "geek",
+    cost: 1,
+    effects: [
+      {
+        id: "study-boost",
+        type: "continuous",
+        description: "Geek stereotypes gain 300 ATK.",
+        actions: [{ type: "boost_attack", amount: 300, duration: "permanent" }],
+      },
+    ],
+  },
+
+  // --- Traps ---
+  {
+    id: "pop-quiz",
+    name: "Pop Quiz",
+    type: "trap",
+    description: "Destroy 1 attacking stereotype.",
+    rarity: "uncommon",
+    trapType: "normal",
+    cost: 1,
+    effects: [
+      {
+        id: "quiz-destroy",
+        type: "trigger",
+        description: "Destroy 1 attacking stereotype.",
+        actions: [{ type: "destroy", target: "selected" }],
+      },
+    ],
+  },
+  {
+    id: "detention",
+    name: "Detention",
+    type: "trap",
+    description: "Opponent's stereotypes lose 500 ATK while this card is face-up.",
+    rarity: "rare",
+    trapType: "continuous",
+    cost: 2,
+    effects: [
+      {
+        id: "detention-debuff",
+        type: "continuous",
+        description: "Opponent stereotypes lose 500 ATK.",
+        actions: [{ type: "boost_attack", amount: -500, duration: "permanent" }],
+      },
+    ],
+  },
+];
+
+// Register the card set with the engine
+export const starterSet = defineCardSet({
+  id: "starter-set",
+  name: "Starter Set",
+  description: "The default card set included with every new game.",
+  cards,
+});
+```
+
+## Registering card sets
+
+Use `defineCardSet` to validate and register your cards with the engine. The function checks every card for required fields and throws descriptive errors if anything is missing.
+
+```typescript
+import { defineCardSet, mergeCardSets } from "@lunchtable-tcg/engine";
+
+// Define individual sets
+const coreSet = defineCardSet({ id: "core", name: "Core Set", cards: coreCards });
+const expansionSet = defineCardSet({ id: "expansion-1", name: "Expansion 1", cards: expansionCards });
+
+// Merge sets into a single card pool (throws on duplicate IDs)
+const allCards = mergeCardSets([coreSet, expansionSet]);
+```
+
+## Testing your cards
+
+The engine package includes a test suite that validates card definitions and simulates gameplay. Run the tests after adding new cards to catch issues early:
+
+```bash
+bun test:once
+```
+
+The test suite checks:
+
+- All required fields are present for each card type
+- No duplicate card IDs within or across sets
+- Stereotype ATK/DEF are non-negative and levels are within 1--12
+- All spells have a `spellType` and all traps have a `trapType`
+- Effect actions reference valid action types
+
+<Aside type="tip">
+Use the integration test suite (`bun test:integration`) to simulate full game loops with your custom cards and verify that effects resolve correctly during actual gameplay.
+</Aside>
+
+## Next steps
+
+- **[Configuration Reference](/reference/config)** -- Adjust engine rules, economy, and progression to match your card design.
+- **[Deployment](/guides/deployment)** -- Ship your game to production.

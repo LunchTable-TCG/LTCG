@@ -1,4 +1,5 @@
-import type { CardDefinition } from "./types/index.js";
+import type { CardDefinition, CardType, Rarity, Attribute, SpellType, TrapType } from "./types/index.js";
+import { parseCSVAbilities } from "./effectParser.js";
 
 /**
  * Shape matching the Convex cardDefinitions table.
@@ -24,6 +25,44 @@ export interface ConvexCardRow {
   imageUrl?: string;
   isActive: boolean;
   createdAt: number;
+}
+
+/**
+ * Convert a Convex cardDefinitions row back to engine CardDefinition.
+ * Inverse of toConvexCardRows. Accepts the _id from Convex as the `id` field.
+ */
+export function fromConvexCardRow(row: ConvexCardRow & { _id: string }): CardDefinition {
+  return {
+    id: row._id,
+    name: row.name,
+    type: row.cardType as CardType,
+    description: row.flavorText ?? row.name,
+    rarity: row.rarity as Rarity,
+    attack: row.attack,
+    defense: row.defense,
+    level: row.level,
+    attribute: row.attribute as Attribute | undefined,
+    archetype: row.archetype,
+    spellType: row.spellType as SpellType | undefined,
+    trapType: row.trapType as TrapType | undefined,
+    effects: parseCSVAbilities(row.ability),
+    viceType: row.viceType,
+    flavorText: row.flavorText,
+    imageUrl: row.imageUrl,
+    cost: row.cost,
+  };
+}
+
+/**
+ * Build a cardLookup map from Convex cardDefinitions rows.
+ * Keys are Convex _id strings, values are engine CardDefinition objects.
+ */
+export function buildCardLookup(rows: Array<ConvexCardRow & { _id: string }>): Record<string, CardDefinition> {
+  const lookup: Record<string, CardDefinition> = {};
+  for (const row of rows) {
+    lookup[row._id] = fromConvexCardRow(row);
+  }
+  return lookup;
 }
 
 /**

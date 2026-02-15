@@ -1,4 +1,4 @@
-import { MatchBoard } from "@/components/match/MatchBoard";
+import { GameBoard } from "@/components/game/GameBoard";
 import type { Id } from "@convex/_generated/dataModel";
 import { createFileRoute } from "@tanstack/react-router";
 
@@ -8,5 +8,5 @@ export const Route = createFileRoute("/_game/play/$matchId")({
 
 function PlayMatchPage() {
   const { matchId } = Route.useParams() as { matchId: Id<"gameLobbies"> };
-  return <MatchBoard matchId={matchId} />;
+  return <GameBoard lobbyId={matchId} />;
 }

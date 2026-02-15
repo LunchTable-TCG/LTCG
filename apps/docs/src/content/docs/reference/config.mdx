@@ -1,0 +1,427 @@
+---
+title: Configuration Reference
+description: Complete reference for all LunchTable TCG configuration options.
+---
+
+import { Aside, Tabs, TabItem } from "@astrojs/starlight/components";
+
+LunchTable TCG is configured through a single `LTCGConfig` object that controls every aspect of your game -- from engine rules to economy, progression, competitive play, theming, and blockchain integration.
+
+## Overview
+
+Your configuration lives in `src/config/gameConfig.ts` and is structured as follows:
+
+```typescript
+const config: LTCGConfig = {
+  game: { /* ... */ },
+  economy: { /* ... */ },
+  marketplace: { /* ... */ },
+  progression: { /* ... */ },
+  competitive: { /* ... */ },
+  theme: { /* ... */ },
+  blockchain: { /* ... */ },
+};
+```
+
+Not all sections are required. Available sections depend on your platform tier (see [Tier differences](#tier-differences) below).
+
+---
+
+## `game`
+
+Core game identity and engine rules.
+
+### `game.name`
+
+```typescript
+game.name: string
+```
+
+Your game's display name. Shown in the UI, metadata, and anywhere the game is referenced.
+
+### `game.engine`
+
+The `EngineConfig` object controls the rules of gameplay:
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `startingLP` | `number` | `8000` | Starting life points for each player. |
+| `deckSize.min` | `number` | `40` | Minimum number of cards in a valid deck. |
+| `deckSize.max` | `number` | `60` | Maximum number of cards in a valid deck. |
+| `maxHandSize` | `number` | `7` | Maximum cards a player can hold at end of turn. Cards exceeding this are discarded. |
+| `maxBoardSlots` | `number` | `3` | Number of stereotype (monster) zones on the board. |
+| `maxSpellTrapSlots` | `number` | `3` | Number of spell/trap zones on the board. |
+| `startingHandSize` | `number` | `5` | Number of cards drawn at the start of a game. |
+| `breakdownThreshold` | `number` | `3` | Number of vice counters on a single card that triggers a breakdown check. |
+| `maxBreakdownsToWin` | `number` | `3` | Number of breakdowns an opponent must suffer for a breakdown victory. |
+
+```typescript
+game: {
+  name: "My Card Game",
+  engine: {
+    startingLP: 8000,
+    deckSize: { min: 40, max: 60 },
+    maxHandSize: 7,
+    maxBoardSlots: 3,
+    maxSpellTrapSlots: 3,
+    startingHandSize: 5,
+    breakdownThreshold: 3,
+    maxBreakdownsToWin: 3,
+  },
+}
+```
+
+<Aside type="tip">
+Smaller board slot counts (e.g., 3) create tighter, more strategic gameplay. Increase to 5 for a more traditional TCG feel with wider boards.
+</Aside>
+
+---
+
+## `economy`
+
+Controls in-game currency, pack opening, and wagering.
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `startingGold` | `number` | `500` | Gold granted to new players. |
+| `startingGems` | `number` | `100` | Premium currency granted to new players. |
+| `rarityWeights` | `Record<string, number>` | See below | Probability weights for each rarity in pack openings. |
+| `wagerWinnerPct` | `number` | `0.9` | Percentage of the wager pool awarded to the winner (remainder is platform fee). |
+| `variantBaseRates` | `object` | See below | Base probability of pulling each card variant. |
+| `pityThresholds` | `object` | See below | Guaranteed pull after N packs without a hit. |
+
+### `economy.rarityWeights`
+
+Probability weights used when opening packs. Higher values mean more frequent pulls. These are relative weights, not percentages.
+
+```typescript
+rarityWeights: {
+  common: 60,
+  uncommon: 25,
+  rare: 10,
+  epic: 4,
+  legendary: 1,
+}
+```
+
+### `economy.variantBaseRates`
+
+Controls how often visual variants appear:
+
+```typescript
+variantBaseRates: {
+  standard: 0.85,    // 85% chance of standard art
+  foil: 0.10,        // 10% chance of foil treatment
+  altArt: 0.04,      // 4% chance of alternate artwork
+  fullArt: 0.01,     // 1% chance of full-art variant
+}
+```
+
+### `economy.pityThresholds`
+
+Guarantees that players receive high-rarity cards after a certain number of packs:
+
+```typescript
+pityThresholds: {
+  epic: 150,         // Guaranteed epic within 150 packs
+  legendary: 500,    // Guaranteed legendary within 500 packs
+  fullArt: 1000,     // Guaranteed full-art within 1000 packs
+}
+```
+
+```typescript
+economy: {
+  startingGold: 500,
+  startingGems: 100,
+  rarityWeights: {
+    common: 60,
+    uncommon: 25,
+    rare: 10,
+    epic: 4,
+    legendary: 1,
+  },
+  wagerWinnerPct: 0.9,
+  variantBaseRates: {
+    standard: 0.85,
+    foil: 0.10,
+    altArt: 0.04,
+    fullArt: 0.01,
+  },
+  pityThresholds: {
+    epic: 150,
+    legendary: 500,
+    fullArt: 1000,
+  },
+}
+```
+
+---
+
+## `marketplace`
+
+Configures the player-to-player card marketplace.
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `platformFeePercent` | `number` | `0.05` | Platform fee taken from each sale (5% = `0.05`). |
+| `minListingPrice` | `number` | `10` | Minimum price (in gold) a card can be listed for. |
+
+```typescript
+marketplace: {
+  platformFeePercent: 0.05,
+  minListingPrice: 10,
+}
+```
+
+---
+
+## `progression`
+
+Controls player leveling and XP rewards.
+
+### `progression.xp`
+
+XP awarded for different match outcomes:
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `rankedWin` | `number` | --- | XP for winning a ranked match. |
+| `rankedLoss` | `number` | --- | XP for losing a ranked match. |
+| `casualWin` | `number` | --- | XP for winning a casual match. |
+| `casualLoss` | `number` | --- | XP for losing a casual match. |
+| `storyWin` | `number` | --- | XP for completing a story chapter. |
+| `storyLoss` | `number` | --- | XP for failing a story chapter. |
+
+### `progression.levelCurve`
+
+```typescript
+progression.levelCurve: "linear" | "exponential"
+```
+
+Determines how XP requirements scale between levels:
+
+- **`linear`** -- Each level requires the same additional XP. Consistent progression pace.
+- **`exponential`** -- Higher levels require progressively more XP. Early levels are fast, later levels are grindy.
+
+```typescript
+progression: {
+  xp: {
+    rankedWin: 100,
+    rankedLoss: 30,
+    casualWin: 50,
+    casualLoss: 15,
+    storyWin: 75,
+    storyLoss: 20,
+  },
+  levelCurve: "exponential",
+}
+```
+
+---
+
+## `competitive`
+
+Ranked play, ELO ratings, and rank thresholds.
+
+### `competitive.elo`
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `defaultRating` | `number` | `1000` | Starting ELO rating for new players. |
+| `kFactor` | `number` | `32` | How much each match affects rating. Higher values = more volatile rankings. |
+
+### `competitive.rankThresholds`
+
+Maps rank names to minimum ELO values:
+
+```typescript
+competitive: {
+  elo: {
+    defaultRating: 1000,
+    kFactor: 32,
+  },
+  rankThresholds: {
+    Bronze: 0,
+    Silver: 1200,
+    Gold: 1400,
+    Platinum: 1600,
+    Diamond: 1800,
+    Master: 2000,
+    Legend: 2200,
+  },
+}
+```
+
+<Aside>
+Players are placed into the highest rank whose threshold they meet. A player with 1500 ELO would be Gold rank.
+</Aside>
+
+---
+
+## `theme`
+
+Visual branding for your game.
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `brand` | `string` | Brand name displayed in UI chrome, emails, and metadata. |
+| `palette.primary` | `string` | Primary brand color as a hex value (e.g., `"#FF6B35"`). |
+| `palette.secondary` | `string` | Secondary/accent color as a hex value (e.g., `"#1A1A2E"`). |
+
+```typescript
+theme: {
+  brand: "My TCG",
+  palette: {
+    primary: "#FF6B35",
+    secondary: "#1A1A2E",
+  },
+}
+```
+
+---
+
+## `blockchain`
+
+Optional blockchain integration for on-chain card ownership and token gating.
+
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `enabled` | `boolean` | `false` | Whether blockchain features are active. |
+| `chain` | `string` | --- | Target chain: `"solana"`, `"ethereum"`, or `"base"`. |
+
+```typescript
+blockchain: {
+  enabled: true,
+  chain: "solana",
+}
+```
+
+<Aside type="caution">
+Blockchain integration requires additional setup. See the [Deployment guide](/guides/deployment) for token configuration details.
+</Aside>
+
+---
+
+## Full example
+
+A complete configuration with all sections:
+
+```typescript
+const config: LTCGConfig = {
+  game: {
+    name: "Cafeteria Clash",
+    engine: {
+      startingLP: 8000,
+      deckSize: { min: 40, max: 60 },
+      maxHandSize: 7,
+      maxBoardSlots: 3,
+      maxSpellTrapSlots: 3,
+      startingHandSize: 5,
+      breakdownThreshold: 3,
+      maxBreakdownsToWin: 3,
+    },
+  },
+  economy: {
+    startingGold: 500,
+    startingGems: 100,
+    rarityWeights: {
+      common: 60,
+      uncommon: 25,
+      rare: 10,
+      epic: 4,
+      legendary: 1,
+    },
+    wagerWinnerPct: 0.9,
+    variantBaseRates: {
+      standard: 0.85,
+      foil: 0.10,
+      altArt: 0.04,
+      fullArt: 0.01,
+    },
+    pityThresholds: {
+      epic: 150,
+      legendary: 500,
+      fullArt: 1000,
+    },
+  },
+  marketplace: {
+    platformFeePercent: 0.05,
+    minListingPrice: 10,
+  },
+  progression: {
+    xp: {
+      rankedWin: 100,
+      rankedLoss: 30,
+      casualWin: 50,
+      casualLoss: 15,
+      storyWin: 75,
+      storyLoss: 20,
+    },
+    levelCurve: "exponential",
+  },
+  competitive: {
+    elo: {
+      defaultRating: 1000,
+      kFactor: 32,
+    },
+    rankThresholds: {
+      Bronze: 0,
+      Silver: 1200,
+      Gold: 1400,
+      Platinum: 1600,
+      Diamond: 1800,
+      Master: 2000,
+      Legend: 2200,
+    },
+  },
+  theme: {
+    brand: "Cafeteria Clash",
+    palette: {
+      primary: "#FF6B35",
+      secondary: "#1A1A2E",
+    },
+  },
+  blockchain: {
+    enabled: false,
+    chain: "solana",
+  },
+};
+```
+
+---
+
+## Tier differences
+
+LunchTable TCG offers three platform tiers. Each tier unlocks additional configuration sections:
+
+### Starter
+
+The essentials for a playable card game.
+
+- `game` -- Engine rules and card definitions
+- `theme` -- Basic branding
+
+Includes: core gameplay, card authoring, deck building, AI opponents.
+
+### Standard
+
+Everything in Starter, plus:
+
+- `economy` -- Gold, gems, packs, wagers, variant rates, pity system
+- `progression` -- XP, levels, rewards
+- `competitive` -- ELO, ranked modes, rank thresholds
+
+Includes: player progression, ranked matchmaking, in-game economy.
+
+### Full
+
+Everything in Standard, plus:
+
+- `marketplace` -- Player-to-player card trading
+- `blockchain` -- On-chain card ownership and token gating
+
+Includes: social features, guilds, story mode, marketplace, payment processing (Stripe), AI agent integration (ElizaOS plugin), and blockchain support.
+
+<Aside type="tip">
+You can start with the Starter tier and upgrade later. Configuration sections for higher tiers are simply ignored until you upgrade.
+</Aside>

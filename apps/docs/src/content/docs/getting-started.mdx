@@ -1,0 +1,128 @@
+---
+title: Quick Start
+description: Get your LunchTable TCG game up and running in minutes.
+---
+
+import { Steps, Tabs, TabItem, Aside } from "@astrojs/starlight/components";
+
+This guide walks you through creating, configuring, and launching your own trading card game on the LunchTable TCG platform.
+
+## Prerequisites
+
+Before you begin, make sure you have the following installed:
+
+| Requirement | Version | Purpose |
+|-------------|---------|---------|
+| **Bun** | 1.3 or later | Package manager and runtime |
+| **Node.js** | 20 or later | Build tooling compatibility |
+| **Convex account** | --- | Real-time backend hosting |
+
+You can verify your installations:
+
+```bash
+bun --version   # Should print 1.3.x or higher
+node --version  # Should print v20.x or higher
+```
+
+<Aside type="tip">
+If you do not have Bun installed, visit [bun.sh](https://bun.sh) and run the one-line installer.
+</Aside>
+
+## Create your project
+
+<Steps>
+
+1. **Scaffold a new game**
+
+   ```bash
+   bunx create-lunchtable-tcg my-game
+   ```
+
+   This creates a new directory `my-game/` with all the platform defaults pre-configured.
+
+2. **Install dependencies**
+
+   ```bash
+   cd my-game
+   bun install
+   ```
+
+3. **Start the Convex backend**
+
+   Open a terminal and run:
+
+   ```bash
+   bunx convex dev
+   ```
+
+   This starts the Convex development server and syncs your backend functions in real time. On first run, it will prompt you to log in and create a new Convex project.
+
+4. **Start the frontend**
+
+   In a separate terminal:
+
+   ```bash
+   bun dev
+   ```
+
+   Your game is now running at `http://localhost:3000`.
+
+</Steps>
+
+## Project structure
+
+After scaffolding, your project has the following layout:
+
+```
+my-game/
+├── convex/                  # Backend functions (Convex)
+│   ├── schema.ts            # Database schema
+│   ├── gameplay/            # Game engine, effects, combat
+│   ├── economy/             # Gold, gems, packs, wagers
+│   ├── auth/                # Authentication hooks
+│   └── ...
+├── src/
+│   ├── cards/               # Your card definitions
+│   │   └── starter-set.ts   # Default starter card set
+│   ├── config/              # Game configuration
+│   │   └── gameConfig.ts    # Core engine settings
+│   └── app/                 # Frontend pages and components
+├── packages/
+│   ├── engine/              # Rules engine (card validation, combat, phases)
+│   └── core/                # Shared types and utilities
+├── .env.local               # Environment variables
+└── package.json
+```
+
+### Key directories
+
+- **`convex/`** -- Your backend. All game logic, matchmaking, economy, and progression run as Convex functions. You rarely need to modify these directly unless extending the platform.
+- **`src/cards/`** -- Where you define your game's card sets. Each file exports an array of `CardDefinition` objects. See the [Card Authoring](/guides/card-authoring) guide.
+- **`src/config/`** -- Game configuration including engine rules, economy settings, progression curves, and theme. See the [Configuration Reference](/reference/config).
+- **`packages/engine/`** -- The pure rules engine. Handles card validation, summoning rules, combat resolution, spell/trap activation, and the vice/breakdown system.
+
+## Environment variables
+
+Your `.env.local` file needs two variables to connect to Convex:
+
+```bash
+# Convex deployment identifier (set automatically by `bunx convex dev`)
+CONVEX_DEPLOYMENT=dev:your-project-name
+
+# Public Convex URL for the client
+NEXT_PUBLIC_CONVEX_URL=https://your-project-name.convex.cloud
+```
+
+<Aside type="caution">
+Never commit `.env.local` to version control. The scaffolding tool adds it to `.gitignore` by default.
+</Aside>
+
+These are set automatically when you run `bunx convex dev` for the first time. For production deployments, you will configure these through your hosting provider's environment variable settings.
+
+## Next steps
+
+You now have a running game with the default starter card set. From here:
+
+- **[Card Authoring](/guides/card-authoring)** -- Design your own cards, effects, and archetypes.
+- **[Configuration Reference](/reference/config)** -- Customize life points, deck sizes, economy, ranked play, and more.
+- **[Deployment](/guides/deployment)** -- Ship your game to production with Convex and Vercel.

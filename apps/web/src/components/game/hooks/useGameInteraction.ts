@@ -4,7 +4,7 @@ import { typedApi, useConvexMutation, useConvexQuery } from "@/lib/convexHelpers
 import { perf } from "@/lib/debug";
 import { categorizeEffect, showEffectActivated } from "@/lib/effectToasts";
 import type { Id } from "@convex/_generated/dataModel";
-import { useRouter } from "next/navigation";
+import { useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 import type { CardInZone, useGameBoard } from "./useGameBoard";
@@ -49,7 +49,7 @@ export function useGameInteraction(
   gameBoard: ReturnType<typeof useGameBoard>,
   gameMode: "pvp" | "story" = "pvp"
 ) {
-  const router = useRouter();
+  const navigate = useNavigate();
 
   const {
     player,
@@ -588,9 +588,9 @@ export function useGameInteraction(
         toast.info("Game forfeited");
 
         if (gameMode === "story") {
-          router.push("/play/story");
+          navigate({ to: "/play/story" });
         } else {
-          router.push("/lunchtable");
+          navigate({ to: "/lunchtable" });
         }
       } else if (result.error) {
         toast.error("Forfeit Failed", {
@@ -601,7 +601,7 @@ export function useGameInteraction(
       setIsForfeitLoading(false);
       setShowForfeitDialog(false);
     }
-  }, [gameBoard.forfeitGame, gameMode, router]);
+  }, [gameBoard.forfeitGame, gameMode, navigate]);
 
   const handleBackrowCardClick = useCallback((card: CardInZone) => {
     setSelectedBackrowCard(card);
