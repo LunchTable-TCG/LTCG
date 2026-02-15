@@ -1,6 +1,0 @@
-# Exclude test files from Convex deployment
-__tests__/
-*.test.ts
-*.test.js
-test.setup.ts
-vitest.config.ts
