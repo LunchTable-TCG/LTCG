@@ -383,5 +383,18 @@ export function evolve(state: GameState, events: EngineEvent[]): GameState {
     }
   }
 
+  // State-based check: LP reaching 0 ends the game
+  if (!newState.gameOver) {
+    if (newState.hostLifePoints <= 0) {
+      newState.gameOver = true;
+      newState.winner = "away";
+      newState.winReason = "lp_zero";
+    } else if (newState.awayLifePoints <= 0) {
+      newState.gameOver = true;
+      newState.winner = "host";
+      newState.winReason = "lp_zero";
+    }
+  }
+
   return newState;
 }
