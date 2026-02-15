@@ -82,7 +82,9 @@ export function MarketListingCard({
       </div>
 
       {listing.listingType === "auction" && listing.bidCount !== undefined && (
-        <p className="text-[10px] font-mono text-black/50 mt-1 text-right">{listing.bidCount} bids</p>
+        <p className="text-[10px] font-mono text-black/50 mt-1 text-right">
+          {listing.bidCount} bids
+        </p>
       )}
     </button>
   );

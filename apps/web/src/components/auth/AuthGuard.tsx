@@ -3,9 +3,9 @@
 import { typedApi } from "@/lib/convexHelpers";
 import { usePrivy } from "@privy-io/react-auth";
 import { useWallets } from "@privy-io/react-auth/solana";
+import { useLocation, useNavigate } from "@tanstack/react-router";
 import { useConvexAuth, useMutation, useQuery } from "convex/react";
 import { Loader2 } from "lucide-react";
-import { useNavigate, useLocation } from "@tanstack/react-router";
 import { type ReactNode, useEffect, useRef } from "react";
 
 interface AuthGuardProps {

@@ -1,9 +1,9 @@
 "use client";
 
+import { Image } from "@/components/ui/image";
 import { getAssetUrl } from "@/lib/blob";
 import { cn } from "@/lib/utils";
 import { ArrowDown, ArrowUp, BarChart3, ChevronDown, Loader2, TrendingUp } from "lucide-react";
-import { Image } from "@/components/ui/image";
 import { Area, AreaChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
 interface PriceDataPoint {

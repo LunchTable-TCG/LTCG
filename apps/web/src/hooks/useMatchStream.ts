@@ -1,9 +1,7 @@
-
-import { useQuery, useMutation } from "convex/react";
-import { api } from "@convex/_generated/api";
-import { Id } from "@convex/_generated/dataModel";
-import { useMemo } from "react";
 import { usePrivy } from "@/hooks/auth/useConvexAuthHook";
+import { api } from "@convex/_generated/api";
+import type { Id } from "@convex/_generated/dataModel";
+import { useMutation, useQuery } from "convex/react";
 
 export function useMatchStream(lobbyId: Id<"gameLobbies">) {
   const { user } = usePrivy();
@@ -15,7 +13,8 @@ export function useMatchStream(lobbyId: Id<"gameLobbies">) {
   // 2. Fetch Player View (Game State)
   // We only fetch this if we have a user ID. If not logged in, maybe fetch as spectator?
   // The query handles masking based on observerId.
-  const gameState = useQuery(api.ltcgGame.states.getPlayerView,
+  const gameState = useQuery(
+    api.ltcgGame.states.getPlayerView,
     userId ? { lobbyId, observerId: userId } : "skip"
   );
 

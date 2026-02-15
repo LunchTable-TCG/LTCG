@@ -90,13 +90,7 @@ export interface NumericRange {
 /**
  * Archetype identifiers matching the schema
  */
-export type ArchetypeId =
-  | "dropout"
-  | "prep"
-  | "geek"
-  | "freak"
-  | "nerd"
-  | "goodie_two_shoes";
+export type ArchetypeId = "dropout" | "prep" | "geek" | "freak" | "nerd" | "goodie_two_shoes";
 
 /**
  * Card rarity levels

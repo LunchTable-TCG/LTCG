@@ -11,12 +11,7 @@ import { useState } from "react";
  *
  * LunchTable TCG has 5 phases: draw → main → combat → breakdown_check → end
  */
-export type GamePhase =
-  | "draw"
-  | "main"
-  | "combat"
-  | "breakdown_check"
-  | "end";
+export type GamePhase = "draw" | "main" | "combat" | "breakdown_check" | "end";
 
 interface PhaseSkipButtonsProps {
   lobbyId: string;

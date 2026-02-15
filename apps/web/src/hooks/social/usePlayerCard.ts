@@ -5,8 +5,8 @@ import { handleHookError } from "@/lib/errorHandling";
 import { type WagerCurrency, formatWagerAmount } from "@/lib/wagerTiers";
 import type { MatchMode } from "@/types/common";
 import type { Id } from "@convex/_generated/dataModel";
-import { useMutation, useQuery } from "convex/react";
 import { useNavigate } from "@tanstack/react-router";
+import { useMutation, useQuery } from "convex/react";
 import { toast } from "sonner";
 import { useAuth } from "../auth/useConvexAuthHook";
 

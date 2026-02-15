@@ -1,11 +1,11 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { Image } from "@/components/ui/image";
 import { getAssetUrl } from "@/lib/blob";
 import { cn } from "@/lib/utils";
 import type { ShopItem } from "@/types/shop";
 import { Coins, Gem, Package } from "lucide-react";
-import { Image } from "@/components/ui/image";
 
 interface ShopItemCardProps {
   item: ShopItem;
@@ -42,9 +42,9 @@ export function ShopItemCard({ item, onPurchase }: ShopItemCardProps) {
         )}
 
         {item.quantity && (
-           <div className="absolute top-2 right-2 bg-yellow-400 text-black font-black text-xs px-2 py-1 border-2 border-black uppercase rotate-6 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-             +{item.quantity}
-           </div>
+          <div className="absolute top-2 right-2 bg-yellow-400 text-black font-black text-xs px-2 py-1 border-2 border-black uppercase rotate-6 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+            +{item.quantity}
+          </div>
         )}
       </div>
 
@@ -68,8 +68,8 @@ export function ShopItemCard({ item, onPurchase }: ShopItemCardProps) {
             onClick={onPurchase}
             variant="outline"
             className={cn(
-               "w-full justify-between h-10 rounded-none border-[3px] border-black text-black font-bold uppercase tracking-wider transition-all",
-               "bg-[#f0e6d2] hover:bg-[#e6dac0] hover:translate-x-[1px] hover:translate-y-[1px]"
+              "w-full justify-between h-10 rounded-none border-[3px] border-black text-black font-bold uppercase tracking-wider transition-all",
+              "bg-[#f0e6d2] hover:bg-[#e6dac0] hover:translate-x-[1px] hover:translate-y-[1px]"
             )}
             size="sm"
             data-testid="pack-price-gold"
@@ -85,8 +85,8 @@ export function ShopItemCard({ item, onPurchase }: ShopItemCardProps) {
             onClick={onPurchase}
             variant="outline"
             className={cn(
-               "w-full justify-between h-10 rounded-none border-[3px] border-black text-black font-bold uppercase tracking-wider transition-all",
-               "bg-[#e0d5f5] hover:bg-[#d0c0e5] hover:translate-x-[1px] hover:translate-y-[1px]"
+              "w-full justify-between h-10 rounded-none border-[3px] border-black text-black font-bold uppercase tracking-wider transition-all",
+              "bg-[#e0d5f5] hover:bg-[#d0c0e5] hover:translate-x-[1px] hover:translate-y-[1px]"
             )}
             size="sm"
             data-testid="pack-price-gems"

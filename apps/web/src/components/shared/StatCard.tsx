@@ -51,7 +51,7 @@ export function StatCard({
             {label}
           </span>
           {Icon && (
-            <div className="p-2 border-2 border-primary bg-white shadow-[2px_2px_0px_0px_rgba(18,18,18,1)]">
+            <div className="p-2 border-zine bg-white shadow-zine-sm">
               <Icon className="w-4 h-4 text-primary" />
             </div>
           )}
@@ -65,11 +65,14 @@ export function StatCard({
           {(description || trend) && (
             <div className="flex items-center gap-2 mt-2">
               {trend && (
-                <span className={cn(
-                  "text-[10px] font-bold px-1.5 py-0.5 border border-primary",
-                  trend.isPositive ? "bg-reputation text-primary" : "bg-destructive text-white"
-                )}>
-                  {trend.isPositive ? "+" : ""}{trend.value}%
+                <span
+                  className={cn(
+                    "text-[10px] font-bold px-1.5 py-0.5 border border-primary",
+                    trend.isPositive ? "bg-reputation text-primary" : "bg-destructive text-white"
+                  )}
+                >
+                  {trend.isPositive ? "+" : ""}
+                  {trend.value}%
                 </span>
               )}
               {description && (

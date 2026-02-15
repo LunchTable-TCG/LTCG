@@ -4,7 +4,7 @@
  * Ensures consistent response format across all API endpoints.
  */
 
-import type { ApiSuccessResponse, ApiErrorResponse } from "@ltcg/core";
+import type { ApiErrorResponse, ApiSuccessResponse } from "@ltcg/core";
 export type { ApiSuccessResponse, ApiErrorResponse } from "@ltcg/core";
 
 /**

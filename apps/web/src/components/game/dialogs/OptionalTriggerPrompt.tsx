@@ -1,12 +1,12 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { Image } from "@/components/ui/image";
 import { typedApi, useConvexMutation } from "@/lib/convexHelpers";
 import { cn } from "@/lib/utils";
 import type { Id } from "@convex/_generated/dataModel";
 import { AnimatePresence, motion } from "framer-motion";
 import { CheckCircle2, Clock, Sparkles, X, XCircle, Zap } from "lucide-react";
-import { Image } from "@/components/ui/image";
 import { useCallback, useState } from "react";
 
 // =============================================================================

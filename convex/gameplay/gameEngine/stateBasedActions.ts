@@ -16,17 +16,17 @@
  * 6. Hand size limit: At end of turn, discard down to max hand size
  */
 
+import { GAME_CONFIG } from "@ltcg/core";
 // Workaround for TS2589 (excessively deep type instantiation)
 import * as generatedApi from "../../_generated/api";
 import type { Doc, Id } from "../../_generated/dataModel";
 import type { MutationCtx } from "../../_generated/server";
-import { GAME_CONFIG } from "@ltcg/core";
 import { getCardAbility } from "../../lib/abilityHelpers";
 import { logger } from "../../lib/debug";
 
+import { emitEvent } from "../../events/emitter";
 import { executeEffect } from "../effectSystem/index";
 import { recordEventHelper, recordGameEndHelper } from "../gameEvents";
-import { emitEvent } from "../../events/emitter";
 
 // biome-ignore lint/suspicious/noExplicitAny: Convex internal type workaround for TS2589
 const internalAny = (generatedApi as any).internal;
@@ -211,7 +211,13 @@ async function runSBACycle(
   }
 
   // 1b. Check Breakdown win condition (3 breakdowns caused = win)
-  const breakdownWinCheck = await checkBreakdownWinCondition(ctx, gameState, lobbyId, lobby.gameId, turnNumber);
+  const breakdownWinCheck = await checkBreakdownWinCondition(
+    ctx,
+    gameState,
+    lobbyId,
+    lobby.gameId,
+    turnNumber
+  );
   if (breakdownWinCheck.gameEnded) {
     result.gameEnded = true;
     result.winnerId = breakdownWinCheck.winnerId;
@@ -879,7 +885,9 @@ async function checkFieldSpellReplacement(
 
   // Validate opponent field spell
   if (gameState.opponentFieldSpell) {
-    const fieldCard = await ctx.db.get(gameState.opponentFieldSpell.cardId as Id<"cardDefinitions">);
+    const fieldCard = await ctx.db.get(
+      gameState.opponentFieldSpell.cardId as Id<"cardDefinitions">
+    );
     // If field spell card no longer exists or is not a spell, remove it
     if (!fieldCard || fieldCard.cardType !== "spell" || fieldCard.spellType !== "field") {
       // Send invalid field spell to graveyard before removing
@@ -959,7 +967,9 @@ async function checkOrphanedEquipSpells(
 
     // Destroy orphaned equip spells
     if (orphanedEquips.length > 0) {
-      const newZone = zone.filter((st) => !orphanedEquips.includes(st.cardId as Id<"cardDefinitions">));
+      const newZone = zone.filter(
+        (st) => !orphanedEquips.includes(st.cardId as Id<"cardDefinitions">)
+      );
       const graveyard =
         playerId === gameState.hostId ? gameState.hostGraveyard : gameState.opponentGraveyard;
       const newGraveyard = [...graveyard, ...orphanedEquips];
@@ -1211,12 +1221,7 @@ async function checkTokenZoneViolations(
   const result = { changed: false, actions: [] as string[] };
 
   // Check all zones for tokens (except board)
-  const checkZone = async (
-    zone: string[],
-    zoneName: string,
-    playerId: string,
-    zoneKey: string
-  ) => {
+  const checkZone = async (zone: string[], zoneName: string, playerId: string, zoneKey: string) => {
     // Tokens have fake IDs in the format: cardId_token_timestamp_index
     const tokensInZone = zone.filter((cardId) => {
       const idStr = cardId as string;
@@ -1484,9 +1489,10 @@ async function checkBreakdownTriggers(
     if (destroyed) {
       result.changed = true;
       result.destroyedCards.push(card.cardId as Id<"cardDefinitions">);
-      const reason = (card.viceCounters ?? 0) >= BREAKDOWN_THRESHOLD
-        ? `Vice overload (${card.viceCounters} counters)`
-        : "Stability reached 0";
+      const reason =
+        (card.viceCounters ?? 0) >= BREAKDOWN_THRESHOLD
+          ? `Vice overload (${card.viceCounters} counters)`
+          : "Stability reached 0";
       result.actions.push(`Host Stereotype Breakdown: ${reason}`);
     }
   }
@@ -1508,9 +1514,10 @@ async function checkBreakdownTriggers(
     if (destroyed) {
       result.changed = true;
       result.destroyedCards.push(card.cardId as Id<"cardDefinitions">);
-      const reason = (card.viceCounters ?? 0) >= BREAKDOWN_THRESHOLD
-        ? `Vice overload (${card.viceCounters} counters)`
-        : "Stability reached 0";
+      const reason =
+        (card.viceCounters ?? 0) >= BREAKDOWN_THRESHOLD
+          ? `Vice overload (${card.viceCounters} counters)`
+          : "Stability reached 0";
       result.actions.push(`Opponent Stereotype Breakdown: ${reason}`);
     }
   }
@@ -1570,10 +1577,16 @@ async function processBreakdown(
   // Remove from board and add to graveyard (Hallway)
   const freshState = await ctx.db.get(gameState._id);
   const currentGraveyard = freshState
-    ? isHost ? freshState.hostGraveyard : freshState.opponentGraveyard
-    : isHost ? gameState.hostGraveyard : gameState.opponentGraveyard;
+    ? isHost
+      ? freshState.hostGraveyard
+      : freshState.opponentGraveyard
+    : isHost
+      ? gameState.hostGraveyard
+      : gameState.opponentGraveyard;
   const currentBoard = freshState
-    ? isHost ? freshState.hostBoard : freshState.opponentBoard
+    ? isHost
+      ? freshState.hostBoard
+      : freshState.opponentBoard
     : board;
   const newBoard = currentBoard.filter((bc) => bc.cardId !== cardId);
 
@@ -1581,8 +1594,8 @@ async function processBreakdown(
   // If host's stereotype broke down, opponent caused it (and vice versa)
   const breakdownField = isHost ? "opponentBreakdownsCaused" : "hostBreakdownsCaused";
   const currentBreakdowns = freshState
-    ? (freshState as any)[breakdownField] ?? 0
-    : (gameState as any)[breakdownField] ?? 0;
+    ? ((freshState as any)[breakdownField] ?? 0)
+    : ((gameState as any)[breakdownField] ?? 0);
 
   await ctx.db.patch(gameState._id, {
     [isHost ? "hostBoard" : "opponentBoard"]: newBoard,

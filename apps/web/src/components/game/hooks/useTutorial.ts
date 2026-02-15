@@ -95,8 +95,7 @@ export function useTutorial({ enabled, gameState }: UseTutorialOptions): UseTuto
           return (
             gameState.turnNumber === 1 &&
             gameState.isPlayerTurn &&
-            (gameState.currentPhase === "draw" ||
-              gameState.currentPhase === "main")
+            (gameState.currentPhase === "draw" || gameState.currentPhase === "main")
           );
 
         case "creature_in_hand":

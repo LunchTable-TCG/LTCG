@@ -157,24 +157,12 @@ export interface BanishedCondition {
 /**
  * Card attribute values (element types)
  */
-export type CardAttribute =
-  | "red"
-  | "blue"
-  | "yellow"
-  | "purple"
-  | "green"
-  | "white";
+export type CardAttribute = "red" | "blue" | "yellow" | "purple" | "green" | "white";
 
 /**
  * Card archetype values (matches schema)
  */
-export type CardArchetype =
-  | "dropout"
-  | "prep"
-  | "geek"
-  | "freak"
-  | "nerd"
-  | "goodie_two_shoes";
+export type CardArchetype = "dropout" | "prep" | "geek" | "freak" | "nerd" | "goodie_two_shoes";
 
 /**
  * Comparison operators for numeric values
@@ -700,12 +688,7 @@ export interface JsonDuration {
   type: JsonDurationType;
   turnCount?: number;
   countOwner?: "self" | "opponent" | "both";
-  expirePhase?:
-    | "draw"
-    | "main"
-    | "combat"
-    | "breakdown_check"
-    | "end";
+  expirePhase?: "draw" | "main" | "combat" | "breakdown_check" | "end";
 }
 
 // ============================================================================

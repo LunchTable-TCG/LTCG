@@ -1,5 +1,5 @@
-import { cn } from "@/lib/utils";
 import { Image } from "@/components/ui/image";
+import { cn } from "@/lib/utils";
 
 export interface LibraryCardProps {
   card: {
@@ -26,7 +26,8 @@ export function LibraryCard({ card, onClick, count, quantity, size = "md" }: Lib
   const isCreature = card.cardType === "stereotype" || card.cardType === "creature";
 
   // Zine Styles
-  const borderStyle = "border-2 border-black bg-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 transition-all cursor-pointer";
+  const borderStyle =
+    "border-2 border-black bg-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 transition-all cursor-pointer";
 
   const sizeClasses = {
     sm: "w-32 h-44 text-[10px]",
@@ -37,11 +38,7 @@ export function LibraryCard({ card, onClick, count, quantity, size = "md" }: Lib
   return (
     <div
       onClick={onClick}
-      className={cn(
-        "relative flex flex-col p-2 select-none",
-        borderStyle,
-        sizeClasses[size]
-      )}
+      className={cn("relative flex flex-col p-2 select-none", borderStyle, sizeClasses[size])}
     >
       {/* Header */}
       <div className="flex justify-between items-start mb-1 border-b border-black pb-1">
@@ -55,7 +52,7 @@ export function LibraryCard({ card, onClick, count, quantity, size = "md" }: Lib
           <Image src={card.imageUrl} alt={card.name} fill className="object-cover" />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-gray-400 bg-[url('/brand/textures/photocopy-noise.png')]">
-             <span className="opacity-20 text-4xl font-black">?</span>
+            <span className="opacity-20 text-4xl font-black">?</span>
           </div>
         )}
       </div>
@@ -68,29 +65,28 @@ export function LibraryCard({ card, onClick, count, quantity, size = "md" }: Lib
 
       {/* Attributes (if creature) */}
       {isCreature && (
-         <div className="flex justify-between border-t border-black pt-1 mt-auto">
-            <div className="flex items-center gap-1">
-                <span className="font-black">ATK</span> {card.attack}
-            </div>
-            <div className="flex items-center gap-1">
-                <span className="font-black">DEF</span> {card.defense}
-            </div>
-         </div>
+        <div className="flex justify-between border-t border-black pt-1 mt-auto">
+          <div className="flex items-center gap-1">
+            <span className="font-black">ATK</span> {card.attack}
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="font-black">DEF</span> {card.defense}
+          </div>
+        </div>
       )}
 
       {/* Quantity Badges */}
-      {(quantity !== undefined) && (
+      {quantity !== undefined && (
         <div className="absolute top-[-8px] left-[-8px] bg-yellow-400 border border-black px-1.5 py-0.5 text-xs font-bold rounded-full shadow-sm z-10">
           x{quantity}
         </div>
       )}
 
-      {(count !== undefined && count > 0) && (
+      {count !== undefined && count > 0 && (
         <div className="absolute top-[-8px] right-[-8px] bg-green-500 text-white border border-black px-1.5 py-0.5 text-xs font-bold rounded-full shadow-sm z-10">
           In Deck: {count}
         </div>
       )}
-
     </div>
   );
 }

@@ -151,7 +151,9 @@ export const getLegalMoves = query({
           // Must be face-down and set for at least 1 full turn
           if (!setCard.isFaceDown || (setCard.turnSet || currentTurn) >= currentTurn) continue;
 
-          const card = (await ctx.db.get(setCard.cardId as Id<"cardDefinitions">)) as Doc<"cardDefinitions"> | null;
+          const card = (await ctx.db.get(
+            setCard.cardId as Id<"cardDefinitions">
+          )) as Doc<"cardDefinitions"> | null;
           if (!card || card.cardType !== "trap") continue;
 
           legalMoves.canActivateTrap.push({
@@ -177,7 +179,9 @@ export const getLegalMoves = query({
         if (myBoard.length < 3) {
           // Check each monster card in hand
           for (const cardId of myHand) {
-            const card = (await ctx.db.get(cardId as Id<"cardDefinitions">)) as Doc<"cardDefinitions"> | null;
+            const card = (await ctx.db.get(
+              cardId as Id<"cardDefinitions">
+            )) as Doc<"cardDefinitions"> | null;
             if (!card || card.cardType !== "stereotype") continue;
 
             const level = card.level || 0;
@@ -189,7 +193,9 @@ export const getLegalMoves = query({
             }
 
             // Get valid tributes (face-up monsters on field)
-            const validTributes = myBoard.filter((bc) => !bc.isFaceDown).map((bc) => bc.cardId as Id<"cardDefinitions">);
+            const validTributes = myBoard
+              .filter((bc) => !bc.isFaceDown)
+              .map((bc) => bc.cardId as Id<"cardDefinitions">);
 
             // Can only summon if we have enough tributes
             if (validTributes.length >= requiresTributes) {
@@ -230,13 +236,17 @@ export const getLegalMoves = query({
             continue;
           }
 
-          const card = (await ctx.db.get(boardCard.cardId as Id<"cardDefinitions">)) as Doc<"cardDefinitions"> | null;
+          const card = (await ctx.db.get(
+            boardCard.cardId as Id<"cardDefinitions">
+          )) as Doc<"cardDefinitions"> | null;
           if (!card) continue;
 
           // Get valid targets (opponent's monsters)
           const validTargets = [];
           for (const opponentCard of opponentBoard) {
-            const targetCard = (await ctx.db.get(opponentCard.cardId as Id<"cardDefinitions">)) as Doc<"cardDefinitions"> | null;
+            const targetCard = (await ctx.db.get(
+              opponentCard.cardId as Id<"cardDefinitions">
+            )) as Doc<"cardDefinitions"> | null;
             if (targetCard) {
               validTargets.push({
                 cardId: opponentCard.cardId as Id<"cardDefinitions">,
@@ -281,7 +291,9 @@ export const getLegalMoves = query({
       if (mySpellTrapZone.length < 3) {
         // Check each spell/trap card in hand
         for (const cardId of myHand) {
-          const card = (await ctx.db.get(cardId as Id<"cardDefinitions">)) as Doc<"cardDefinitions"> | null;
+          const card = (await ctx.db.get(
+            cardId as Id<"cardDefinitions">
+          )) as Doc<"cardDefinitions"> | null;
           if (!card) continue;
 
           if (card.cardType === "spell" || card.cardType === "trap") {
@@ -306,7 +318,9 @@ export const getLegalMoves = query({
 
     if (isMainPhase || isCombatPhase) {
       for (const cardId of myHand) {
-        const card = (await ctx.db.get(cardId as Id<"cardDefinitions">)) as Doc<"cardDefinitions"> | null;
+        const card = (await ctx.db.get(
+          cardId as Id<"cardDefinitions">
+        )) as Doc<"cardDefinitions"> | null;
         if (!card || card.cardType !== "spell") continue;
 
         const spellType = card.spellType || "normal";
@@ -338,7 +352,9 @@ export const getLegalMoves = query({
           // Must be face-down and set for at least 1 full turn
           if (!setCard.isFaceDown || (setCard.turnSet || currentTurn) >= currentTurn) continue;
 
-          const card = (await ctx.db.get(setCard.cardId as Id<"cardDefinitions">)) as Doc<"cardDefinitions"> | null;
+          const card = (await ctx.db.get(
+            setCard.cardId as Id<"cardDefinitions">
+          )) as Doc<"cardDefinitions"> | null;
           if (!card || card.cardType !== "trap") continue;
 
           legalMoves.canActivateTrap.push({
@@ -367,7 +383,9 @@ export const getLegalMoves = query({
           !boardCard.hasChangedPosition &&
           boardCard.turnSummoned !== gameState.turnNumber
         ) {
-          const card = (await ctx.db.get(boardCard.cardId as Id<"cardDefinitions">)) as Doc<"cardDefinitions"> | null;
+          const card = (await ctx.db.get(
+            boardCard.cardId as Id<"cardDefinitions">
+          )) as Doc<"cardDefinitions"> | null;
           if (card) {
             legalMoves.canChangePosition.push({
               cardId: boardCard.cardId as Id<"cardDefinitions">,

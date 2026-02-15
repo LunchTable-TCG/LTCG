@@ -331,12 +331,7 @@ async function activateSpellHandler(
   }
 
   // Normal Spells can only be activated during Main Phase
-  if (
-    !isQuickPlay &&
-    !isFieldSpell &&
-    !isEquipSpell &&
-    currentPhase !== "main"
-  ) {
+  if (!isQuickPlay && !isFieldSpell && !isEquipSpell && currentPhase !== "main") {
     throw createError(ErrorCode.GAME_INVALID_PHASE, {
       reason: "Normal Spells can only be activated during Main Phase",
     });
@@ -422,7 +417,9 @@ async function activateSpellHandler(
       });
 
       // Record field spell replacement event
-      const oldFieldCard = await ctx.db.get(currentFieldSpell.cardId as Id<"cardDefinitions">) as Doc<"cardDefinitions"> | null;
+      const oldFieldCard = (await ctx.db.get(
+        currentFieldSpell.cardId as Id<"cardDefinitions">
+      )) as Doc<"cardDefinitions"> | null;
       if (oldFieldCard) {
         await recordEventHelper(ctx, {
           lobbyId: args.lobbyId,

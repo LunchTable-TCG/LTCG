@@ -10,10 +10,10 @@
 
 import { v } from "convex/values";
 import { internalMutation } from "../_generated/server";
-import type { DomainEvent } from "./types";
 import { handleEconomyEvent } from "./handlers/economyHandler";
 import { handleProgressionEvent } from "./handlers/progressionHandler";
 import { handleStatsEvent } from "./handlers/statsHandler";
+import type { DomainEvent } from "./types";
 
 const KNOWN_EVENT_TYPES = new Set([
   "game:ended",

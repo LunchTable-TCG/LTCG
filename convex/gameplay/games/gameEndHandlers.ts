@@ -40,10 +40,7 @@ export interface GameEndParams {
  * Replaces duplicated logic across completeGame, surrenderGame, and forfeitGame.
  * All steps run within the same Convex mutation transaction.
  */
-export async function handleGameEnd(
-  ctx: MutationCtx,
-  params: GameEndParams
-): Promise<void> {
+export async function handleGameEnd(ctx: MutationCtx, params: GameEndParams): Promise<void> {
   const { lobbyId, winnerId, loserId, endReason, finalTurnNumber } = params;
 
   // biome-ignore lint/suspicious/noExplicitAny: Component tables not in main DataModel
@@ -151,7 +148,12 @@ export async function handleGameEnd(
   }
 
   // 9. Stop agent streams
-  await stopAgentStreams(ctx, lobbyId, lobby.hostId as Id<"users">, lobby.opponentId as Id<"users"> | undefined);
+  await stopAgentStreams(
+    ctx,
+    lobbyId,
+    lobby.hostId as Id<"users">,
+    lobby.opponentId as Id<"users"> | undefined
+  );
 
   // 10. Handle story mode completion
   if (lobby.mode === "story" && lobby.stageId) {

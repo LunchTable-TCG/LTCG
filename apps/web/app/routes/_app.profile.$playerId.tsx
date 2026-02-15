@@ -1,9 +1,11 @@
+import { AgentManagement } from "@/components/social/AgentManagement";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useUserProfile } from "@/hooks/social/useUserProfile";
 import { cn } from "@/lib/utils";
 import type { Id } from "@convex/_generated/dataModel";
+import { Link, createFileRoute } from "@tanstack/react-router";
 import {
   Bot,
   Calendar,
@@ -26,10 +28,8 @@ import {
   Users,
 } from "lucide-react";
 import { Medal, Star, Trophy } from "lucide-react";
-import { Link, createFileRoute } from '@tanstack/react-router'
 import { useState } from "react";
 import { toast } from "sonner";
-import { AgentManagement } from "@/components/social/profile/AgentManagement"; // Updated import path assumption
 
 // Types
 interface MatchHistoryItem {
@@ -68,9 +68,9 @@ function formatRelativeTime(timestamp: number): string {
   return formatDate(timestamp);
 }
 
-export const Route = createFileRoute('/_app/profile/$playerId')({
+export const Route = createFileRoute("/_app/profile/$playerId")({
   component: PlayerProfilePage,
-})
+});
 
 function PlayerProfilePage() {
   const { playerId } = Route.useParams() as { playerId: Id<"users"> };
@@ -101,7 +101,7 @@ function PlayerProfilePage() {
             <div className="h-48 rounded-none bg-slate-200 border-[3px] border-black" />
             <div className="grid grid-cols-4 gap-4">
               {[1, 2, 3, 4].map((i) => (
-                <div key={i} className="h-24 rounded-none bg-slate-200 border-[3px] border-black" />
+                <div key={i} className="h-24 rounded-none bg-slate-200 border-zine" />
               ))}
             </div>
           </div>
@@ -115,13 +115,18 @@ function PlayerProfilePage() {
       <div className="min-h-screen bg-[#fdfbf7] pt-24">
         <div className="container mx-auto px-4 py-8 text-center max-w-lg">
           <div className="w-24 h-24 bg-white border-[3px] border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] rounded-full flex items-center justify-center mx-auto mb-8 transform rotate-3">
-              <Users className="w-12 h-12 text-black/20" />
+            <Users className="w-12 h-12 text-black/20" />
           </div>
-          <h2 className="text-4xl font-black mb-4 uppercase tracking-tighter ink-bleed">Player Not Found</h2>
+          <h2 className="text-4xl font-black mb-4 uppercase tracking-tighter ink-bleed">
+            Player Not Found
+          </h2>
           <p className="text-black/60 font-medium mb-8 text-lg">
             This player profile does not exist or has been deleted.
           </p>
-          <Button asChild className="h-12 px-8 bg-black text-white font-black uppercase text-lg border-[3px] border-black hover:bg-black/80 hover:translate-x-[2px] hover:translate-y-[2px] shadow-[4px_4px_0px_0px_rgba(0,0,0,0.3)] hover:shadow-none transition-all">
+          <Button
+            asChild
+            className="h-12 px-8 bg-black text-white font-black uppercase text-lg border-zine hover:bg-black/80 hover:-translate-x-0.5 hover:-translate-y-0.5 shadow-zine-sm hover:shadow-zine transition-all"
+          >
             <Link to="/guilds">Back to Community</Link>
           </Button>
         </div>
@@ -142,7 +147,11 @@ function PlayerProfilePage() {
             This player has set their profile to private. Only they can view their profile
             information.
           </p>
-          <Button asChild variant="outline" className="h-12 border-[3px] border-black font-black uppercase tracking-wider hover:bg-black hover:text-white transition-colors">
+          <Button
+            asChild
+            variant="outline"
+            className="h-12 border-zine font-black uppercase tracking-wider hover:bg-black hover:text-white transition-colors"
+          >
             <Link to="/guilds">Back to Community</Link>
           </Button>
         </div>
@@ -163,7 +172,7 @@ function PlayerProfilePage() {
       <div className="container mx-auto px-4 relative z-10 max-w-6xl">
         {/* Profile Context Banner */}
         {isOwnProfile ? (
-          <div className="mb-8 px-6 py-3 bg-amber-100 border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] flex items-center gap-3 text-sm font-bold uppercase tracking-wide max-w-fit mx-auto sm:mx-0">
+          <div className="mb-8 px-6 py-3 bg-amber-100 border-zine shadow-zine-sm flex items-center gap-3 text-sm font-bold uppercase tracking-wide max-w-fit mx-auto sm:mx-0">
             <Shield className="w-5 h-5 text-black" />
             <span className="text-black">Viewing your profile</span>
             <span className="text-black/30">|</span>
@@ -176,7 +185,7 @@ function PlayerProfilePage() {
           </div>
         ) : (
           currentUser && (
-            <div className="mb-8 px-6 py-3 bg-indigo-100 border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] flex items-center gap-3 text-sm font-bold uppercase tracking-wide max-w-fit mx-auto sm:mx-0">
+            <div className="mb-8 px-6 py-3 bg-indigo-100 border-zine shadow-zine-sm flex items-center gap-3 text-sm font-bold uppercase tracking-wide max-w-fit mx-auto sm:mx-0">
               <UserPlus className="w-5 h-5 text-indigo-600" />
               <span className="text-indigo-900">
                 Viewing {profileUser.username || "player"}'s profile
@@ -186,13 +195,13 @@ function PlayerProfilePage() {
         )}
 
         {/* Profile Header */}
-        <div className="relative p-8 bg-white border-[3px] border-black shadow-[12px_12px_0px_0px_rgba(0,0,0,1)] mb-12">
+        <div className="relative p-8 bg-white border-zine shadow-zine-lg mb-12 ink-wash">
           {/* Rank Badge */}
           {stats.rank && (
             <Badge
               className={cn(
-                "absolute top-0 right-0 translate-x-[20%] -translate-y-[20%] text-xs px-4 py-2 font-black uppercase tracking-widest z-20 rounded-none shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] rotate-3",
-                "bg-yellow-400 text-black border-[3px] border-black hover:bg-yellow-400"
+                "absolute top-0 right-0 translate-x-[20%] -translate-y-[20%] text-xs px-4 py-2 font-black uppercase tracking-widest z-20 rounded-none shadow-zine rotate-3",
+                "bg-yellow-400 text-black border-zine hover:bg-yellow-400"
               )}
             >
               <RankIcon className="w-4 h-4 mr-2" />
@@ -202,7 +211,7 @@ function PlayerProfilePage() {
 
           <div className="flex flex-col md:flex-row items-center md:items-start gap-8">
             <div className="relative z-10 shrink-0">
-              <Avatar className="w-40 h-40 border-[4px] border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] rounded-none bg-slate-100">
+              <Avatar className="w-40 h-40 border-zine shadow-zine rounded-none bg-slate-100">
                 {profileUser.image && (
                   <AvatarImage
                     src={profileUser.image}
@@ -249,8 +258,10 @@ function PlayerProfilePage() {
 
             {/* Info */}
             <div className="flex-1 text-center md:text-left w-full">
-              <div className="flex flex-col md:flex-row items-center md:items-baseline gap-4 mb-4 border-b-[3px] border-black pb-4">
-                <h1 className="text-5xl font-black uppercase tracking-tighter text-black leading-none">{profileUser.username || "Unknown"}</h1>
+              <div className="flex flex-col md:flex-row items-center md:items-baseline gap-4 mb-4 border-b-2 border-primary/20 pb-4">
+                <h1 className="text-5xl font-black uppercase tracking-tighter text-black leading-none">
+                  {profileUser.username || "Unknown"}
+                </h1>
                 {userStats && (
                   <span className="bg-black text-white px-3 py-1 font-black text-sm uppercase tracking-wider shadow-[2px_2px_0px_0px_rgba(0,0,0,0.3)]">
                     LVL {userStats.level}
@@ -261,20 +272,20 @@ function PlayerProfilePage() {
               {/* Bio */}
               <div className="mb-6 min-h-[80px]">
                 {profileUser.bio ? (
-                    <p className="text-xl font-medium leading-relaxed font-handwriting text-black/80 rotate-[-1deg] max-w-2xl mx-auto md:mx-0">
+                  <p className="text-xl font-medium leading-relaxed font-handwriting text-black/80 rotate-[-1deg] max-w-2xl mx-auto md:mx-0">
                     "{profileUser.bio}"
-                    </p>
+                  </p>
                 ) : isOwnProfile ? (
-                    <p className="text-black/40 text-sm italic py-4 border-2 border-dashed border-black/20 bg-slate-50 flex items-center justify-center gap-2 max-w-md mx-auto md:mx-0">
+                  <p className="text-black/40 text-sm italic py-4 border-2 border-dashed border-black/20 bg-slate-50 flex items-center justify-center gap-2 max-w-md mx-auto md:mx-0">
                     Your bio is empty.{" "}
                     <Link
-                        to="/settings"
-                        className="text-indigo-600 font-bold hover:underline inline-flex items-center gap-1 uppercase text-xs tracking-wider"
+                      to="/settings"
+                      className="text-indigo-600 font-bold hover:underline inline-flex items-center gap-1 uppercase text-xs tracking-wider"
                     >
-                        <Settings className="w-3 h-3" />
-                        Add Bio
+                      <Settings className="w-3 h-3" />
+                      Add Bio
                     </Link>
-                    </p>
+                  </p>
                 ) : null}
               </div>
 
@@ -286,29 +297,30 @@ function PlayerProfilePage() {
                 <div className="w-px h-4 bg-black/20 hidden sm:block" />
                 <div className="flex items-center gap-2">
                   <Clock className="w-4 h-4 text-black" />
-                  Seen {profileUser.createdAt ? formatRelativeTime(profileUser.createdAt) : "Unknown"}
+                  Seen{" "}
+                  {profileUser.createdAt ? formatRelativeTime(profileUser.createdAt) : "Unknown"}
                 </div>
                 {userStats && userStats.xp > 0 && (
-                    <>
+                  <>
                     <div className="w-px h-4 bg-black/20 hidden sm:block" />
                     <div className="flex items-center gap-2 text-indigo-600">
-                        <Star className="w-4 h-4" />
-                        {userStats.xp.toLocaleString()} XP
+                      <Star className="w-4 h-4" />
+                      {userStats.xp.toLocaleString()} XP
                     </div>
-                    </>
+                  </>
                 )}
               </div>
             </div>
 
             {!isOwnProfile && currentUser && (
               <div className="flex flex-col gap-3 w-full md:w-auto mt-6 md:mt-0">
-                <Button className="h-12 px-8 bg-indigo-600 text-white font-black uppercase tracking-wider border-[3px] border-black shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-none hover:bg-indigo-700 transition-all">
+                <Button className="h-12 px-8 bg-indigo-600 text-white font-black uppercase tracking-wider border-zine shadow-zine-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-zine hover:bg-indigo-700 transition-all">
                   <UserPlus className="w-5 h-5 mr-3" />
                   Add Friend
                 </Button>
                 <Button
                   variant="outline"
-                  className="h-12 px-8 bg-white text-black font-black uppercase tracking-wider border-[3px] border-black hover:bg-black hover:text-white transition-all"
+                  className="h-12 px-8 bg-white text-black font-black uppercase tracking-wider border-zine hover:bg-black hover:text-white transition-all"
                 >
                   <Swords className="w-5 h-5 mr-3" />
                   Challenge
@@ -377,7 +389,9 @@ function PlayerProfilePage() {
                 <StatRow label="Level" value={userStats.level} />
                 <div className="flex justify-between text-base pt-3 border-t-2 border-black/10 mt-2">
                   <span className="font-bold uppercase tracking-wider text-black/60">XP</span>
-                  <span className="font-black text-black text-xl">{userStats.xp.toLocaleString()}</span>
+                  <span className="font-black text-black text-xl">
+                    {userStats.xp.toLocaleString()}
+                  </span>
                 </div>
               </div>
             </StatPanel>
@@ -387,8 +401,8 @@ function PlayerProfilePage() {
         {/* Additional Sections */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
           {/* Recent Activity */}
-          <div className="p-8 bg-white border-[3px] border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] relative overflow-hidden min-h-[300px]">
-            <h3 className="text-2xl font-black mb-8 flex items-center gap-4 text-black uppercase tracking-tighter relative z-10 border-b-[3px] border-black pb-4">
+          <div className="p-8 bg-white border-zine shadow-zine relative overflow-hidden min-h-[300px]">
+            <h3 className="text-2xl font-black mb-8 flex items-center gap-4 text-black uppercase tracking-tighter relative z-10 border-b-2 border-primary/20 pb-4">
               <div className="bg-black text-white p-2 transform -rotate-3 shadow-sm">
                 <TrendingUp className="w-6 h-6" />
               </div>
@@ -399,17 +413,23 @@ function PlayerProfilePage() {
               {matchHistory === undefined ? (
                 <div className="flex flex-col items-center justify-center h-48 border-2 border-dashed border-black/20 bg-slate-50">
                   <Loader2 className="w-8 h-8 text-black/20 animate-spin mb-2" />
-                  <p className="text-black/40 text-xs font-bold uppercase tracking-widest">Scanning Records...</p>
+                  <p className="text-black/40 text-xs font-bold uppercase tracking-widest">
+                    Scanning Records...
+                  </p>
                 </div>
               ) : matchHistory === null ? (
                 <div className="flex flex-col items-center justify-center h-48 border-2 border-dashed border-black/20 bg-slate-50">
                   <Lock className="w-8 h-8 text-black/20 mb-3" />
-                  <p className="text-black/40 text-xs font-bold uppercase tracking-widest">History is Classified</p>
+                  <p className="text-black/40 text-xs font-bold uppercase tracking-widest">
+                    History is Classified
+                  </p>
                 </div>
               ) : matchHistory.length === 0 ? (
                 <div className="flex flex-col items-center justify-center h-48 border-2 border-dashed border-black/20 bg-slate-50">
                   <Swords className="w-8 h-8 text-black/20 mb-3" />
-                  <p className="text-black/40 text-xs font-bold uppercase tracking-widest">No Battles Recorded</p>
+                  <p className="text-black/40 text-xs font-bold uppercase tracking-widest">
+                    No Battles Recorded
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -417,17 +437,17 @@ function PlayerProfilePage() {
                     <div
                       key={match.id}
                       className={cn(
-                        "flex items-center justify-between p-4 border-[2px] border-black transition-all hover:-translate-y-1 hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]",
-                        match.result === "victory"
-                          ? "bg-green-50"
-                          : "bg-red-50"
+                        "flex items-center justify-between p-4 border-zine transition-all hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-zine",
+                        match.result === "victory" ? "bg-green-50" : "bg-red-50"
                       )}
                     >
                       <div className="flex items-center gap-4">
                         <div
                           className={cn(
                             "w-10 h-10 flex items-center justify-center border-2 border-black font-black text-lg",
-                            match.result === "victory" ? "bg-green-500 text-white" : "bg-red-500 text-white"
+                            match.result === "victory"
+                              ? "bg-green-500 text-white"
+                              : "bg-red-500 text-white"
                           )}
                         >
                           {match.result === "victory" ? "W" : "L"}
@@ -436,7 +456,9 @@ function PlayerProfilePage() {
                           <p className="font-bold text-black uppercase text-sm">
                             VS {match.opponent.username}
                           </p>
-                          <p className="text-xs text-black/50 font-bold uppercase tracking-wider">{match.mode}</p>
+                          <p className="text-xs text-black/50 font-bold uppercase tracking-wider">
+                            {match.mode}
+                          </p>
                         </div>
                       </div>
                       <div className="text-right">
@@ -461,9 +483,9 @@ function PlayerProfilePage() {
           </div>
 
           {/* Achievements */}
-          <div className="p-8 bg-white border-[3px] border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] relative overflow-hidden">
-            <h3 className="text-2xl font-black mb-8 flex items-center gap-4 text-black uppercase tracking-tighter relative z-10 border-b-[3px] border-black pb-4">
-              <div className="bg-yellow-400 text-black border-2 border-black p-2 transform rotate-3 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+          <div className="p-8 bg-white border-zine shadow-zine relative overflow-hidden">
+            <h3 className="text-2xl font-black mb-8 flex items-center gap-4 text-black uppercase tracking-tighter relative z-10 border-b-2 border-primary/20 pb-4">
+              <div className="bg-yellow-400 text-black border-zine p-2 transform rotate-3 shadow-zine-sm">
                 <Medal className="w-6 h-6" />
               </div>
               Trophies
@@ -499,11 +521,10 @@ function PlayerProfilePage() {
             />
 
             {/* AI Agents Section */}
-            <div className="p-8 bg-white border-[3px] border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] relative overflow-hidden">
-
-              <h3 className="text-2xl font-black mb-4 flex items-center gap-4 text-black uppercase tracking-tighter relative z-10 border-b-[3px] border-black pb-4">
-                <div className="bg-indigo-600 text-white border-2 border-black p-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-                     <Bot className="w-6 h-6" />
+            <div className="p-8 bg-white border-zine shadow-zine relative overflow-hidden">
+              <h3 className="text-2xl font-black mb-4 flex items-center gap-4 text-black uppercase tracking-tighter relative z-10 border-b-2 border-primary/20 pb-4">
+                <div className="bg-indigo-600 text-white border-zine p-2 shadow-zine-sm">
+                  <Bot className="w-6 h-6" />
                 </div>
                 AI Representatives
               </h3>
@@ -523,25 +544,30 @@ function PlayerProfilePage() {
 // Components
 // ============================================================================
 
-function StatPanel({ icon: Icon, title, children, accentColor }: { icon: any, title: string, children: React.ReactNode, accentColor: string }) {
-    return (
-        <div className="p-6 bg-white border-[3px] border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] relative overflow-hidden group hover:-translate-y-1 hover:shadow-[10px_10px_0px_0px_rgba(0,0,0,1)] transition-all">
-            <h3 className="text-lg font-black mb-6 text-black uppercase tracking-widest flex items-center gap-3 border-b-2 border-black/10 pb-3">
-            <Icon className={cn("w-5 h-5", accentColor)} />
-            {title}
-            </h3>
-            {children}
-        </div>
-    )
+function StatPanel({
+  icon: Icon,
+  title,
+  children,
+  accentColor,
+}: { icon: any; title: string; children: React.ReactNode; accentColor: string }) {
+  return (
+    <div className="p-6 bg-white border-zine shadow-zine relative overflow-hidden group hover:-translate-y-1 hover:shadow-zine-lg transition-all ink-wash">
+      <h3 className="text-lg font-black mb-6 text-black uppercase tracking-widest flex items-center gap-3 border-b-2 border-black/10 pb-3">
+        <Icon className={cn("w-5 h-5", accentColor)} />
+        {title}
+      </h3>
+      {children}
+    </div>
+  );
 }
 
-function StatRow({ label, value }: { label: string, value: number }) {
-    return (
-        <div className="flex justify-between items-center text-sm">
-            <span className="font-bold text-black/50 uppercase tracking-widest">{label}</span>
-            <span className="font-black text-black text-lg">{value}</span>
-        </div>
-    )
+function StatRow({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="flex justify-between items-center text-sm">
+      <span className="font-bold text-black/50 uppercase tracking-widest">{label}</span>
+      <span className="font-black text-black text-lg">{value}</span>
+    </div>
+  );
 }
 
 interface StatCardProps {
@@ -553,18 +579,23 @@ interface StatCardProps {
 
 function StatCard({ icon: Icon, label, value, color }: StatCardProps) {
   return (
-    <div className="group p-6 bg-white border-[3px] border-black shadow-[6px_6px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-1 hover:shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] transition-all relative overflow-hidden">
-       <div className={cn("absolute top-0 right-0 p-3 border-l-2 border-b-2 border-black rounded-bl-xl", color)}>
-         <Icon className="w-5 h-5 opacity-80" />
-       </div>
-       <div className="mt-4">
-            <p className="text-4xl font-black text-black uppercase tracking-tighter leading-none mb-2">
-            {value}
-            </p>
-            <p className="text-[10px] text-black/50 uppercase font-black tracking-widest leading-relaxed border-t-2 border-black/10 pt-2 inline-block">
-            {label}
-            </p>
-       </div>
+    <div className="group p-6 bg-white border-zine shadow-zine-sm hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-zine transition-all relative overflow-hidden ink-wash">
+      <div
+        className={cn(
+          "absolute top-0 right-0 p-3 border-l-2 border-b-2 border-primary rounded-none",
+          color
+        )}
+      >
+        <Icon className="w-5 h-5 opacity-80" />
+      </div>
+      <div className="mt-4">
+        <p className="text-4xl font-black text-black uppercase tracking-tighter leading-none mb-2">
+          {value}
+        </p>
+        <p className="text-[10px] text-black/50 uppercase font-black tracking-widest leading-relaxed border-t-2 border-black/10 pt-2 inline-block">
+          {label}
+        </p>
+      </div>
     </div>
   );
 }
@@ -579,26 +610,20 @@ function Achievement({ name, description, unlocked }: AchievementProps) {
   return (
     <div
       className={cn(
-        "p-4 border-[3px] border-black transition-all relative overflow-hidden h-full flex flex-col items-center text-center",
-        unlocked
-          ? "bg-amber-50 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
-          : "bg-slate-100 opacity-60 grayscale border-dashed"
+        "p-4 border-zine transition-all relative overflow-hidden h-full flex flex-col items-center text-center ink-wash",
+        unlocked ? "bg-amber-50 shadow-zine" : "bg-slate-100 opacity-60 grayscale border-dashed"
       )}
     >
       <div
         className={cn(
-          "w-12 h-12 rounded-full flex items-center justify-center mb-3 border-2 border-black",
-          unlocked ? "bg-yellow-400 text-black shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]" : "bg-slate-300 text-black/40"
+          "w-12 h-12 rounded-full flex items-center justify-center mb-3 border-zine",
+          unlocked ? "bg-yellow-400 text-black shadow-zine-sm" : "bg-slate-300 text-black/40"
         )}
       >
         <Star className="w-6 h-6 fill-current" />
       </div>
-      <p className="text-xs font-black uppercase tracking-widest mb-1 text-black">
-        {name}
-      </p>
-      <p className="text-[10px] font-bold text-black/50 leading-tight">
-        {description}
-      </p>
+      <p className="text-xs font-black uppercase tracking-widest mb-1 text-black">{name}</p>
+      <p className="text-[10px] font-bold text-black/50 leading-tight">{description}</p>
     </div>
   );
 }
@@ -655,10 +680,10 @@ function ReferralSection({
   };
 
   return (
-    <div className="p-8 bg-white border-[3px] border-black shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] relative overflow-hidden">
-      <h3 className="text-2xl font-black mb-4 flex items-center gap-4 text-black uppercase tracking-tighter relative z-10 border-b-[3px] border-black pb-4">
-        <div className="bg-green-500 text-white border-2 border-black p-2 shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] transform -rotate-2">
-             <Share2 className="w-6 h-6" />
+    <div className="p-8 bg-white border-zine shadow-zine relative overflow-hidden ink-wash-reputation">
+      <h3 className="text-2xl font-black mb-4 flex items-center gap-4 text-black uppercase tracking-tighter relative z-10 border-b-2 border-primary/20 pb-4">
+        <div className="bg-green-500 text-white border-zine p-2 shadow-zine-sm transform -rotate-2">
+          <Share2 className="w-6 h-6" />
         </div>
         Recruitment
       </h3>
@@ -676,44 +701,52 @@ function ReferralSection({
           <div className="space-y-6">
             {/* Link display + copy */}
             <div className="flex items-center gap-0">
-               <div className="flex-1 bg-slate-100 border-[3px] border-black border-r-0 p-3 overflow-hidden font-mono text-sm text-black font-bold">
-                  {referralUrl}
-               </div>
-               <Button
+              <div className="flex-1 bg-slate-100 border-zine border-r-0 p-3 overflow-hidden font-mono text-sm text-black font-bold">
+                {referralUrl}
+              </div>
+              <Button
                 onClick={() => handleCopy(referralUrl, "link")}
-                className="h-full rounded-none border-[3px] border-black bg-black text-white hover:bg-slate-800 px-6 font-black uppercase"
-               >
-                 {justCopied === "link" ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-               </Button>
+                className="h-full rounded-none border-zine bg-black text-white hover:bg-slate-800 px-6 font-black uppercase"
+              >
+                {justCopied === "link" ? (
+                  <Check className="w-4 h-4" />
+                ) : (
+                  <Copy className="w-4 h-4" />
+                )}
+              </Button>
             </div>
 
             {/* Regenerate */}
             <div className="flex justify-end">
-                <Button
+              <Button
                 onClick={handleGenerate}
                 disabled={isGenerating}
                 variant="outline"
                 size="sm"
                 className="border-2 border-black text-black/60 hover:text-black hover:border-black font-bold uppercase text-xs h-8"
-                >
+              >
                 {isGenerating ? (
-                    <Loader2 className="w-3 h-3 animate-spin mr-2" />
+                  <Loader2 className="w-3 h-3 animate-spin mr-2" />
                 ) : (
-                    <Link2 className="w-3 h-3 mr-2" />
+                  <Link2 className="w-3 h-3 mr-2" />
                 )}
                 Generate New Link
-                </Button>
+              </Button>
             </div>
           </div>
         ) : (
           /* No link yet */
-          <div className="text-center py-8 space-y-4 bg-slate-50 border-2 border-dashed border-black/20">
-            <div className="w-16 h-16 mx-auto bg-white border-[3px] border-black flex items-center justify-center shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]">
+          <div className="text-center py-8 space-y-4 bg-slate-50 border-zine border-dashed">
+            <div className="w-16 h-16 mx-auto bg-white border-zine flex items-center justify-center shadow-zine-sm">
               <Share2 className="w-8 h-8 text-black" />
             </div>
             <div>
-              <p className="text-black font-black uppercase tracking-tight text-lg">No referral link yet</p>
-              <p className="text-xs font-bold text-black/40 uppercase tracking-widest mt-1">Generate a link to share with friends</p>
+              <p className="text-black font-black uppercase tracking-tight text-lg">
+                No referral link yet
+              </p>
+              <p className="text-xs font-bold text-black/40 uppercase tracking-widest mt-1">
+                Generate a link to share with friends
+              </p>
             </div>
             <Button
               onClick={handleGenerate}
@@ -744,9 +777,9 @@ function ReferralSection({
               {referralStats.referrals.map((ref, i) => (
                 <div
                   key={`referral-${i}`}
-                  className="flex items-center gap-3 p-3 bg-white border-2 border-black shadow-[3px_3px_0px_0px_rgba(0,0,0,0.1)] hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] hover:-translate-y-0.5 transition-all"
+                  className="flex items-center gap-3 p-3 bg-white border-zine shadow-zine-sm hover:shadow-zine hover:-translate-y-0.5 transition-all"
                 >
-                  <Avatar className="w-8 h-8 border-2 border-black">
+                  <Avatar className="w-8 h-8 border-zine">
                     {ref.image && <AvatarImage src={ref.image} alt={ref.username || "User"} />}
                     <AvatarFallback className="bg-slate-200 text-black text-xs font-bold">
                       {(ref.username || "?")[0]?.toUpperCase()}

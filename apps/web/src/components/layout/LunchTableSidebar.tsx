@@ -3,92 +3,16 @@
 import { LogoutConfirmDialog } from "@/components/dialogs/LogoutConfirmDialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { Image } from "@/components/ui/image";
 import { useAuth, useLogout } from "@/hooks/auth/useConvexAuthHook";
 import { getAssetUrl } from "@/lib/blob";
+import { navGroups } from "@/lib/config/navigation";
 import { typedApi } from "@/lib/convexHelpers";
 import { useConvexQuery } from "@/lib/react-query";
 import { cn } from "@/lib/utils";
-import {
-  Award,
-  BookOpen,
-  Coins,
-  Gamepad2,
-  Heart,
-  LogOut,
-  Map as MapIcon,
-  Settings,
-  Sparkles,
-  Star,
-  Store,
-  Swords,
-  Target,
-  Trophy,
-  User,
-  Users,
-  Wallet,
-} from "lucide-react";
-import { Image } from "@/components/ui/image";
 import { Link, useLocation } from "@tanstack/react-router";
+import { LogOut } from "lucide-react";
 import { useState } from "react";
-
-interface NavLink {
-  href: string;
-  label: string;
-  icon: typeof Swords;
-  comingSoon?: boolean;
-}
-
-interface NavGroup {
-  label: string;
-  icon: typeof Swords;
-  links: NavLink[];
-}
-
-const navGroups: NavGroup[] = [
-  {
-    label: "Play",
-    icon: Gamepad2,
-    links: [
-      { href: "/lunchtable", label: "The Table", icon: Swords },
-      { href: "/play/story", label: "Story Mode", icon: MapIcon },
-      { href: "/tournaments", label: "Tournaments", icon: Award },
-    ],
-  },
-  {
-    label: "Progress",
-    icon: Star,
-    links: [
-      { href: "/battle-pass", label: "Battle Pass", icon: Sparkles },
-      { href: "/quests", label: "Quests", icon: Target },
-      { href: "/leaderboards", label: "Leaderboards", icon: Trophy },
-    ],
-  },
-  {
-    label: "Community",
-    icon: Users,
-    links: [
-      { href: "/friends", label: "Friends", icon: Heart },
-      { href: "/guilds", label: "Guilds", icon: Users },
-    ],
-  },
-  {
-    label: "Economy",
-    icon: Coins,
-    links: [
-      { href: "/shop", label: "Shop", icon: Store },
-      { href: "/lunchmoney", label: "LunchMoney", icon: Wallet },
-    ],
-  },
-  {
-    label: "Collection",
-    icon: BookOpen,
-    links: [
-      { href: "/binder", label: "Binder", icon: BookOpen },
-      { href: "/profile", label: "Profile", icon: User },
-      { href: "/settings", label: "Settings", icon: Settings },
-    ],
-  },
-];
 
 export function LunchTableSidebar({ className }: { className?: string }) {
   const pathname = useLocation().pathname;
@@ -115,8 +39,20 @@ export function LunchTableSidebar({ className }: { className?: string }) {
         )}
       >
         {/* Comic Overlays */}
-        <div className="absolute inset-0 pointer-events-none z-0 opacity-10 mix-blend-multiply" style={{ backgroundImage: 'url(/assets/overlays/paper-texture.png)', backgroundSize: '256px' }} />
-        <div className="absolute inset-0 pointer-events-none z-0 opacity-5" style={{ backgroundImage: 'url(/assets/overlays/halftone-dots.png)', backgroundSize: '128px' }} />
+        <div
+          className="absolute inset-0 pointer-events-none z-0 opacity-10 mix-blend-multiply"
+          style={{
+            backgroundImage: "url(/assets/overlays/paper-texture.png)",
+            backgroundSize: "256px",
+          }}
+        />
+        <div
+          className="absolute inset-0 pointer-events-none z-0 opacity-5"
+          style={{
+            backgroundImage: "url(/assets/overlays/halftone-dots.png)",
+            backgroundSize: "128px",
+          }}
+        />
         <div className="p-6 border-b-2 border-primary relative overflow-hidden">
           <Link href="/" className="flex items-center gap-3 relative z-10 group">
             <div className="relative w-10 h-10 flex items-center justify-center border-4 border-primary overflow-hidden">
@@ -164,7 +100,9 @@ export function LunchTableSidebar({ className }: { className?: string }) {
                         >
                           <div className="flex items-center gap-3">
                             <Icon className="w-4 h-4" />
-                            <span className="text-sm font-black uppercase tracking-tighter">{link.label}</span>
+                            <span className="text-sm font-black uppercase tracking-tighter">
+                              {link.label}
+                            </span>
                           </div>
                           <span className="text-[8px] font-black border-2 border-muted px-1 rounded uppercase">
                             SOON
@@ -204,8 +142,7 @@ export function LunchTableSidebar({ className }: { className?: string }) {
                   Enrollment required to access internal hierarchy.
                 </p>
                 <Button asChild className="w-full tcg-button-primary">
-                  <Link to="/profile">
-LOGIN</Link>
+                  <Link to="/profile">LOGIN</Link>
                 </Button>
               </div>
             </div>
@@ -241,12 +178,24 @@ LOGIN</Link>
             </div>
             {/* Currency Mini-Display - Hierarchy Stats */}
             <div className="grid grid-cols-2 gap-2">
-              <div className="bg-background border-2 border-primary px-2 py-1 flex items-center gap-2 relative overflow-hidden group/rep">
-                <Image src="/lunchtable/reputation-icon.png" alt="Rep" width={16} height={16} className="w-4 h-4 grayscale group-hover/rep:grayscale-0 transition-all" />
+              <div className="bg-background border-2 border-primary px-2 py-1 flex items-center gap-2 relative overflow-hidden group/rep hover:bg-primary hover:text-primary-foreground transition-colors cursor-help">
+                <Image
+                  src="/lunchtable/reputation-icon.png"
+                  alt="Rep"
+                  width={16}
+                  height={16}
+                  className="w-4 h-4 grayscale group-hover/rep:grayscale-0 group-hover/rep:invert transition-all"
+                />
                 <span className="text-[10px] font-black uppercase ink-bleed">Rep</span>
               </div>
-              <div className="bg-background border-2 border-primary px-2 py-1 flex items-center gap-2 relative overflow-hidden group/stab">
-                <Image src="/lunchtable/stability-icon.png" alt="Stab" width={16} height={16} className="w-4 h-4 grayscale group-hover/stab:grayscale-0 transition-all" />
+              <div className="bg-background border-2 border-primary px-2 py-1 flex items-center gap-2 relative overflow-hidden group/stab hover:bg-primary hover:text-primary-foreground transition-colors cursor-help">
+                <Image
+                  src="/lunchtable/stability-icon.png"
+                  alt="Stab"
+                  width={16}
+                  height={16}
+                  className="w-4 h-4 grayscale group-hover/stab:grayscale-0 group-hover/stab:invert transition-all"
+                />
                 <span className="text-[10px] font-black uppercase ink-bleed">Stab</span>
               </div>
             </div>

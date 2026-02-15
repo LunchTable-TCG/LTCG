@@ -299,6 +299,20 @@ export function evolve(state: GameState, events: EngineEvent[]): GameState {
         newState.hostNormalSummonedThisTurn = false;
         newState.awayNormalSummonedThisTurn = false;
         newState.optUsedThisTurn = [];
+        // Reset combat flags for the new turn player's monsters
+        if (event.seat === "host") {
+          newState.hostBoard = newState.hostBoard.map((c) => ({
+            ...c,
+            canAttack: true,
+            hasAttackedThisTurn: false,
+          }));
+        } else {
+          newState.awayBoard = newState.awayBoard.map((c) => ({
+            ...c,
+            canAttack: true,
+            hasAttackedThisTurn: false,
+          }));
+        }
         break;
 
       case "TURN_ENDED":

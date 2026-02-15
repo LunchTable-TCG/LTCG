@@ -129,9 +129,7 @@ export function StoryBattleCompleteDialog({
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ delay: 0.5 }}
               >
-                <div
-                  className="p-4 text-center zine-border bg-linear-to-br from-purple-900/40 to-blue-900/40"
-                >
+                <div className="p-4 text-center zine-border bg-linear-to-br from-purple-900/40 to-blue-900/40">
                   <div className="flex items-center justify-center gap-3 mb-2">
                     <Trophy className="w-6 h-6 text-[#d4af37]" />
                     <div className="text-2xl font-bold text-[#d4af37]">LEVEL UP!</div>

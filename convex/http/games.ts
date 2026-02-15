@@ -1292,7 +1292,11 @@ export const enterBreakdownCheck = authHttpAction(async (ctx, request, auth) => 
 
     // Verify we're in combat phase
     if (state.currentPhase !== "combat") {
-      return errorResponse("INVALID_PHASE", "Can only enter Breakdown Check from Combat Phase", 400);
+      return errorResponse(
+        "INVALID_PHASE",
+        "Can only enter Breakdown Check from Combat Phase",
+        400
+      );
     }
 
     // Update phase to breakdown_check
@@ -1362,15 +1366,8 @@ export const endPlayerTurn = authHttpAction(async (ctx, request, auth) => {
       if (error.message.includes("NOT_YOUR_TURN")) {
         return errorResponse("NOT_YOUR_TURN", "It's not your turn", 403);
       }
-      if (
-        error.message.includes("INVALID_PHASE") ||
-        error.message.includes("End Phase")
-      ) {
-        return errorResponse(
-          "INVALID_PHASE",
-          "Must be in End Phase to end turn",
-          400
-        );
+      if (error.message.includes("INVALID_PHASE") || error.message.includes("End Phase")) {
+        return errorResponse("INVALID_PHASE", "Must be in End Phase to end turn", 400);
       }
     }
 

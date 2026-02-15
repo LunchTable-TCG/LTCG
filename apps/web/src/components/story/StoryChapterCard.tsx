@@ -1,11 +1,11 @@
 "use client";
 
+import { Image } from "@/components/ui/image";
 import { getArchetypeTheme } from "@/lib/archetypeThemes";
 import { getAssetUrl } from "@/lib/blob";
 import { cn } from "@/lib/utils";
 import { motion } from "framer-motion";
 import { Lock, Star, Trophy } from "lucide-react";
-import { Image } from "@/components/ui/image";
 
 interface StoryChapterCardProps {
   chapter: {
@@ -47,9 +47,7 @@ export function StoryChapterCard({ chapter, onClick }: StoryChapterCardProps) {
         !isUnlocked && "opacity-80 grayscale"
       )}
     >
-      <div
-        className="h-full overflow-hidden zine-border bg-card"
-      >
+      <div className="h-full overflow-hidden zine-border bg-card">
         {/* Background Image */}
         <div className="absolute inset-0" data-testid="chapter-artwork">
           <Image

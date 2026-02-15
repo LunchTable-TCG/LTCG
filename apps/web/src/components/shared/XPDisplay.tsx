@@ -28,11 +28,7 @@ export function XPDisplay({
   return (
     <div className={cn("space-y-1 w-full", className)}>
       <div className="flex justify-between items-end text-[10px] font-black uppercase tracking-tighter">
-        {showLevel && (
-          <span className="text-destructive font-bold ink-bleed">
-            Level {level}
-          </span>
-        )}
+        {showLevel && <span className="text-destructive font-bold ink-bleed">Level {level}</span>}
         {showXP && (
           <span className="text-muted-foreground">
             {currentXP} / {nextLevelXP} XP

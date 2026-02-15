@@ -1,9 +1,6 @@
-import {
-  useQuery as useTanStackQuery,
-  type UseQueryOptions,
-} from "@tanstack/react-query";
+import { type UseQueryOptions, useQuery as useTanStackQuery } from "@tanstack/react-query";
 import { useConvex } from "convex/react";
-import { type FunctionReference, type OptionalRestArgs } from "convex/server";
+import type { FunctionReference, OptionalRestArgs } from "convex/server";
 import { useCallback, useMemo } from "react";
 
 /**
@@ -28,10 +25,7 @@ export function useConvexQuery<Query extends FunctionReference<"query">>(
   const convex = useConvex();
 
   // Create a stable query key based on the query name and args
-  const queryKey = useMemo(
-    () => [(query as any)._def.functionName, args] as const,
-    [query, args]
-  );
+  const queryKey = useMemo(() => [(query as any)._def.functionName, args] as const, [query, args]);
 
   const queryFn = useCallback(async () => {
     return convex.query(query, args);

@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&family=Special+Elite&display=swap");
+
 @import "tailwindcss";
 @source "../src";
 @import "tw-animate-css";
@@ -9,97 +11,36 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
-  --color-ring: var(--ring);
-  --color-input: var(--input);
-  --color-border: var(--border);
-  --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-popover: var(--popover);
-  --color-card-foreground: var(--card-foreground);
-  --color-card: var(--card);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  --radius-2xl: calc(var(--radius) + 8px);
+  --font-outfit: "Outfit", "Inter", sans-serif;
+  --font-zine: "Special Elite", cursive;
 
-  --color-reputation: var(--reputation);
-  --color-stability: var(--stability);
-  --color-ink: var(--ink);
-  --font-heading: var(--font-heading);
-  --font-body: var(--font-body);
+  --shadow-zine: 4px 4px 0px 0px rgba(18, 18, 18, 1);
+  --shadow-zine-lg: 8px 8px 0px 0px rgba(18, 18, 18, 1);
+  --shadow-zine-sm: 2px 2px 0px 0px rgba(18, 18, 18, 1);
+  --shadow-zine-glow: 0px 0px 20px 0px rgba(255, 204, 0, 0.3);
+
+  --border-zine: 2px solid #121212;
+  --border-zine-thick: 4px solid #121212;
+  --border-zine-dashed: 2px dashed #121212;
 }
 
 :root {
-  --radius: 0rem; /* Sharp edges for zine feel */
+  --radius: 0rem;
 
-  /* LunchTable Palette: High Contrast, Gritty Ink & Paper */
-  --background: #fdfdfb; /* Raw, slightly off-white paper */
-  --foreground: #121212; /* Deep, saturated charcoal ink */
+  /* LunchTable Palette: Refined Ink & Paper */
+  --background: #fdfdfb;
+  --foreground: #121212;
 
-  --card: #ffffff;
-  --card-foreground: #121212;
-
-  --popover: #ffffff;
-  --popover-foreground: #121212;
-
-  --primary: #121212; /* Ink is primary */
+  --primary: #121212;
   --primary-foreground: #ffffff;
 
-  --secondary: #e6e6e6; /* Light gray paper */
-  --secondary-foreground: #121212;
-
-  --muted: #f2f2f2;
-  --muted-foreground: #666666;
-
-  --accent: #d1d1d1;
-  --accent-foreground: #121212;
-
-  --destructive: #cc0000; /* Raw, bleeding red ink */
-  --destructive-foreground: #ffffff;
-
-  --border: #121212; /* Ink lines for borders */
-  --input: #ffffff;
-  --ring: #121212;
-
-  --reputation: #ffcc00; /* Humiliation gold */
-  --stability: #33ccff; /* Fragile blue */
+  --reputation: #ffcc00;
+  --stability: #33ccff;
   --ink: #121212;
 
-  --sidebar: #fdfdfb;
-  --sidebar-foreground: #121212;
-  --sidebar-primary: #121212;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #e6e6e6;
-  --sidebar-accent-foreground: #121212;
-
-  --sidebar-border: #121212;
-  --sidebar-ring: #121212;
-
-  /* Font Variables: Using Geist sans for a modern-but-raw feel */
-  --font-heading: var(--font-geist-sans);
-  --font-body: var(--font-geist-sans);
+  --font-heading: "Outfit", sans-serif;
+  --font-body: "Inter", sans-serif;
+  --font-special: "Special Elite", cursive;
 }
 
 @layer base {
@@ -112,7 +53,18 @@
     background-image: url("/lunchtable/paper-texture.png");
     background-size: 512px;
     background-repeat: repeat;
+    font-family: var(--font-body);
     font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-heading);
+    @apply font-black uppercase tracking-tighter;
   }
 }
 
@@ -124,14 +76,31 @@
   }
 
   .ink-bleed {
-    filter: blur(0.2px) contrast(1.2);
-    text-shadow: 0.5px 0.5px 1px rgba(18, 18, 18, 0.2);
+    filter: blur(0.25px) contrast(1.1);
+    text-shadow: 0.5px 0.5px 1px rgba(18, 18, 18, 0.15);
   }
 
   .paper-panel {
     background-color: #ffffff;
-    box-shadow: 4px 4px 0px 0px rgba(18, 18, 18, 1);
-    border: 1px solid #121212;
+    background-image: radial-gradient(#121212 0.5px, transparent 0.5px);
+    background-size: 24px 24px;
+    background-position: 0 0;
+    box-shadow: var(--shadow-zine);
+    border: var(--border-zine);
+    @apply bg-opacity-95;
+  }
+
+  .paper-panel-flat {
+    background-color: #ffffff;
+    border: var(--border-zine);
+  }
+
+  .ink-wash {
+    background-image: linear-gradient(135deg, rgba(18, 18, 18, 0.03) 0%, transparent 100%);
+  }
+
+  .ink-wash-reputation {
+    background-image: linear-gradient(135deg, rgba(255, 204, 0, 0.1) 0%, transparent 100%);
   }
 
   .scanner-noise {
@@ -143,21 +112,23 @@
     position: absolute;
     inset: 0;
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-    opacity: 0.03;
+    opacity: 0.04;
     pointer-events: none;
+    z-index: 50;
   }
 
   .tcg-button {
-    @apply relative inline-flex items-center justify-center font-bold px-6 py-2 transition-transform;
+    @apply relative inline-flex items-center justify-center font-black px-6 py-2 transition-all uppercase tracking-wider;
     background-color: #ffffff;
-    border: 2px solid #121212;
+    border: var(--border-zine);
     color: #121212;
-    box-shadow: 3px 3px 0px 0px rgba(18, 18, 18, 1);
+    box-shadow: var(--shadow-zine-sm);
+    font-family: var(--font-heading);
   }
 
   .tcg-button:hover {
     @apply -translate-x-0.5 -translate-y-0.5;
-    box-shadow: 5px 5px 0px 0px rgba(18, 18, 18, 1);
+    box-shadow: var(--shadow-zine);
   }
 
   .tcg-button:active {
@@ -169,8 +140,8 @@
     @apply relative inline-flex items-center justify-center font-bold px-6 py-2 transition-transform;
     background-color: #121212;
     color: #ffffff;
-    border: 2px solid #121212;
-    box-shadow: 3px 3px 0px 0px rgba(18, 18, 18, 0.5);
+    border: var(--border-zine);
+    box-shadow: var(--shadow-zine-sm);
   }
 
   .nav-link {
@@ -178,7 +149,8 @@
     color: #666666;
   }
 
-  .nav-link:hover, .nav-link.active {
+  .nav-link:hover,
+  .nav-link.active {
     color: #121212;
     background-color: rgba(18, 18, 18, 0.05);
   }
@@ -214,12 +186,11 @@
 }
 
 /* ============================================================================
-   TCG THEMED SCROLLBAR
-   A custom scrollbar that matches the trading card game aesthetic with
-   gold accents, leather textures, and ornate styling.
+   LUNCHTABLE THEMED SCROLLBAR
+   A custom scrollbar that matches the Zine aesthetic.
    ============================================================================ */
 
-/* TCG Scrollbar Container */
+/* LunchTable Scrollbar Container */
 .tcg-scrollbar {
   scrollbar-width: thin;
   scrollbar-color: #121212 #fdfdfb;
@@ -238,7 +209,7 @@
 .tcg-scrollbar::-webkit-scrollbar-thumb {
   background: #121212;
   border: 1px solid #121212;
-  box-shadow: 2px 2px 0px 0px rgba(18, 18, 18, 1);
+  box-shadow: var(--shadow-zine-sm);
 }
 
 .tcg-scrollbar::-webkit-scrollbar-thumb:hover {

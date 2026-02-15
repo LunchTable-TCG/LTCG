@@ -1,10 +1,10 @@
 "use client";
 
 import { useLogin, usePrivy } from "@privy-io/react-auth";
+import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { useConvexAuth } from "convex/react";
 import { motion } from "framer-motion";
 import { ArrowRight, Loader2, Sparkles } from "lucide-react";
-import { Link, useNavigate, useLocation } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 
 interface AuthFormProps {

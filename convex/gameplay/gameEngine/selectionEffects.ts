@@ -7,8 +7,8 @@
  * - Revival effects
  */
 
-import type { Doc, Id } from "../../_generated/dataModel";
 import { v } from "convex/values";
+import type { Doc, Id } from "../../_generated/dataModel";
 import { query } from "../../_generated/server";
 import { mutation } from "../../functions";
 import { requireAuthMutation, requireAuthQuery } from "../../lib/convexAuth";
@@ -226,7 +226,9 @@ export const getDestructionTargets = query({
       ...board.map((bc) => bc.cardId),
       ...spellTrapZone.filter((st) => !st.isFaceDown).map((st) => st.cardId),
     ];
-    const cards = await Promise.all(allCardIds.map((id) => ctx.db.get(id as Id<"cardDefinitions">)));
+    const cards = await Promise.all(
+      allCardIds.map((id) => ctx.db.get(id as Id<"cardDefinitions">))
+    );
     const cardMap = new Map(
       cards.filter((c): c is Doc<"cardDefinitions"> => c !== null).map((c) => [c._id, c])
     );

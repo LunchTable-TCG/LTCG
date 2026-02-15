@@ -1,7 +1,7 @@
 "use client";
 
-import { handleHookError } from "@/lib/errorHandling";
 import { typedApi, useQuery } from "@/lib/convexHelpers";
+import { handleHookError } from "@/lib/errorHandling";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
 import { useMutation } from "convex/react";
@@ -23,10 +23,7 @@ export function useCardBinder(): UseCardBinderReturn {
   const { isAuthenticated } = useAuth();
 
   // Fetch current user details to get the userId for queries
-  const currentUser = useQuery(
-    typedApi.core.users.currentUser,
-    isAuthenticated ? {} : "skip"
-  );
+  const currentUser = useQuery(typedApi.core.users.currentUser, isAuthenticated ? {} : "skip");
 
   const userId = currentUser?._id;
 
@@ -47,7 +44,9 @@ export function useCardBinder(): UseCardBinderReturn {
   );
 
   // Mutation
-  const toggleFavoriteMutation = useMutation((api as any).lunchtable_tcg_cards.cards.toggleFavorite);
+  const toggleFavoriteMutation = useMutation(
+    (api as any).lunchtable_tcg_cards.cards.toggleFavorite
+  );
 
   const toggleFavorite = async (playerCardId: Id<"playerCards">) => {
     if (!isAuthenticated || !userId) throw new Error("Not authenticated");

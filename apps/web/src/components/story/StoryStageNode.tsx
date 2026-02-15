@@ -60,7 +60,6 @@ export function StoryStageNode({ stage, onClick, className }: StoryStageNodeProp
   const isStarred = stage.status === "starred";
   const canClaimFirstClear = isCompleted && !stage.firstClearClaimed;
 
-
   return (
     <motion.button
       data-testid="story-stage"

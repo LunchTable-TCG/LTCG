@@ -2,38 +2,19 @@
 
 import { LogoutConfirmDialog } from "@/components/dialogs/LogoutConfirmDialog";
 import { InboxDropdown } from "@/components/inbox/InboxDropdown";
+import { XPDisplay } from "@/components/shared/XPDisplay";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { Image } from "@/components/ui/image";
 import { WalletButton } from "@/components/wallet";
 import { useAuth, useLogout } from "@/hooks/auth/useConvexAuthHook";
 import { getAssetUrl } from "@/lib/blob";
+import { navGroups } from "@/lib/config/navigation";
 import { typedApi, useConvexQuery } from "@/lib/convexHelpers";
-import { XPDisplay } from "@/components/shared/XPDisplay";
 import { cn } from "@/lib/utils";
-import {
-  Award,
-  BookOpen,
-  Coins,
-  Gamepad2,
-  Heart,
-  LogOut,
-  Map as MapIcon,
-  Menu,
-  Settings,
-  Sparkles,
-  Star,
-  Store,
-  Swords,
-  Target,
-  Trophy,
-  User,
-  Users,
-  Wallet,
-  X,
-} from "lucide-react";
-import { Image } from "@/components/ui/image";
 import { Link } from "@tanstack/react-router";
 import { useLocation } from "@tanstack/react-router";
+import { LogOut, Menu, Swords, X } from "lucide-react";
 import { createContext, useContext, useEffect, useState } from "react";
 
 interface SidebarContextType {
@@ -71,65 +52,6 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
   );
 }
 
-interface NavLink {
-  href: string;
-  label: string;
-  icon: typeof Swords;
-  comingSoon?: boolean;
-}
-
-interface NavGroup {
-  label: string;
-  icon: typeof Swords;
-  links: NavLink[];
-}
-
-const navGroups: NavGroup[] = [
-  {
-    label: "Play",
-    icon: Gamepad2,
-    links: [
-      { href: "/lunchtable", label: "The Table", icon: Swords },
-      { href: "/play/story", label: "Story Mode", icon: MapIcon },
-      { href: "/tournaments", label: "Tournaments", icon: Award },
-    ],
-  },
-  {
-    label: "Progress",
-    icon: Star,
-    links: [
-      { href: "/battle-pass", label: "Battle Pass", icon: Sparkles },
-      { href: "/quests", label: "Quests", icon: Target },
-      { href: "/leaderboards", label: "Leaderboards", icon: Trophy },
-    ],
-  },
-  {
-    label: "Community",
-    icon: Users,
-    links: [
-      { href: "/friends", label: "Friends", icon: Heart },
-      { href: "/guilds", label: "Guilds", icon: Users },
-    ],
-  },
-  {
-    label: "Economy",
-    icon: Coins,
-    links: [
-      { href: "/shop", label: "Shop", icon: Store },
-      { href: "/lunchmoney", label: "LunchMoney", icon: Wallet },
-    ],
-  },
-  {
-    label: "Collection",
-    icon: BookOpen,
-    links: [
-      { href: "/binder", label: "Binder", icon: BookOpen },
-      { href: "/profile", label: "Profile", icon: User },
-      { href: "/settings", label: "Settings", icon: Settings },
-    ],
-  },
-];
-
 export function Navbar() {
   const pathname = useLocation().pathname;
   const [isScrolled, setIsScrolled] = useState(false);
@@ -159,14 +81,24 @@ export function Navbar() {
       <header
         className={cn(
           "sticky top-0 z-40 transition-all duration-300 w-full",
-          isScrolled
-            ? "bg-background border-b-2 border-primary py-2"
-            : "bg-background/80 py-4"
+          isScrolled ? "bg-background border-b-2 border-primary py-2" : "bg-background/80 py-4"
         )}
       >
         {/* Comic Overlays */}
-        <div className="absolute inset-0 pointer-events-none z-0 opacity-10 mix-blend-multiply" style={{ backgroundImage: 'url(/assets/overlays/paper-texture.png)', backgroundSize: '256px' }} />
-        <div className="absolute inset-0 pointer-events-none z-0 opacity-5" style={{ backgroundImage: 'url(/assets/overlays/halftone-dots.png)', backgroundSize: '128px' }} />
+        <div
+          className="absolute inset-0 pointer-events-none z-0 opacity-10 mix-blend-multiply"
+          style={{
+            backgroundImage: "url(/assets/overlays/paper-texture.png)",
+            backgroundSize: "256px",
+          }}
+        />
+        <div
+          className="absolute inset-0 pointer-events-none z-0 opacity-5"
+          style={{
+            backgroundImage: "url(/assets/overlays/halftone-dots.png)",
+            backgroundSize: "128px",
+          }}
+        />
         <div className="container mx-auto px-4">
           <nav className="flex items-center justify-between">
             <div className="flex items-center gap-4">
@@ -240,9 +172,7 @@ export function Navbar() {
                     <Link to="/login">LOGIN</Link>
                   </Button>
                   <Button asChild className="tcg-button-primary px-6 py-4">
-                    <Link to="/signup">
-                      JOIN US
-                    </Link>
+                    <Link to="/signup">JOIN US</Link>
                   </Button>
                 </div>
               )}
@@ -279,8 +209,12 @@ export function Navbar() {
                 />
               </div>
               <div className="flex flex-col">
-                <span className="text-xl font-black uppercase tracking-tighter leading-none ink-bleed">LunchTable</span>
-                <span className="text-[10px] font-bold text-destructive uppercase tracking-widest mt-0.5">Hierarchy Chronicle</span>
+                <span className="text-xl font-black uppercase tracking-tighter leading-none ink-bleed">
+                  LunchTable
+                </span>
+                <span className="text-[10px] font-bold text-destructive uppercase tracking-widest mt-0.5">
+                  Hierarchy Chronicle
+                </span>
               </div>
             </Link>
             <button
@@ -327,7 +261,7 @@ export function Navbar() {
             {isAuthenticated ? (
               <nav className="space-y-6">
                 {/* Primary CTA - The Table */}
-                  <Link
+                <Link
                   to="/lunchtable"
                   onClick={() => setIsOpen(false)}
                   className="flex items-center gap-4 px-4 py-4 border-4 border-primary bg-primary text-primary-foreground hover:scale-[1.02] transition-transform group"
@@ -336,62 +270,67 @@ export function Navbar() {
                     <Swords className="w-6 h-6" />
                   </div>
                   <div className="flex-1">
-                    <span className="block font-black text-xl uppercase tracking-tighter leading-none">Play Now</span>
-                    <span className="text-[10px] font-bold uppercase text-primary-foreground/70">Claim Your Seat</span>
+                    <span className="block font-black text-xl uppercase tracking-tighter leading-none">
+                      Play Now
+                    </span>
+                    <span className="text-[10px] font-bold uppercase text-primary-foreground/70">
+                      Claim Your Seat
+                    </span>
                   </div>
                 </Link>
 
                 {/* Grouped Navigation */}
                 {navGroups.map((group) => {
-                  const GroupIcon = group.icon;
-                  const filteredLinks = group.links.filter((l) => l.href !== "/lunchtable");
-                  if (filteredLinks.length === 0) return null;
-
                   return (
                     <div key={group.label} className="space-y-2">
                       <div className="flex items-center gap-2 px-1">
-                        <GroupIcon className="w-4 h-4 text-muted-foreground" />
                         <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest opacity-80">
                           {group.label}
                         </span>
                       </div>
                       <div className="space-y-1">
-                        {filteredLinks.map((link) => {
-                          const Icon = link.icon;
-                          const isActive =
-                            pathname === link.href || pathname.startsWith(`${link.href}/`);
-                          const isComingSoon = link.comingSoon === true;
+                        {group.links
+                          .filter((l) => l.href !== "/lunchtable")
+                          .map((link) => {
+                            const Icon = link.icon;
+                            const isActive =
+                              pathname === link.href || pathname.startsWith(`${link.href}/`);
+                            const isComingSoon = link.comingSoon === true;
 
-                          if (isComingSoon) {
+                            if (isComingSoon) {
+                              return (
+                                <div
+                                  key={link.href}
+                                  className="flex items-center gap-4 px-4 py-2 border-2 border-dashed border-muted/50 opacity-40 grayscale"
+                                >
+                                  <Icon className="w-5 h-5" />
+                                  <span className="text-sm font-black uppercase tracking-tighter">
+                                    {link.label}
+                                  </span>
+                                  <span className="ml-auto text-[8px] font-bold bg-muted px-1 py-0.5 uppercase tracking-tighter">
+                                    Soon
+                                  </span>
+                                </div>
+                              );
+                            }
+
                             return (
-                              <div
+                              <Link
                                 key={link.href}
-                                className="flex items-center gap-4 px-4 py-2 border-2 border-dashed border-muted/50 opacity-40 grayscale"
+                                to={link.href}
+                                onClick={() => setIsOpen(false)}
+                                className={cn(
+                                  "flex items-center gap-4 px-4 py-2 border-2 transition-all font-black uppercase tracking-tighter",
+                                  isActive
+                                    ? "bg-primary text-primary-foreground border-primary ink-bleed"
+                                    : "border-transparent text-foreground/70 hover:border-primary hover:text-foreground hover:bg-secondary/20"
+                                )}
                               >
                                 <Icon className="w-5 h-5" />
-                                <span className="text-sm font-black uppercase tracking-tighter">{link.label}</span>
-                                <span className="ml-auto text-[8px] font-bold bg-muted px-1 py-0.5 uppercase tracking-tighter">Soon</span>
-                              </div>
+                                <span className="text-sm">{link.label}</span>
+                              </Link>
                             );
-                          }
-
-                          return (
-                            <Link
-                              key={link.href}
-                              to={link.href}
-                              onClick={() => setIsOpen(false)}
-                              className={cn(
-                                "flex items-center gap-4 px-4 py-2 border-2 transition-all font-black uppercase tracking-tighter",
-                                isActive
-                                  ? "bg-primary text-primary-foreground border-primary ink-bleed"
-                                  : "border-transparent text-foreground/70 hover:border-primary hover:text-foreground hover:bg-secondary/20"
-                              )}
-                            >
-                              <Icon className="w-5 h-5" />
-                              <span className="text-sm">{link.label}</span>
-                            </Link>
-                          );
-                        })}
+                          })}
                       </div>
                     </div>
                   );

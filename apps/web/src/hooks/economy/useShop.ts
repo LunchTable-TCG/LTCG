@@ -162,9 +162,10 @@ export function useShop(): UseShopReturn {
   // Queries
   const products = useQuery(api.economy.shop.getShopProducts, {}) as ShopProduct[] | undefined;
 
-  const packHistory = useQuery(api.economy.shop.getPackOpeningHistory, isAuthenticated ? {} : "skip") as
-    | PackHistoryResponse
-    | undefined;
+  const packHistory = useQuery(
+    api.economy.shop.getPackOpeningHistory,
+    isAuthenticated ? {} : "skip"
+  ) as PackHistoryResponse | undefined;
 
   // Mutations
   const purchasePackMutation = useMutation(api.economy.shop.purchasePack);

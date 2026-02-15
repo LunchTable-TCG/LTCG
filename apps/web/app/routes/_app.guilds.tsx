@@ -1,12 +1,12 @@
-import { useGuildInteraction } from "@/hooks/guilds/useGuildInteraction";
-import { Loader2, Shield } from "lucide-react";
 import { GuildDashboard } from "@/components/guilds/GuildDashboard";
 import { NoGuildView } from "@/components/guilds/NoGuildView";
-import { createFileRoute } from '@tanstack/react-router'
+import { useGuildInteraction } from "@/hooks/guilds/useGuildInteraction";
+import { createFileRoute } from "@tanstack/react-router";
+import { Loader2, Shield } from "lucide-react";
 
-export const Route = createFileRoute('/_app/guilds')({
+export const Route = createFileRoute("/_app/guilds")({
   component: GuildsPage,
-})
+});
 
 function GuildsPage() {
   const { isAuthenticated, isLoading, hasGuild, dashboard, discovery } = useGuildInteraction();

@@ -104,8 +104,14 @@ export const endTurn = mutation({
       }
 
       const allBoards: BoardCardWithOwner[] = [
-        ...playerBoard.map((bc) => ({ cardId: bc.cardId as Id<"cardDefinitions">, ownerId: user.userId })),
-        ...opponentBoard.map((bc) => ({ cardId: bc.cardId as Id<"cardDefinitions">, ownerId: opponentId as Id<"users"> })),
+        ...playerBoard.map((bc) => ({
+          cardId: bc.cardId as Id<"cardDefinitions">,
+          ownerId: user.userId,
+        })),
+        ...opponentBoard.map((bc) => ({
+          cardId: bc.cardId as Id<"cardDefinitions">,
+          ownerId: opponentId as Id<"users">,
+        })),
       ];
 
       for (const boardCard of allBoards) {
@@ -434,8 +440,14 @@ export const endTurnInternal = internalMutation({
       }
 
       const allBoards: BoardCardWithOwner[] = [
-        ...playerBoard.map((bc) => ({ cardId: bc.cardId as Id<"cardDefinitions">, ownerId: args.userId })),
-        ...opponentBoard.map((bc) => ({ cardId: bc.cardId as Id<"cardDefinitions">, ownerId: opponentId as Id<"users"> })),
+        ...playerBoard.map((bc) => ({
+          cardId: bc.cardId as Id<"cardDefinitions">,
+          ownerId: args.userId,
+        })),
+        ...opponentBoard.map((bc) => ({
+          cardId: bc.cardId as Id<"cardDefinitions">,
+          ownerId: opponentId as Id<"users">,
+        })),
       ];
 
       for (const boardCard of allBoards) {

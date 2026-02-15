@@ -15,8 +15,12 @@ interface BuyNowResult {
 }
 
 interface UseMarketplaceReturn {
-  listings: ReturnType<typeof useQuery<typeof api.economy.marketplace.getMarketplaceListings>> | undefined;
-  myListings: ReturnType<typeof useQuery<typeof api.economy.marketplace.getUserListings>> | undefined;
+  listings:
+    | ReturnType<typeof useQuery<typeof api.economy.marketplace.getMarketplaceListings>>
+    | undefined;
+  myListings:
+    | ReturnType<typeof useQuery<typeof api.economy.marketplace.getUserListings>>
+    | undefined;
   isLoading: boolean;
   createListing: (params: {
     cardDefinitionId: Id<"cardDefinitions">;
@@ -91,7 +95,10 @@ export function useMarketplace(): UseMarketplaceReturn {
   // Queries
   const listings = useQuery(api.economy.marketplace.getMarketplaceListings, {});
 
-  const myListings = useQuery(api.economy.marketplace.getUserListings, isAuthenticated ? {} : "skip");
+  const myListings = useQuery(
+    api.economy.marketplace.getUserListings,
+    isAuthenticated ? {} : "skip"
+  );
 
   // Mutations
   const createListingMutation = useMutation(api.economy.marketplace.createListing);

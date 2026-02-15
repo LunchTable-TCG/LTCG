@@ -24,23 +24,12 @@ import { recordEventHelper } from "./gameEvents";
  *
  * LunchTable TCG has 5 phases
  */
-export type GamePhase =
-  | "draw"
-  | "main"
-  | "combat"
-  | "breakdown_check"
-  | "end";
+export type GamePhase = "draw" | "main" | "combat" | "breakdown_check" | "end";
 
 /**
  * Phase transition sequence
  */
-const PHASE_SEQUENCE: GamePhase[] = [
-  "draw",
-  "main",
-  "combat",
-  "breakdown_check",
-  "end",
-];
+const PHASE_SEQUENCE: GamePhase[] = ["draw", "main", "combat", "breakdown_check", "end"];
 
 /**
  * Get next phase in sequence

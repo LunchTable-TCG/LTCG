@@ -2,6 +2,7 @@
 
 import { ArchetypeIcon } from "@/components/ui/ArchetypeIcon";
 import { Button } from "@/components/ui/button";
+import { Image } from "@/components/ui/image";
 import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -18,7 +19,6 @@ import {
   X,
   Zap,
 } from "lucide-react";
-import { Image } from "@/components/ui/image";
 import type { CardInZone } from "../hooks/useGameBoard";
 
 interface CardInspectorModalProps {

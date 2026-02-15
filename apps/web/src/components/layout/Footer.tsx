@@ -1,6 +1,6 @@
-import { ExternalLink } from "lucide-react";
-import { Link } from "@tanstack/react-router";
 import { Image } from "@/components/ui/image";
+import { Link } from "@tanstack/react-router";
+import { ExternalLink } from "lucide-react";
 
 const footerLinks = {
   game: {
@@ -14,18 +14,42 @@ const footerLinks = {
   developers: {
     title: "Propaganda",
     links: [
-      { href: process.env.NEXT_PUBLIC_DOCS_URL || "https://docs.lunchtable.cards", label: "Field Manual", external: true },
-      { href: process.env.NEXT_PUBLIC_AGENT_SDK_URL || "https://agents.lunchtable.cards", label: "Agent SDK", external: true },
-      { href: process.env.NEXT_PUBLIC_DEV_PORTAL_URL || "https://dev.lunchtable.cards", label: "Portal", external: true },
-      { href: process.env.NEXT_PUBLIC_GITHUB_URL || "https://github.com/LunchTable-TCG/LTCG", label: "Source", external: true },
+      {
+        href: process.env.NEXT_PUBLIC_DOCS_URL || "https://docs.lunchtable.cards",
+        label: "Field Manual",
+        external: true,
+      },
+      {
+        href: process.env.NEXT_PUBLIC_AGENT_SDK_URL || "https://agents.lunchtable.cards",
+        label: "Agent SDK",
+        external: true,
+      },
+      {
+        href: process.env.NEXT_PUBLIC_DEV_PORTAL_URL || "https://dev.lunchtable.cards",
+        label: "Portal",
+        external: true,
+      },
+      {
+        href: process.env.NEXT_PUBLIC_GITHUB_URL || "https://github.com/LunchTable-TCG/LTCG",
+        label: "Source",
+        external: true,
+      },
     ],
   },
   community: {
     title: "Hierarchy",
     links: [
       { href: "/social", label: "The Yard" },
-      { href: process.env.NEXT_PUBLIC_DISCORD_URL || "https://discord.gg/hgjCJJZh", label: "Broadcast", external: true },
-      { href: process.env.NEXT_PUBLIC_TWITTER_URL || "https://x.com/LunchTableTCG", label: "X", external: true },
+      {
+        href: process.env.NEXT_PUBLIC_DISCORD_URL || "https://discord.gg/hgjCJJZh",
+        label: "Broadcast",
+        external: true,
+      },
+      {
+        href: process.env.NEXT_PUBLIC_TWITTER_URL || "https://x.com/LunchTableTCG",
+        label: "X",
+        external: true,
+      },
     ],
   },
   legal: {
@@ -54,7 +78,9 @@ export function Footer() {
                 />
               </div>
               <div>
-                <span className="text-xl font-black uppercase tracking-tighter ink-bleed">Lunchtable</span>
+                <span className="text-xl font-black uppercase tracking-tighter ink-bleed">
+                  Lunchtable
+                </span>
                 <span className="block text-[10px] text-destructive font-bold tracking-widest uppercase">
                   Regret Chronicle
                 </span>
@@ -113,8 +139,12 @@ export function Footer() {
             &copy; {new Date().getFullYear()} LunchTable Team. No Regrets.
           </p>
           <div className="flex items-center gap-4">
-            <div className="px-2 py-1 border-2 border-primary text-[10px] font-black uppercase">Established 1994</div>
-            <div className="px-2 py-1 border-2 border-primary text-[10px] font-black uppercase">Zine-Certified</div>
+            <div className="px-2 py-1 border-2 border-primary text-[10px] font-black uppercase">
+              Established 1994
+            </div>
+            <div className="px-2 py-1 border-2 border-primary text-[10px] font-black uppercase">
+              Zine-Certified
+            </div>
           </div>
         </div>
       </div>

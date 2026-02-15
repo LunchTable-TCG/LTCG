@@ -411,7 +411,10 @@ export const selectStarterDeck = authHttpAction(async (ctx, request, auth) => {
     return successResponse(result, 201);
   } catch (error) {
     if (error instanceof Error) {
-      if (error.message.includes("Invalid starter deck code") || error.message.includes("Starter deck not found")) {
+      if (
+        error.message.includes("Invalid starter deck code") ||
+        error.message.includes("Starter deck not found")
+      ) {
         return errorResponse(
           "INVALID_STARTER_DECK",
           "Invalid starter deck code. Use GET /api/agents/starter-decks to see available codes.",

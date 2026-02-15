@@ -98,7 +98,7 @@ export function getDisplayUsername(user: Doc<"users">) {
 }
 
 import { GAME_CONFIG } from "@ltcg/core";
-import { Attribute } from "./types";
+import type { Attribute } from "./types";
 
 /**
  * Map archetype name to attribute color for frontend compatibility

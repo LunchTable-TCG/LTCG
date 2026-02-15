@@ -13,6 +13,7 @@ import { useTokenBalance } from "@/hooks/economy/useTokenBalance";
 import { useTokenPurchase } from "@/hooks/marketplace/useTokenPurchase";
 import { cn } from "@/lib/utils";
 import type { Id } from "@convex/_generated/dataModel";
+import { Link } from "@tanstack/react-router";
 import {
   AlertCircle,
   CheckCircle2,
@@ -23,7 +24,6 @@ import {
   RefreshCw,
   XCircle,
 } from "lucide-react";
-import { Link } from "@tanstack/react-router";
 
 /** Token decimal places for LTCG token */
 const TOKEN_DECIMALS = 6;

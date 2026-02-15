@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useNavigate } from "@tanstack/react-router";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowRight,
@@ -20,7 +21,6 @@ import {
   Trophy,
   Zap,
 } from "lucide-react";
-import { useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 
 type GameResult = "victory" | "defeat" | "draw";
@@ -307,7 +307,9 @@ export function GameResultScreen({
                     </div>
                     <div>
                       <Skull className="w-5 h-5 mx-auto mb-1 text-gray-400" />
-                      <p className="text-xl font-bold text-[#e8e0d5]">{stats.stereotypesDestroyed}</p>
+                      <p className="text-xl font-bold text-[#e8e0d5]">
+                        {stats.stereotypesDestroyed}
+                      </p>
                       <p className="text-xs text-[#a89f94]">Slain</p>
                     </div>
                     <div>

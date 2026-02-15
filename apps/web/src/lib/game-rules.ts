@@ -91,10 +91,7 @@ export const TURN_PHASES: PhaseInfo[] = [
     shortDescription: "Resolve post-combat effects and cleanup.",
     fullDescription:
       "After combat, resolve any pending effects and perform cleanup. Cards with breakdown triggers activate here.",
-    allowedActions: [
-      "Resolve breakdown effects",
-      "Activate triggered abilities",
-    ],
+    allowedActions: ["Resolve breakdown effects", "Activate triggered abilities"],
     tips: [
       "Some cards have effects that trigger specifically during the Breakdown Check.",
       "This is the last chance to use certain effects before the End Phase.",

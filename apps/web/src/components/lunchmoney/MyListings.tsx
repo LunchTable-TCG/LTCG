@@ -1,10 +1,10 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { Image } from "@/components/ui/image";
 import { getAssetUrl } from "@/lib/blob";
 import { cn } from "@/lib/utils";
 import { Clock, Coins, Gavel, Loader2, Package, Wallet, X } from "lucide-react";
-import { Image } from "@/components/ui/image";
 
 interface Listing {
   _id: string;

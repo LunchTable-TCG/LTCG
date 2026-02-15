@@ -4,8 +4,8 @@ import { Button } from "@/components/ui/button";
 import { typedApi, useConvexQuery } from "@/lib/convexHelpers";
 import { componentLogger, useDebugLifecycle } from "@/lib/debug";
 import type { Id } from "@convex/_generated/dataModel";
-import { Flag, Loader2, Users } from "lucide-react";
 import { Link, useNavigate } from "@tanstack/react-router";
+import { Flag, Loader2, Users } from "lucide-react";
 import { useState } from "react";
 import { AgentActivityIndicator } from "./AgentActivityIndicator";
 import { GameResultScreen } from "./GameResultScreen";
@@ -454,7 +454,9 @@ export function GameBoard({
               : []
           }
           onSummon={handleSummon}
-          onSet={selectedHandCard?.cardType === "stereotype" ? handleSetMonster : handleSetSpellTrap}
+          onSet={
+            selectedHandCard?.cardType === "stereotype" ? handleSetMonster : handleSetSpellTrap
+          }
           onActivate={handleHandCardActivate}
           onClose={() => {
             setShowSummonModal(false);

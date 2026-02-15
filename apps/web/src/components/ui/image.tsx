@@ -1,5 +1,4 @@
-import { cn } from "@/lib/utils";
-import { ImgHTMLAttributes, forwardRef } from "react";
+import { type ImgHTMLAttributes, forwardRef } from "react";
 
 export interface ImageProps extends ImgHTMLAttributes<HTMLImageElement> {
   src: string;

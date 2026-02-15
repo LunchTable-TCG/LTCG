@@ -4,11 +4,11 @@ import { LunchTableSidebar } from "@/components/layout/LunchTableSidebar";
 import { Navbar, SidebarProvider } from "@/components/layout/Navbar";
 import { NotificationToast } from "@/components/notifications/NotificationToast";
 import { Toaster } from "@/components/ui/toaster";
-import { createFileRoute, Outlet } from '@tanstack/react-router'
+import { Outlet, createFileRoute } from "@tanstack/react-router";
 
-export const Route = createFileRoute('/_app')({
+export const Route = createFileRoute("/_app")({
   component: AppLayout,
-})
+});
 
 function AppLayout() {
   return (
@@ -23,7 +23,7 @@ function AppLayout() {
             <AnnouncementBanner />
             <Navbar />
             <main className="flex-1 overflow-x-hidden">
-                <Outlet />
+              <Outlet />
             </main>
           </div>
         </div>

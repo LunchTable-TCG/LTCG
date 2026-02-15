@@ -1,8 +1,8 @@
 "use client";
 
-import { handleHookError } from "@/lib/errorHandling";
-import { typedApi, useQuery } from "@/lib/convexHelpers";
 import { api } from "@/lib/convexApiWrapper";
+import { typedApi, useQuery } from "@/lib/convexHelpers";
+import { handleHookError } from "@/lib/errorHandling";
 import type { Id } from "@convex/_generated/dataModel";
 import { useMutation } from "convex/react";
 import { toast } from "sonner";
@@ -76,10 +76,7 @@ export function useDeckBuilder(): UseDeckBuilderReturn {
   const { isAuthenticated } = useAuth();
 
   // Fetch current user details
-  const currentUser = useQuery(
-    typedApi.core.users.currentUser,
-    isAuthenticated ? {} : "skip"
-  );
+  const currentUser = useQuery(typedApi.core.users.currentUser, isAuthenticated ? {} : "skip");
 
   const userId = currentUser?._id;
 
@@ -228,10 +225,7 @@ export function useDeck(deckId: Id<"userDecks"> | null) {
   const { isAuthenticated } = useAuth();
 
   // Fetch current user details
-  const currentUser = useQuery(
-    typedApi.core.users.currentUser,
-    isAuthenticated ? {} : "skip"
-  );
+  const currentUser = useQuery(typedApi.core.users.currentUser, isAuthenticated ? {} : "skip");
 
   const userId = currentUser?._id;
 
@@ -275,10 +269,7 @@ export function useValidateDeck(deckId: Id<"userDecks"> | null) {
   const { isAuthenticated } = useAuth();
 
   // Fetch current user details
-  const currentUser = useQuery(
-    typedApi.core.users.currentUser,
-    isAuthenticated ? {} : "skip"
-  );
+  const currentUser = useQuery(typedApi.core.users.currentUser, isAuthenticated ? {} : "skip");
 
   const userId = currentUser?._id;
 

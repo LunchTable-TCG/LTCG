@@ -29,10 +29,7 @@ export function useGuild(guildId: Id<"guilds"> | null) {
   // Queries
   const guild = useQuery(getGuildQuery, guildId ? { guildId } : "skip");
   const members = useQuery(getGuildMembersQuery, guildId ? { guildId } : "skip");
-  const onlineMemberCount = useQuery(
-    getOnlineMemberCountQuery,
-    guildId ? { guildId } : "skip"
-  );
+  const onlineMemberCount = useQuery(getOnlineMemberCountQuery, guildId ? { guildId } : "skip");
   const joinRequests = useQuery(getGuildJoinRequestsQuery, guildId ? { guildId } : "skip");
 
   // Mutations with toast handling

@@ -2,8 +2,8 @@
 
 import { getTooltip } from "@/lib/game-rules";
 import { cn } from "@/lib/utils";
-import { XIcon } from "lucide-react";
 import { Link } from "@tanstack/react-router";
+import { XIcon } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useHelpModeSafe } from "./HelpModeProvider";

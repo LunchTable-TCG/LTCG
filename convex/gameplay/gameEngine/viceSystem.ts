@@ -10,9 +10,9 @@
  * This system runs as part of state-based actions and effect resolution.
  */
 
+import { GAME_CONFIG } from "@ltcg/core";
 import type { Doc, Id } from "../../_generated/dataModel";
 import type { MutationCtx } from "../../_generated/server";
-import { GAME_CONFIG } from "@ltcg/core";
 import { logger } from "../../lib/debug";
 import { recordEventHelper } from "../gameEvents";
 

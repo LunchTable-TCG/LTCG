@@ -1,11 +1,5 @@
-import { useDeckBuilder } from "@/hooks/collection/useDeckBuilder";
 import { StatCard } from "@/components/shared/StatCard";
 import { ToolGrid } from "@/components/shared/ToolGrid";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Plus, Edit, Trash, Play, CheckCircle2 } from "lucide-react";
-import { Link, useNavigate, createFileRoute } from '@tanstack/react-router'
-import { useState } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,12 +11,18 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { useDeckBuilder } from "@/hooks/collection/useDeckBuilder";
 import { cn } from "@/lib/utils";
+import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { motion } from "framer-motion";
+import { CheckCircle2, Edit, Play, Plus, Trash } from "lucide-react";
+import { useState } from "react";
 
-export const Route = createFileRoute('/_app/decks')({
+export const Route = createFileRoute("/_app/decks")({
   component: DecksPage,
-})
+});
 
 function DecksPage() {
   const { decks, isLoading, createDeck, deleteDeck, setActiveDeck } = useDeckBuilder();
@@ -71,11 +71,7 @@ function DecksPage() {
 
       {/* Stats Summary */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <StatCard
-          label="Total Loadouts"
-          value={decks?.length ?? 0}
-          delay={0.1}
-        />
+        <StatCard label="Total Loadouts" value={decks?.length ?? 0} delay={0.1} />
         <StatCard
           label="Active Status"
           value={activeDeck ? "DEPLOYED" : "NONE"}
@@ -97,7 +93,11 @@ function DecksPage() {
       </div>
 
       {/* Decks Grid */}
-      <ToolGrid isLoading={isLoading} isEmpty={!decks || decks.length === 0} emptyMessage="No decks found in the registry. Assemble one to begin.">
+      <ToolGrid
+        isLoading={isLoading}
+        isEmpty={!decks || decks.length === 0}
+        emptyMessage="No decks found in the registry. Assemble one to begin."
+      >
         {decks?.map((deck: any, index: number) => (
           <motion.div
             key={deck.deckId}
@@ -107,22 +107,30 @@ function DecksPage() {
             className={cn(
               "paper-panel group relative flex flex-col p-6 min-h-[220px] transition-all border-2 border-primary",
               "hover:shadow-[8px_8px_0px_0px_rgba(18,18,18,1)] hover:-translate-y-1",
-              deck.isActive && "bg-secondary/20 ring-4 ring-primary ring-offset-4 ring-offset-background"
+              deck.isActive &&
+                "bg-secondary/20 ring-4 ring-primary ring-offset-4 ring-offset-background"
             )}
           >
             {/* Delete Option */}
             <div className="absolute top-4 right-4 z-10 opacity-0 group-hover:opacity-100 transition-opacity">
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button size="icon" variant="ghost" className="h-10 w-10 text-destructive border-2 border-transparent hover:border-destructive hover:bg-destructive/10 rounded-none shadow-none">
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-10 w-10 text-destructive border-2 border-transparent hover:border-destructive hover:bg-destructive/10 rounded-none shadow-none"
+                  >
                     <Trash className="w-5 h-5" />
                   </Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent className="paper-panel border-4 border-primary rounded-none shadow-[10px_10px_0px_0px_rgba(0,0,0,1)]">
                   <AlertDialogHeader>
-                    <AlertDialogTitle className="text-3xl font-black uppercase italic ink-bleed">Destroy Deck?</AlertDialogTitle>
+                    <AlertDialogTitle className="text-3xl font-black uppercase italic ink-bleed">
+                      Destroy Deck?
+                    </AlertDialogTitle>
                     <AlertDialogDescription className="text-foreground font-bold uppercase text-sm">
-                      This action is irreversible. The deck config "{deck.name}" will be wiped from the registry.
+                      This action is irreversible. The deck config "{deck.name}" will be wiped from
+                      the registry.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter className="gap-4">
@@ -157,7 +165,10 @@ function DecksPage() {
               </div>
 
               <div className="flex items-center gap-4 flex-wrap">
-                <Badge variant="outline" className="text-[10px] font-black uppercase rounded-none border-2 border-primary bg-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] px-2">
+                <Badge
+                  variant="outline"
+                  className="text-[10px] font-black uppercase rounded-none border-2 border-primary bg-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] px-2"
+                >
                   {deck.deckArchetype || "Neutral"}
                 </Badge>
                 <div className="text-[10px] font-black uppercase opacity-60">
@@ -167,7 +178,11 @@ function DecksPage() {
             </div>
 
             <div className="flex gap-4 mt-6">
-              <Button asChild variant="outline" className="tcg-button-outline flex-1 gap-2 border-2 px-0 h-11">
+              <Button
+                asChild
+                variant="outline"
+                className="tcg-button-outline flex-1 gap-2 border-2 px-0 h-11"
+              >
                 <Link to={`/decks/builder/${deck.deckId}`}>
                   <Edit className="w-4 h-4" /> Edit
                 </Link>
@@ -177,7 +192,7 @@ function DecksPage() {
                   onClick={() => setActiveDeck(deck.deckId)}
                   className="tcg-button-primary flex-1 gap-2 border-2 px-0 h-11"
                 >
-                   <Play className="w-4 h-4" /> Deploy
+                  <Play className="w-4 h-4" /> Deploy
                 </Button>
               )}
             </div>

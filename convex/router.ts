@@ -214,7 +214,6 @@ http.route({
   handler: games.enterBattlePhase,
 });
 
-
 // POST /api/agents/games/actions/end-turn - End turn
 http.route({
   path: "/api/agents/games/actions/end-turn",

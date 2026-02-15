@@ -56,14 +56,22 @@
   },
   "resolutions": {
     "@tanstack/start-client-core": "1.120.19",
+    "@tanstack/start-server-core": "1.120.19",
+    "@tanstack/react-start-client": "1.120.19",
+    "@tanstack/react-start-server": "1.120.19",
+    "@tanstack/react-start-router-manifest": "1.120.19",
     "@tanstack/react-router": "1.120.19",
     "@tanstack/router-generator": "1.120.19",
     "@tanstack/router-core": "1.120.19",
-    "@tanstack/router-plugin": "1.120.19"
+    "@tanstack/router-plugin": "1.120.19",
+    "@tanstack/start-config": "1.120.20"
   },
   "devDependencies": {
     "@tanstack/start-client-core": "1.120.19",
     "@tanstack/start-server-core": "1.120.19",
+    "@tanstack/react-start-client": "1.120.19",
+    "@tanstack/react-start-server": "1.120.19",
+    "@tanstack/react-start-router-manifest": "1.120.19",
     "@tanstack/router-core": "1.120.19",
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",

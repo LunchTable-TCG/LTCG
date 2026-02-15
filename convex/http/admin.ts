@@ -32,7 +32,7 @@ export const getConfig = httpAction(async (ctx, request) => {
     return errorResponse(
       "INTERNAL_ERROR",
       error instanceof Error ? error.message : "Failed to get config",
-      500,
+      500
     );
   }
 });
@@ -69,7 +69,7 @@ export const updateConfig = httpAction(async (ctx, request) => {
     return errorResponse(
       "INTERNAL_ERROR",
       error instanceof Error ? error.message : "Failed to update config",
-      500,
+      500
     );
   }
 });
@@ -123,7 +123,7 @@ export const seedCards = httpAction(async (ctx, request) => {
     return errorResponse(
       "INTERNAL_ERROR",
       error instanceof Error ? error.message : "Failed to seed cards",
-      500,
+      500
     );
   }
 });

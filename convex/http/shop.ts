@@ -54,7 +54,7 @@ export const getPackages = httpAction(async (_ctx, request) => {
 
   try {
     // Get packages from database or constants
-    const packages = GEM_PACKAGES.map((pkg: typeof GEM_PACKAGES[number]) => ({
+    const packages = GEM_PACKAGES.map((pkg: (typeof GEM_PACKAGES)[number]) => ({
       packageId: pkg.id,
       name: pkg.name,
       gems: pkg.gems,
@@ -147,7 +147,7 @@ export const purchaseGems = x402HttpAction(
       throw new Error("packageId is required");
     }
 
-    const pkg = GEM_PACKAGES.find((p: typeof GEM_PACKAGES[number]) => p.id === packageId);
+    const pkg = GEM_PACKAGES.find((p: (typeof GEM_PACKAGES)[number]) => p.id === packageId);
     if (!pkg) {
       throw new Error(`Unknown gem package: ${packageId}`);
     }
@@ -178,7 +178,7 @@ export const purchaseGems = x402HttpAction(
       const validation = validateRequiredFields(body, ["packageId"]);
       if (validation) return validation;
 
-      const pkg = GEM_PACKAGES.find((p: typeof GEM_PACKAGES[number]) => p.id === body.packageId);
+      const pkg = GEM_PACKAGES.find((p: (typeof GEM_PACKAGES)[number]) => p.id === body.packageId);
       if (!pkg) {
         return errorResponse("INVALID_PACKAGE", "Package not found", 400, undefined, request);
       }

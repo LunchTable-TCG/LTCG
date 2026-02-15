@@ -558,7 +558,12 @@ function TransferDialog({
           <DialogFooter>
             <Button
               variant="outline"
-              onClick={() => window.open(`${process.env.NEXT_PUBLIC_SOLANA_EXPLORER_URL || "https://solscan.io"}/tx/${txSignature}`, "_blank")}
+              onClick={() =>
+                window.open(
+                  `${process.env.NEXT_PUBLIC_SOLANA_EXPLORER_URL || "https://solscan.io"}/tx/${txSignature}`,
+                  "_blank"
+                )
+              }
               className="w-full border-[#3d2b1f] text-[#a89f94] hover:text-[#e8e0d5]"
             >
               <ExternalLink className="w-4 h-4 mr-2" />

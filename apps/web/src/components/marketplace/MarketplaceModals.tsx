@@ -59,15 +59,21 @@ export function ShopPurchaseModal({
             {item.type === "box" && <Box className="w-12 h-12 text-black" />}
             {item.type === "currency" && <Coins className="w-12 h-12 text-black" />}
           </div>
-          <h3 className="text-xl font-bold text-black uppercase tracking-tight mb-2">{item.name}</h3>
-          <p className="text-black/70 font-medium font-mono text-sm mb-3 px-4">{item.description}</p>
+          <h3 className="text-xl font-bold text-black uppercase tracking-tight mb-2">
+            {item.name}
+          </h3>
+          <p className="text-black/70 font-medium font-mono text-sm mb-3 px-4">
+            {item.description}
+          </p>
           {item.contents && (
             <div className="inline-block bg-black text-white px-3 py-1 font-bold text-sm uppercase tracking-wider transform -rotate-1">
               {item.contents}
             </div>
           )}
           {item.quantity && (
-            <p className="text-amber-700 font-black mt-2 text-lg">+{item.quantity.toLocaleString()} Gold</p>
+            <p className="text-amber-700 font-black mt-2 text-lg">
+              +{item.quantity.toLocaleString()} Gold
+            </p>
           )}
         </div>
 
@@ -156,11 +162,17 @@ export function MarketListingModal({
           </div>
           <div className="flex flex-col justify-center">
             <h3 className="font-bold text-black text-lg leading-tight mb-1">{listing.cardName}</h3>
-            <p className={cn("text-xs font-black uppercase tracking-wider mb-2", RARITY_COLORS[listing.cardRarity])}>
+            <p
+              className={cn(
+                "text-xs font-black uppercase tracking-wider mb-2",
+                RARITY_COLORS[listing.cardRarity]
+              )}
+            >
               {listing.cardRarity}
             </p>
             <p className="text-sm font-mono text-black/60">
-              Seller: <span className="text-black font-bold">{listing.sellerName || "Unknown"}</span>
+              Seller:{" "}
+              <span className="text-black font-bold">{listing.sellerName || "Unknown"}</span>
             </p>
           </div>
         </div>
@@ -169,7 +181,9 @@ export function MarketListingModal({
           {listing.listingType === "auction" ? (
             <>
               <div className="flex justify-between items-center text-black">
-                <span className="font-bold uppercase text-sm tracking-wider opacity-70">Current Bid</span>
+                <span className="font-bold uppercase text-sm tracking-wider opacity-70">
+                  Current Bid
+                </span>
                 <span className="font-black text-xl flex items-center gap-1">
                   <Coins className="w-5 h-5" />
                   {(listing.currentBid || listing.price).toLocaleString()}
@@ -196,7 +210,9 @@ export function MarketListingModal({
               </div>
               <div className="flex justify-between text-sm text-black/60 mb-3 border-b-2 border-black/10 pb-3">
                 <span className="font-mono">Platform Fee (5%)</span>
-                <span className="font-mono">{Math.ceil(listing.price * PLATFORM_FEE).toLocaleString()}</span>
+                <span className="font-mono">
+                  {Math.ceil(listing.price * PLATFORM_FEE).toLocaleString()}
+                </span>
               </div>
               <div className="flex justify-between font-black text-xl text-black">
                 <span className="uppercase tracking-wider">Total</span>

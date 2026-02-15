@@ -1,8 +1,8 @@
 "use client";
 
+import { Image } from "@/components/ui/image";
 import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
-import { Image } from "@/components/ui/image";
 import { useState } from "react";
 import type { CardInZone } from "../../hooks/useGameBoard";
 

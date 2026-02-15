@@ -128,7 +128,6 @@ export const applyWebhookEvent = internalMutation({
           await handleTrackUnpublished(ctx, args.roomName, args.trackSid, now);
         }
         break;
-
     }
 
     return { applied: true };
@@ -394,4 +393,3 @@ function coerceTrackSource(
   }
   return "camera";
 }
-

@@ -2,8 +2,8 @@ import { registerRoutes } from "@convex-dev/stripe";
 import type Stripe from "stripe";
 
 import { components } from "./_generated/api";
-import router from "./router";
 import { payments } from "./lib/componentClients";
+import router from "./router";
 
 import * as livekitWebhook from "./livekit/http/webhook";
 
@@ -15,9 +15,7 @@ const http = router;
 // ============================================================================
 
 // Helper: derive planInterval from Stripe recurring interval
-function toPlanInterval(
-  interval: string | undefined
-): "month" | "year" {
+function toPlanInterval(interval: string | undefined): "month" | "year" {
   return interval === "year" ? "year" : "month";
 }
 
@@ -43,9 +41,7 @@ registerRoutes(http, components.stripe, {
     // ── Subscription Created ──────────────────────────────────────────
     "customer.subscription.created": async (ctx, event) => {
       // Idempotency guard — Stripe may retry webhooks
-      const alreadyProcessed = await ctx.runQuery(
-        payments.stripe.isEventProcessed(event.id)
-      );
+      const alreadyProcessed = await ctx.runQuery(payments.stripe.isEventProcessed(event.id));
       if (alreadyProcessed) return;
 
       const subscription = event.data.object as Stripe.Subscription;
@@ -62,10 +58,7 @@ registerRoutes(http, components.stripe, {
       const stripeCustomerId = subscription.customer as string;
 
       // Record webhook event for idempotency tracking
-      const eventRef = payments.stripe.recordWebhookEvent(
-        event.id,
-        event.type
-      );
+      const eventRef = payments.stripe.recordWebhookEvent(event.id, event.type);
       await ctx.runMutation(eventRef);
 
       // Ensure customer record exists in LTCG payments component
@@ -94,9 +87,7 @@ registerRoutes(http, components.stripe, {
 
     // ── Subscription Updated ──────────────────────────────────────────
     "customer.subscription.updated": async (ctx, event) => {
-      const alreadyProcessed = await ctx.runQuery(
-        payments.stripe.isEventProcessed(event.id)
-      );
+      const alreadyProcessed = await ctx.runQuery(payments.stripe.isEventProcessed(event.id));
       if (alreadyProcessed) return;
 
       const subscription = event.data.object as Stripe.Subscription;
@@ -113,10 +104,7 @@ registerRoutes(http, components.stripe, {
       const stripeCustomerId = subscription.customer as string;
 
       // Record webhook event
-      const eventRef = payments.stripe.recordWebhookEvent(
-        event.id,
-        event.type
-      );
+      const eventRef = payments.stripe.recordWebhookEvent(event.id, event.type);
       await ctx.runMutation(eventRef);
 
       // Upsert subscription with latest data
@@ -137,9 +125,7 @@ registerRoutes(http, components.stripe, {
 
     // ── Subscription Deleted ──────────────────────────────────────────
     "customer.subscription.deleted": async (ctx, event) => {
-      const alreadyProcessed = await ctx.runQuery(
-        payments.stripe.isEventProcessed(event.id)
-      );
+      const alreadyProcessed = await ctx.runQuery(payments.stripe.isEventProcessed(event.id));
       if (alreadyProcessed) return;
 
       const subscription = event.data.object as Stripe.Subscription;
@@ -155,10 +141,7 @@ registerRoutes(http, components.stripe, {
       const stripeCustomerId = subscription.customer as string;
 
       // Record webhook event
-      const eventRef = payments.stripe.recordWebhookEvent(
-        event.id,
-        event.type
-      );
+      const eventRef = payments.stripe.recordWebhookEvent(event.id, event.type);
       await ctx.runMutation(eventRef);
 
       // Mark subscription as canceled in LTCG payments component
@@ -167,9 +150,7 @@ registerRoutes(http, components.stripe, {
         stripeCustomerId,
         stripeSubscriptionId: subscription.id,
         status: "canceled",
-        planInterval: toPlanInterval(
-          subscription.items.data[0]?.price?.recurring?.interval
-        ),
+        planInterval: toPlanInterval(subscription.items.data[0]?.price?.recurring?.interval),
         planAmount: subscription.items.data[0]?.price?.unit_amount ?? 0,
         currentPeriodStart: subscription.current_period_start,
         currentPeriodEnd: subscription.current_period_end,
@@ -181,9 +162,7 @@ registerRoutes(http, components.stripe, {
 
     // ── Checkout Session Completed ────────────────────────────────────
     "checkout.session.completed": async (ctx, event) => {
-      const alreadyProcessed = await ctx.runQuery(
-        payments.stripe.isEventProcessed(event.id)
-      );
+      const alreadyProcessed = await ctx.runQuery(payments.stripe.isEventProcessed(event.id));
       if (alreadyProcessed) return;
 
       const session = event.data.object as Stripe.Checkout.Session;
@@ -203,10 +182,7 @@ registerRoutes(http, components.stripe, {
       }
 
       // Record webhook event
-      const eventRef = payments.stripe.recordWebhookEvent(
-        event.id,
-        event.type
-      );
+      const eventRef = payments.stripe.recordWebhookEvent(event.id, event.type);
       await ctx.runMutation(eventRef);
 
       // Ensure customer record exists in LTCG payments component

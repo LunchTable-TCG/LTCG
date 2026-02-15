@@ -167,9 +167,14 @@ export const normalSummon = mutation({
 
       // Remove tributes from board and add to graveyard in one batch operation
       const tributeSet = new Set(args.tributeCardIds as Id<"cardDefinitions">[]);
-      const boardAfterTributes = board.filter((bc) => !tributeSet.has(bc.cardId as Id<"cardDefinitions">));
+      const boardAfterTributes = board.filter(
+        (bc) => !tributeSet.has(bc.cardId as Id<"cardDefinitions">)
+      );
       const graveyard = isHost ? gameState.hostGraveyard : gameState.opponentGraveyard;
-      const graveyardAfterTributes = [...graveyard, ...args.tributeCardIds] as Id<"cardDefinitions">[];
+      const graveyardAfterTributes = [
+        ...graveyard,
+        ...args.tributeCardIds,
+      ] as Id<"cardDefinitions">[];
 
       // biome-ignore lint/suspicious/noExplicitAny: Dynamic game state updates with flexible field types
       const tributeUpdates: Record<string, any> = {
@@ -328,7 +333,9 @@ export const normalSummon = mutation({
     for (const zoneCard of opponentSpellTrapZone) {
       // Only check active (face-up) continuous traps
       if (!zoneCard.isFaceDown && zoneCard.isActivated) {
-        const trapCard = await ctx.db.get(zoneCard.cardId as Id<"cardDefinitions">) as Doc<"cardDefinitions"> | null;
+        const trapCard = (await ctx.db.get(
+          zoneCard.cardId as Id<"cardDefinitions">
+        )) as Doc<"cardDefinitions"> | null;
         if (trapCard?.cardType === "trap") {
           const trapAbility = getCardAbility(trapCard);
           const trapEffect = trapAbility?.effects.find(
@@ -354,7 +361,9 @@ export const normalSummon = mutation({
               );
 
               if (opponentTriggerResult.success) {
-                const opponent = await ctx.db.get(opponentId as Id<"users">) as Doc<"users"> | null;
+                const opponent = (await ctx.db.get(
+                  opponentId as Id<"users">
+                )) as Doc<"users"> | null;
                 // Record opponent's trap activation
                 await recordEventHelper(ctx, {
                   lobbyId: args.lobbyId,
@@ -514,25 +523,34 @@ async function setMonsterHandler(
     });
 
     // Record card_to_graveyard events for each tribute
-      for (const tributeId of args.tributeCardIds) {
-        const tributeCard = await ctx.db.get(tributeId as Id<"cardDefinitions">);
-        await recordEventHelper(ctx, {
-          lobbyId: args.lobbyId,
-          gameId: lobby.gameId as string,
-          turnNumber: gameState.turnNumber as number,
-          eventType: "card_to_graveyard",
-          playerId: user.userId,
-          playerUsername: user.username,
-          description: `${user.username}'s ${tributeCard?.name || "card"} was sent to the graveyard`,
-          metadata: { cardId: tributeId as Id<"cardDefinitions">, fromZone: "board", toZone: "graveyard" },
-        });
-      }
+    for (const tributeId of args.tributeCardIds) {
+      const tributeCard = await ctx.db.get(tributeId as Id<"cardDefinitions">);
+      await recordEventHelper(ctx, {
+        lobbyId: args.lobbyId,
+        gameId: lobby.gameId as string,
+        turnNumber: gameState.turnNumber as number,
+        eventType: "card_to_graveyard",
+        playerId: user.userId,
+        playerUsername: user.username,
+        description: `${user.username}'s ${tributeCard?.name || "card"} was sent to the graveyard`,
+        metadata: {
+          cardId: tributeId as Id<"cardDefinitions">,
+          fromZone: "board",
+          toZone: "graveyard",
+        },
+      });
+    }
 
     // Remove tributes from board and add to graveyard in one batch operation
     const tributeSet = new Set(args.tributeCardIds as Id<"cardDefinitions">[]);
-    const boardAfterTributes = board.filter((bc) => !tributeSet.has(bc.cardId as Id<"cardDefinitions">));
+    const boardAfterTributes = board.filter(
+      (bc) => !tributeSet.has(bc.cardId as Id<"cardDefinitions">)
+    );
     const graveyard = isHost ? gameState.hostGraveyard : gameState.opponentGraveyard;
-    const graveyardAfterTributes = [...graveyard, ...args.tributeCardIds] as Id<"cardDefinitions">[];
+    const graveyardAfterTributes = [
+      ...graveyard,
+      ...args.tributeCardIds,
+    ] as Id<"cardDefinitions">[];
 
     // biome-ignore lint/suspicious/noExplicitAny: Dynamic game state updates with flexible field types
     const tributeUpdates: Record<string, any> = {
@@ -967,8 +985,12 @@ export const normalSummonInternal = internalMutation({
     // 8.6. Process tributes (if any)
     if (tributeCardIds.length > 0) {
       const tributeSet = new Set(tributeCardIds as Id<"cardDefinitions">[]);
-      const boardAfterTributes = board.filter((bc) => !tributeSet.has(bc.cardId as Id<"cardDefinitions">));
-      const graveyard = (isHost ? gameState.hostGraveyard : gameState.opponentGraveyard) as Id<"cardDefinitions">[];
+      const boardAfterTributes = board.filter(
+        (bc) => !tributeSet.has(bc.cardId as Id<"cardDefinitions">)
+      );
+      const graveyard = (
+        isHost ? gameState.hostGraveyard : gameState.opponentGraveyard
+      ) as Id<"cardDefinitions">[];
       const graveyardAfterTributes = [...graveyard, ...tributeCardIds] as Id<"cardDefinitions">[];
 
       // biome-ignore lint/suspicious/noExplicitAny: Dynamic game state updates with flexible field types

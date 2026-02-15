@@ -1,10 +1,10 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { Image } from "@/components/ui/image";
 import { cn } from "@/lib/utils";
 import { AnimatePresence, motion } from "framer-motion";
 import { AlertCircle, Clock, Coins, Sparkles, X, Zap } from "lucide-react";
-import { Image } from "@/components/ui/image";
 import type { CardInZone } from "../hooks/useGameBoard";
 
 interface ActivateCardModalProps {

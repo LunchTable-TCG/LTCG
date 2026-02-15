@@ -3,6 +3,7 @@
 import { type InboxMessage, type InboxMessageType, useInbox } from "@/hooks/social/useInbox";
 import { cn } from "@/lib/utils";
 import type { Id } from "@convex/_generated/dataModel";
+import { Link } from "@tanstack/react-router";
 import {
   Bell,
   Check,
@@ -20,7 +21,6 @@ import {
   Wrench,
   X,
 } from "lucide-react";
-import { Link } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 
 // Icon mapping for message types

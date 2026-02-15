@@ -47,7 +47,10 @@ export function ToolGrid({
     return (
       <div className={cn("grid w-full", columnVariants[columns], gapVariants[gap], className)}>
         {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="paper-panel aspect-[3/4] animate-pulse bg-secondary/20 border-2 border-primary" />
+          <div
+            key={i}
+            className="paper-panel aspect-[3/4] animate-pulse bg-secondary/20 border-2 border-primary"
+          />
         ))}
       </div>
     );
@@ -67,12 +70,7 @@ export function ToolGrid({
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className={cn(
-        "grid w-full",
-        columnVariants[columns],
-        gapVariants[gap],
-        className
-      )}
+      className={cn("grid w-full", columnVariants[columns], gapVariants[gap], className)}
     >
       {children}
     </motion.div>

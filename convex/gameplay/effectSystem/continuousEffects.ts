@@ -7,8 +7,8 @@
  * Supports both legacy string conditions and new JSON conditions.
  */
 
-import type { MutationCtx } from "../../_generated/server";
 import { GAME_CONFIG } from "@ltcg/core";
+import type { MutationCtx } from "../../_generated/server";
 
 // Generated Doc/Id types should now include component tables after schema consolidation.
 import type { Doc, Id } from "../../_generated/dataModel";
@@ -49,13 +49,13 @@ export async function calculateContinuousModifiers(
   let defBonus = 0;
 
   // Get the card being modified
-  const card = await ctx.db.get(cardId) as unknown as CardDef;
+  const card = (await ctx.db.get(cardId)) as unknown as CardDef;
   if (!card) return { atkBonus: 0, defBonus: 0 };
 
   // Check field spell (affects both players)
   const fieldSpell = isHost ? gameState.hostFieldSpell : gameState.opponentFieldSpell;
   if (fieldSpell?.isActive && fieldSpell.cardId) {
-    const fieldCard = await ctx.db.get(fieldSpell.cardId as CardDefId) as unknown as CardDef;
+    const fieldCard = (await ctx.db.get(fieldSpell.cardId as CardDefId)) as unknown as CardDef;
     const parsedAbility = getCardAbility(fieldCard);
     if (parsedAbility) {
       for (const effect of parsedAbility.effects) {
@@ -75,7 +75,9 @@ export async function calculateContinuousModifiers(
   // Check opponent's field spell (some field spells affect opponent's monsters)
   const opponentFieldSpell = isHost ? gameState.opponentFieldSpell : gameState.hostFieldSpell;
   if (opponentFieldSpell?.isActive && opponentFieldSpell.cardId) {
-    const fieldCard = await ctx.db.get(opponentFieldSpell.cardId as CardDefId) as unknown as CardDef;
+    const fieldCard = (await ctx.db.get(
+      opponentFieldSpell.cardId as CardDefId
+    )) as unknown as CardDef;
     const parsedAbility = getCardAbility(fieldCard);
     if (parsedAbility) {
       for (const effect of parsedAbility.effects) {
@@ -99,7 +101,9 @@ export async function calculateContinuousModifiers(
   // Batch fetch all face-up backrow cards
   const faceUpBackrowCards = backrow.filter((bc) => bc && !bc.isFaceDown);
   const backrowCardDefs = await Promise.all(
-    faceUpBackrowCards.map((bc) => ctx.db.get(bc.cardId as CardDefId) as unknown as Promise<CardDef | null>)
+    faceUpBackrowCards.map(
+      (bc) => ctx.db.get(bc.cardId as CardDefId) as unknown as Promise<CardDef | null>
+    )
   );
   const backrowCardMap = new Map(
     backrowCardDefs.filter((c): c is NonNullable<typeof c> => c !== null).map((c) => [c._id, c])
@@ -158,7 +162,7 @@ export async function getActiveContinuousEffects(
   // Check field spell
   const fieldSpell = isHost ? gameState.hostFieldSpell : gameState.opponentFieldSpell;
   if (fieldSpell?.isActive && fieldSpell.cardId) {
-    const fieldCard = await ctx.db.get(fieldSpell.cardId as CardDefId) as unknown as CardDef;
+    const fieldCard = (await ctx.db.get(fieldSpell.cardId as CardDefId)) as unknown as CardDef;
     const parsedAbility = getCardAbility(fieldCard);
     if (parsedAbility && fieldCard) {
       const hasContinuousEffect = parsedAbility.effects.some((effect) => effect.continuous);
@@ -178,7 +182,9 @@ export async function getActiveContinuousEffects(
   // Batch fetch all face-up backrow cards
   const faceUpBackrowCards = backrow.filter((bc) => bc && !bc.isFaceDown);
   const backrowCardDefs = await Promise.all(
-    faceUpBackrowCards.map((bc) => ctx.db.get(bc.cardId as CardDefId) as unknown as Promise<CardDef | null>)
+    faceUpBackrowCards.map(
+      (bc) => ctx.db.get(bc.cardId as CardDefId) as unknown as Promise<CardDef | null>
+    )
   );
   const backrowCardMap = new Map(
     backrowCardDefs.filter((c): c is NonNullable<typeof c> => c !== null).map((c) => [c._id, c])
@@ -713,10 +719,7 @@ function isCardOwnedByHost(card: CardOnBoard | undefined, gameState: GameState):
  * - level conditions (e.g., "level_4_or_lower", "level_7_or_higher")
  * - ATK/DEF thresholds (e.g., "atk_1500_or_less", "def_2000_or_more")
  */
-function matchesCondition(
-  card: CardDef,
-  condition?: string | JsonCondition
-): boolean {
+function matchesCondition(card: CardDef, condition?: string | JsonCondition): boolean {
   if (!condition) return true; // No condition = affects all
 
   // Only affect monsters (continuous stat modifiers don't apply to spells/traps)

@@ -1,12 +1,12 @@
 "use client";
 
 import { Badge } from "@/components/ui/badge";
+import { Image } from "@/components/ui/image";
 import { cn } from "@/lib/utils";
 import type { CardData } from "@/types/binder";
 import { RARITY_STYLES } from "@ltcg/core/ui";
 import { motion } from "framer-motion";
 import { Star } from "lucide-react";
-import { Image } from "@/components/ui/image";
 
 interface BinderCardProps {
   card: CardData;
@@ -27,7 +27,8 @@ export function BinderCard({
   className,
   delay = 0,
 }: BinderCardProps) {
-  const rarityStyle = RARITY_STYLES[card.rarity as keyof typeof RARITY_STYLES] || RARITY_STYLES.common;
+  const rarityStyle =
+    RARITY_STYLES[card.rarity as keyof typeof RARITY_STYLES] || RARITY_STYLES.common;
 
   return (
     <motion.div
@@ -38,7 +39,7 @@ export function BinderCard({
       onClick={onClick}
       className={cn(
         "paper-panel group relative flex flex-col aspect-[2.5/3.5] overflow-hidden p-2 cursor-pointer transition-all",
-        "border-2 border-primary hover:shadow-[4px_4px_0px_0px_rgba(18,18,18,1)]",
+        "border-zine hover:shadow-zine",
         className
       )}
     >
@@ -49,7 +50,7 @@ export function BinderCard({
           onFavoriteToggle?.(e);
         }}
         className={cn(
-          "absolute top-3 right-3 z-20 p-1.5 rounded-full border-2 border-primary bg-white shadow-[2px_2px_0px_0px_rgba(18,18,18,1)] transition-transform hover:scale-110",
+          "absolute top-3 right-3 z-20 p-1.5 rounded-full border-zine bg-white shadow-zine-sm transition-transform hover:scale-110",
           card.isFavorite ? "text-amber-500" : "text-slate-300"
         )}
       >
@@ -57,7 +58,7 @@ export function BinderCard({
       </button>
 
       {/* Card Image Wrapper */}
-      <div className="relative flex-1 bg-slate-100 border-2 border-primary overflow-hidden">
+      <div className="relative flex-1 bg-slate-100 border-zine overflow-hidden">
         {card.imageUrl ? (
           <Image
             src={card.imageUrl}
@@ -73,7 +74,7 @@ export function BinderCard({
 
         {/* Quantity Badge */}
         {card.owned !== undefined && (
-          <div className="absolute bottom-2 right-2 px-2 py-0.5 border-2 border-primary bg-white shadow-[2px_2px_0px_0px_rgba(18,18,18,1)] font-black text-xs">
+          <div className="absolute bottom-2 right-2 px-2 py-0.5 border-zine bg-white shadow-zine-sm font-black text-xs">
             x{card.owned}
           </div>
         )}
@@ -89,7 +90,7 @@ export function BinderCard({
           <Badge
             variant="outline"
             className={cn(
-              "text-[10px] font-black uppercase px-1 py-0 rounded-none border-2 border-primary bg-white shadow-[1px_1px_0px_0px_rgba(18,18,18,1)]",
+              "text-[10px] font-black uppercase px-1 py-0 rounded-none border-zine bg-white shadow-zine-sm",
               rarityStyle.text
             )}
           >
@@ -97,9 +98,7 @@ export function BinderCard({
           </Badge>
 
           <div className="flex items-center gap-1">
-             <span className="text-[10px] font-black uppercase opacity-60">
-               {card.cardType}
-             </span>
+            <span className="text-[10px] font-black uppercase opacity-60">{card.cardType}</span>
           </div>
         </div>
       </div>
@@ -107,12 +106,12 @@ export function BinderCard({
       {/* TCG Stats Overlay (Visual Only in Binder) */}
       {(card.attack !== undefined || card.defense !== undefined) && (
         <div className="absolute bottom-8 left-2 right-2 flex justify-between pointer-events-none">
-           <div className="bg-primary text-white text-[10px] font-black px-1.5 border-2 border-primary shadow-[2px_2px_0px_0px_rgba(255,255,255,1)]">
-             {card.attack ?? 0}
-           </div>
-           <div className="bg-white text-primary text-[10px] font-black px-1.5 border-2 border-primary shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
-             {card.defense ?? 0}
-           </div>
+          <div className="bg-primary text-white text-[10px] font-black px-1.5 border-2 border-primary shadow-[2px_2px_0px_0px_rgba(255,255,255,1)]">
+            {card.attack ?? 0}
+          </div>
+          <div className="bg-white text-primary text-[10px] font-black px-1.5 border-2 border-primary shadow-[2px_2px_0px_0px_rgba(0,0,0,1)]">
+            {card.defense ?? 0}
+          </div>
         </div>
       )}
     </motion.div>

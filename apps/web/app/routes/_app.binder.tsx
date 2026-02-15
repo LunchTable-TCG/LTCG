@@ -6,14 +6,14 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useBinderInteraction } from "@/hooks";
 import { cn } from "@/lib/utils";
-import { Authenticated } from "convex/react";
 import type { Id } from "@convex/_generated/dataModel";
+import { createFileRoute } from "@tanstack/react-router";
+import { Authenticated } from "convex/react";
 import { Filter, Loader2, Plus, Search, Trophy } from "lucide-react";
-import { createFileRoute } from '@tanstack/react-router'
 
-export const Route = createFileRoute('/_app/binder')({
+export const Route = createFileRoute("/_app/binder")({
   component: BinderPage,
-})
+});
 
 function BinderPage() {
   return (
@@ -65,17 +65,8 @@ function BinderContent() {
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 w-full md:w-auto">
-          <StatCard
-            label="Total Cards"
-            value={stats?.totalCards ?? 0}
-            icon={Trophy}
-            delay={0.1}
-          />
-          <StatCard
-            label="Unique Types"
-            value={stats?.uniqueCards ?? 0}
-            delay={0.2}
-          />
+          <StatCard label="Total Cards" value={stats?.totalCards ?? 0} icon={Trophy} delay={0.1} />
+          <StatCard label="Unique Types" value={stats?.uniqueCards ?? 0} delay={0.2} />
           <StatCard
             label="Favorites"
             value={stats?.favoriteCount ?? 0}

@@ -5,8 +5,8 @@ import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import type { Infer } from "convex/values";
 
-import { livekitTables } from "./livekit/schema";
 import { GAME_CONFIG } from "@ltcg/core";
+import { livekitTables } from "./livekit/schema";
 
 // ============================================================================
 // SHARED VALIDATORS (Reusable across schema and function args)
@@ -332,9 +332,7 @@ export default defineSchema({
     turnNumber: v.number(),
 
     // Phase Management (LunchTable turn structure)
-    currentPhase: v.optional(
-      literals("draw", "main", "combat", "breakdown_check", "end")
-    ),
+    currentPhase: v.optional(literals("draw", "main", "combat", "breakdown_check", "end")),
 
     // Turn Flags
     hostNormalSummonedThisTurn: v.optional(v.boolean()),
@@ -494,9 +492,7 @@ export default defineSchema({
     // AI & Story Mode (for single-player battles)
     gameMode: v.optional(literals("pvp", "story")), // Default: "pvp"
     isAIOpponent: v.optional(v.boolean()), // True if opponent is AI
-    aiDifficulty: v.optional(
-      literals("easy", "normal", "medium", "hard", "boss")
-    ),
+    aiDifficulty: v.optional(literals("easy", "normal", "medium", "hard", "boss")),
 
     // Response Window (for priority/chain system)
     responseWindow: v.optional(
@@ -800,7 +796,6 @@ export default defineSchema({
   })
     .index("by_agent", ["agentId"])
     .index("by_active", ["isActive"]),
-
 
   aiUsageDailyStats: defineTable({
     date: v.string(),
@@ -1116,12 +1111,14 @@ export default defineSchema({
     winnerUsername: v.optional(v.string()),
     loserId: v.optional(v.string()),
     loserUsername: v.optional(v.string()),
-    winReason: v.optional(v.union(
-      v.literal("game_win"),
-      v.literal("opponent_forfeit"),
-      v.literal("opponent_no_show"),
-      v.literal("bye")
-    )),
+    winReason: v.optional(
+      v.union(
+        v.literal("game_win"),
+        v.literal("opponent_forfeit"),
+        v.literal("opponent_no_show"),
+        v.literal("bye")
+      )
+    ),
     scheduledAt: v.optional(v.number()),
     startedAt: v.optional(v.number()),
     completedAt: v.optional(v.number()),
@@ -1568,8 +1565,7 @@ export default defineSchema({
     isActive: v.boolean(),
     createdAt: v.number(),
     createdBy: v.string(),
-  })
-    .index("by_active", ["isActive"]),
+  }).index("by_active", ["isActive"]),
 
   webhookEvents: defineTable({
     endpointId: v.id("webhookEndpoints"), // intra-component
@@ -1590,8 +1586,7 @@ export default defineSchema({
     responseBody: v.optional(v.string()),
     durationMs: v.number(),
     attemptedAt: v.number(),
-  })
-    .index("by_event", ["eventId"]),
+  }).index("by_event", ["eventId"]),
 
   // ============================================================================
   // BRANDING COMPONENT TABLES
@@ -1605,8 +1600,7 @@ export default defineSchema({
     faviconUrl: v.string(),
     isActive: v.boolean(),
     createdAt: v.number(),
-  })
-    .index("by_active", ["isActive"]),
+  }).index("by_active", ["isActive"]),
 
   brandingAssets: defineTable({
     name: v.string(),
@@ -1615,8 +1609,7 @@ export default defineSchema({
     storageId: v.optional(v.string()),
     tags: v.array(v.string()),
     createdAt: v.number(),
-  })
-    .index("by_type", ["type"]),
+  }).index("by_type", ["type"]),
 
   // ============================================================================
   // ADMIN COMPONENT TABLES
@@ -1628,8 +1621,7 @@ export default defineSchema({
     permissions: v.array(v.string()),
     description: v.optional(v.string()),
     createdAt: v.number(),
-  })
-    .index("by_slug", ["slug"]),
+  }).index("by_slug", ["slug"]),
 
   adminAuditLogs: defineTable({
     adminId: v.string(),

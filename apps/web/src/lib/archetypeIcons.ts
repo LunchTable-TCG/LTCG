@@ -5,13 +5,7 @@
  * Icons are located in /public/brand/icons/archetypes/
  */
 
-export type ArchetypeId =
-  | "dropout"
-  | "prep"
-  | "geek"
-  | "freak"
-  | "nerd"
-  | "goodie_two_shoes";
+export type ArchetypeId = "dropout" | "prep" | "geek" | "freak" | "nerd" | "goodie_two_shoes";
 
 /**
  * Get the icon path for a given archetype

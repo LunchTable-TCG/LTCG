@@ -75,9 +75,7 @@ export const checkSetupStatus = mutation({
     return {
       isSetupComplete: !!systemUser,
       details: { systemUser: !!systemUser },
-      recommendations: [
-        !systemUser && "Run: bun convex run setup:setupComplete",
-      ].filter(Boolean),
+      recommendations: [!systemUser && "Run: bun convex run setup:setupComplete"].filter(Boolean),
     };
   },
 });

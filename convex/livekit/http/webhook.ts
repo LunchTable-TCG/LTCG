@@ -168,7 +168,6 @@ async function enqueueAsyncHooks(
       console.log("[Hook] room_finished:", data.roomName);
       // Example: workflow.start("finalizeRoom", { roomName: data.roomName })
       break;
-
   }
 }
 

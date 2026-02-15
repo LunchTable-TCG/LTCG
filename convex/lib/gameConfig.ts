@@ -1,6 +1,6 @@
-import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { DEFAULT_LTCG_CONFIG } from "@lunchtable-tcg/config";
 import type { LTCGConfig } from "@lunchtable-tcg/config";
+import type { MutationCtx, QueryCtx } from "../_generated/server";
 
 /**
  * Deep merge utility — same as config package but inlined to avoid
@@ -14,7 +14,14 @@ function deepMerge<T>(base: T, override: Partial<T>): T {
     const val = overrideObj[key];
     const baseVal = (base as Record<string, unknown>)[key];
 
-    if (val && typeof val === "object" && !Array.isArray(val) && baseVal && typeof baseVal === "object" && !Array.isArray(baseVal)) {
+    if (
+      val &&
+      typeof val === "object" &&
+      !Array.isArray(val) &&
+      baseVal &&
+      typeof baseVal === "object" &&
+      !Array.isArray(baseVal)
+    ) {
       result[key] = deepMerge(baseVal, val);
     } else if (val !== undefined) {
       result[key] = val;
@@ -55,14 +62,14 @@ export async function getGameConfig(ctx: QueryCtx | MutationCtx): Promise<LTCGCo
 export async function setGameConfig(
   ctx: MutationCtx,
   updates: Partial<LTCGConfig>,
-  updatedBy?: string,
+  updatedBy?: string
 ) {
   const existing = await ctx.db
     .query("gameConfig")
     .withIndex("by_key", (q) => q.eq("key", "active"))
     .first();
 
-  const currentOverrides = existing ? JSON.parse(existing.config) as Partial<LTCGConfig> : {};
+  const currentOverrides = existing ? (JSON.parse(existing.config) as Partial<LTCGConfig>) : {};
   const merged = deepMerge(currentOverrides, updates);
 
   if (existing) {

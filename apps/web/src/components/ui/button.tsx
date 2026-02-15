@@ -9,15 +9,18 @@ const buttonVariants = cva(
       variant: {
         default: "tcg-button",
         destructive:
-          "bg-destructive text-destructive-foreground hover:bg-destructive/90 border-2 border-primary shadow-[2px_2px_0px_0px_rgba(18,18,18,1)] text-[10px] uppercase font-black tracking-tighter",
-        outline: "border-2 border-primary bg-background hover:bg-secondary/50 font-bold uppercase tracking-tighter text-xs",
+          "bg-destructive text-destructive-foreground hover:bg-destructive/90 border-zine shadow-zine-sm text-[10px] uppercase font-black tracking-tighter hover:-translate-x-0.5 hover:-translate-y-0.5 transition-transform",
+        outline:
+          "border-zine bg-background hover:bg-secondary/50 font-bold uppercase tracking-tighter text-xs shadow-zine-sm hover:-translate-x-0.5 hover:-translate-y-0.5 transition-transform",
         secondary:
-          "bg-secondary text-secondary-foreground hover:bg-secondary/80 border-2 border-primary font-bold uppercase tracking-tighter text-xs",
-        ghost: "hover:bg-primary/10 hover:text-foreground font-bold uppercase tracking-tighter text-xs",
+          "bg-secondary text-secondary-foreground hover:bg-secondary/80 border-zine font-bold uppercase tracking-tighter text-xs shadow-zine-sm hover:-translate-x-0.5 hover:-translate-y-0.5 transition-transform",
+        ghost:
+          "hover:bg-primary/10 hover:text-foreground font-bold uppercase tracking-tighter text-xs",
         link: "text-primary underline-offset-4 hover:underline font-bold uppercase tracking-tighter text-xs",
         // New LunchTable Variants
         primary: "tcg-button-primary",
-        reputation: "bg-reputation text-black border-2 border-primary shadow-[3px_3px_0px_0px_rgba(18,18,18,1)] font-black uppercase tracking-tighter hover:-translate-x-0.5 hover:-translate-y-0.5 transition-transform",
+        reputation:
+          "bg-reputation text-black border-zine shadow-zine font-black uppercase tracking-tighter hover:-translate-x-0.5 hover:-translate-y-0.5 transition-transform",
       },
       size: {
         default: "h-10 px-6 py-2",
