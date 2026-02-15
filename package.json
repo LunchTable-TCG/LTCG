@@ -108,6 +108,7 @@
     "@lunchtable-tcg/engine": "workspace:*",
     "@lunchtable-tcg/game": "workspace:*",
     "@lunchtable-tcg/guilds": "workspace:*",
+    "@lunchtable-tcg/match": "workspace:*",
     "@lunchtable-tcg/marketplace": "workspace:*",
     "@lunchtable-tcg/payments": "workspace:*",
     "@lunchtable-tcg/progression": "workspace:*",

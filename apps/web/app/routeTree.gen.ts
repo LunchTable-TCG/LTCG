@@ -8,232 +8,325 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from "./routes/__root";
-import { Route as AppRouteImport } from "./routes/_app";
-import { Route as AppBinderRouteImport } from "./routes/_app.binder";
-import { Route as AppDecksRouteImport } from "./routes/_app.decks";
-import { Route as AppDecksBuilderDeckIdRouteImport } from "./routes/_app.decks.builder.$deckId";
-import { Route as AppFriendsRouteImport } from "./routes/_app.friends";
-import { Route as AppGuildsRouteImport } from "./routes/_app.guilds";
-import { Route as AppProfilePlayerIdRouteImport } from "./routes/_app.profile.$playerId";
-import { Route as GameRouteImport } from "./routes/_game";
-import { Route as GamePlayMatchIdRouteImport } from "./routes/_game.play.$matchId";
-import { Route as IndexRouteImport } from "./routes/index";
+import { Route as rootRouteImport } from './routes/__root'
+import { Route as GameRouteImport } from './routes/_game'
+import { Route as AppRouteImport } from './routes/_app'
+import { Route as IndexRouteImport } from './routes/index'
+import { Route as AppLunchtableRouteImport } from './routes/_app.lunchtable'
+import { Route as AppGuildsRouteImport } from './routes/_app.guilds'
+import { Route as AppFriendsRouteImport } from './routes/_app.friends'
+import { Route as AppDecksRouteImport } from './routes/_app.decks'
+import { Route as AppBinderRouteImport } from './routes/_app.binder'
+import { Route as GamePlayMatchIdRouteImport } from './routes/_game.play.$matchId'
+import { Route as AppResultsMatchIdRouteImport } from './routes/_app.results.$matchId'
+import { Route as AppProfilePlayerIdRouteImport } from './routes/_app.profile.$playerId'
+import { Route as AppPlayStoryRouteImport } from './routes/_app.play.story'
+import { Route as AppPlayStoryChapterIdRouteImport } from './routes/_app.play.story.$chapterId'
+import { Route as AppDecksBuilderDeckIdRouteImport } from './routes/_app.decks.builder.$deckId'
 
 const GameRoute = GameRouteImport.update({
-  id: "/_game",
+  id: '/_game',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const AppRoute = AppRouteImport.update({
-  id: "/_app",
+  id: '/_app',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const IndexRoute = IndexRouteImport.update({
-  id: "/",
-  path: "/",
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
+const AppLunchtableRoute = AppLunchtableRouteImport.update({
+  id: '/lunchtable',
+  path: '/lunchtable',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppGuildsRoute = AppGuildsRouteImport.update({
-  id: "/guilds",
-  path: "/guilds",
+  id: '/guilds',
+  path: '/guilds',
   getParentRoute: () => AppRoute,
-} as any);
+} as any)
 const AppFriendsRoute = AppFriendsRouteImport.update({
-  id: "/friends",
-  path: "/friends",
+  id: '/friends',
+  path: '/friends',
   getParentRoute: () => AppRoute,
-} as any);
+} as any)
 const AppDecksRoute = AppDecksRouteImport.update({
-  id: "/decks",
-  path: "/decks",
+  id: '/decks',
+  path: '/decks',
   getParentRoute: () => AppRoute,
-} as any);
+} as any)
 const AppBinderRoute = AppBinderRouteImport.update({
-  id: "/binder",
-  path: "/binder",
+  id: '/binder',
+  path: '/binder',
   getParentRoute: () => AppRoute,
-} as any);
+} as any)
 const GamePlayMatchIdRoute = GamePlayMatchIdRouteImport.update({
-  id: "/play/$matchId",
-  path: "/play/$matchId",
+  id: '/play/$matchId',
+  path: '/play/$matchId',
   getParentRoute: () => GameRoute,
-} as any);
-const AppProfilePlayerIdRoute = AppProfilePlayerIdRouteImport.update({
-  id: "/profile/$playerId",
-  path: "/profile/$playerId",
+} as any)
+const AppResultsMatchIdRoute = AppResultsMatchIdRouteImport.update({
+  id: '/results/$matchId',
+  path: '/results/$matchId',
   getParentRoute: () => AppRoute,
-} as any);
+} as any)
+const AppProfilePlayerIdRoute = AppProfilePlayerIdRouteImport.update({
+  id: '/profile/$playerId',
+  path: '/profile/$playerId',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppPlayStoryRoute = AppPlayStoryRouteImport.update({
+  id: '/play/story',
+  path: '/play/story',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppPlayStoryChapterIdRoute = AppPlayStoryChapterIdRouteImport.update({
+  id: '/$chapterId',
+  path: '/$chapterId',
+  getParentRoute: () => AppPlayStoryRoute,
+} as any)
 const AppDecksBuilderDeckIdRoute = AppDecksBuilderDeckIdRouteImport.update({
-  id: "/builder/$deckId",
-  path: "/builder/$deckId",
+  id: '/builder/$deckId',
+  path: '/builder/$deckId',
   getParentRoute: () => AppDecksRoute,
-} as any);
+} as any)
 
 export interface FileRoutesByFullPath {
-  "/": typeof IndexRoute;
-  "/binder": typeof AppBinderRoute;
-  "/decks": typeof AppDecksRouteWithChildren;
-  "/friends": typeof AppFriendsRoute;
-  "/guilds": typeof AppGuildsRoute;
-  "/profile/$playerId": typeof AppProfilePlayerIdRoute;
-  "/play/$matchId": typeof GamePlayMatchIdRoute;
-  "/decks/builder/$deckId": typeof AppDecksBuilderDeckIdRoute;
+  '/': typeof IndexRoute
+  '/binder': typeof AppBinderRoute
+  '/decks': typeof AppDecksRouteWithChildren
+  '/friends': typeof AppFriendsRoute
+  '/guilds': typeof AppGuildsRoute
+  '/lunchtable': typeof AppLunchtableRoute
+  '/play/story': typeof AppPlayStoryRouteWithChildren
+  '/profile/$playerId': typeof AppProfilePlayerIdRoute
+  '/results/$matchId': typeof AppResultsMatchIdRoute
+  '/play/$matchId': typeof GamePlayMatchIdRoute
+  '/decks/builder/$deckId': typeof AppDecksBuilderDeckIdRoute
+  '/play/story/$chapterId': typeof AppPlayStoryChapterIdRoute
 }
 export interface FileRoutesByTo {
-  "/": typeof IndexRoute;
-  "/binder": typeof AppBinderRoute;
-  "/decks": typeof AppDecksRouteWithChildren;
-  "/friends": typeof AppFriendsRoute;
-  "/guilds": typeof AppGuildsRoute;
-  "/profile/$playerId": typeof AppProfilePlayerIdRoute;
-  "/play/$matchId": typeof GamePlayMatchIdRoute;
-  "/decks/builder/$deckId": typeof AppDecksBuilderDeckIdRoute;
+  '/': typeof IndexRoute
+  '/binder': typeof AppBinderRoute
+  '/decks': typeof AppDecksRouteWithChildren
+  '/friends': typeof AppFriendsRoute
+  '/guilds': typeof AppGuildsRoute
+  '/lunchtable': typeof AppLunchtableRoute
+  '/play/story': typeof AppPlayStoryRouteWithChildren
+  '/profile/$playerId': typeof AppProfilePlayerIdRoute
+  '/results/$matchId': typeof AppResultsMatchIdRoute
+  '/play/$matchId': typeof GamePlayMatchIdRoute
+  '/decks/builder/$deckId': typeof AppDecksBuilderDeckIdRoute
+  '/play/story/$chapterId': typeof AppPlayStoryChapterIdRoute
 }
 export interface FileRoutesById {
-  __root__: typeof rootRouteImport;
-  "/": typeof IndexRoute;
-  "/_app": typeof AppRouteWithChildren;
-  "/_game": typeof GameRouteWithChildren;
-  "/_app/binder": typeof AppBinderRoute;
-  "/_app/decks": typeof AppDecksRouteWithChildren;
-  "/_app/friends": typeof AppFriendsRoute;
-  "/_app/guilds": typeof AppGuildsRoute;
-  "/_app/profile/$playerId": typeof AppProfilePlayerIdRoute;
-  "/_game/play/$matchId": typeof GamePlayMatchIdRoute;
-  "/_app/decks/builder/$deckId": typeof AppDecksBuilderDeckIdRoute;
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/_app': typeof AppRouteWithChildren
+  '/_game': typeof GameRouteWithChildren
+  '/_app/binder': typeof AppBinderRoute
+  '/_app/decks': typeof AppDecksRouteWithChildren
+  '/_app/friends': typeof AppFriendsRoute
+  '/_app/guilds': typeof AppGuildsRoute
+  '/_app/lunchtable': typeof AppLunchtableRoute
+  '/_app/play/story': typeof AppPlayStoryRouteWithChildren
+  '/_app/profile/$playerId': typeof AppProfilePlayerIdRoute
+  '/_app/results/$matchId': typeof AppResultsMatchIdRoute
+  '/_game/play/$matchId': typeof GamePlayMatchIdRoute
+  '/_app/decks/builder/$deckId': typeof AppDecksBuilderDeckIdRoute
+  '/_app/play/story/$chapterId': typeof AppPlayStoryChapterIdRoute
 }
 export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath;
+  fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
-    | "/"
-    | "/binder"
-    | "/decks"
-    | "/friends"
-    | "/guilds"
-    | "/profile/$playerId"
-    | "/play/$matchId"
-    | "/decks/builder/$deckId";
-  fileRoutesByTo: FileRoutesByTo;
+    | '/'
+    | '/binder'
+    | '/decks'
+    | '/friends'
+    | '/guilds'
+    | '/lunchtable'
+    | '/play/story'
+    | '/profile/$playerId'
+    | '/results/$matchId'
+    | '/play/$matchId'
+    | '/decks/builder/$deckId'
+    | '/play/story/$chapterId'
+  fileRoutesByTo: FileRoutesByTo
   to:
-    | "/"
-    | "/binder"
-    | "/decks"
-    | "/friends"
-    | "/guilds"
-    | "/profile/$playerId"
-    | "/play/$matchId"
-    | "/decks/builder/$deckId";
+    | '/'
+    | '/binder'
+    | '/decks'
+    | '/friends'
+    | '/guilds'
+    | '/lunchtable'
+    | '/play/story'
+    | '/profile/$playerId'
+    | '/results/$matchId'
+    | '/play/$matchId'
+    | '/decks/builder/$deckId'
+    | '/play/story/$chapterId'
   id:
-    | "__root__"
-    | "/"
-    | "/_app"
-    | "/_game"
-    | "/_app/binder"
-    | "/_app/decks"
-    | "/_app/friends"
-    | "/_app/guilds"
-    | "/_app/profile/$playerId"
-    | "/_game/play/$matchId"
-    | "/_app/decks/builder/$deckId";
-  fileRoutesById: FileRoutesById;
+    | '__root__'
+    | '/'
+    | '/_app'
+    | '/_game'
+    | '/_app/binder'
+    | '/_app/decks'
+    | '/_app/friends'
+    | '/_app/guilds'
+    | '/_app/lunchtable'
+    | '/_app/play/story'
+    | '/_app/profile/$playerId'
+    | '/_app/results/$matchId'
+    | '/_game/play/$matchId'
+    | '/_app/decks/builder/$deckId'
+    | '/_app/play/story/$chapterId'
+  fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute;
-  AppRoute: typeof AppRouteWithChildren;
-  GameRoute: typeof GameRouteWithChildren;
+  IndexRoute: typeof IndexRoute
+  AppRoute: typeof AppRouteWithChildren
+  GameRoute: typeof GameRouteWithChildren
 }
 
-declare module "@tanstack/react-router" {
+declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    "/_game": {
-      id: "/_game";
-      path: "";
-      fullPath: "/";
-      preLoaderRoute: typeof GameRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/_app": {
-      id: "/_app";
-      path: "";
-      fullPath: "/";
-      preLoaderRoute: typeof AppRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/": {
-      id: "/";
-      path: "/";
-      fullPath: "/";
-      preLoaderRoute: typeof IndexRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
-    "/_app/guilds": {
-      id: "/_app/guilds";
-      path: "/guilds";
-      fullPath: "/guilds";
-      preLoaderRoute: typeof AppGuildsRouteImport;
-      parentRoute: typeof AppRoute;
-    };
-    "/_app/friends": {
-      id: "/_app/friends";
-      path: "/friends";
-      fullPath: "/friends";
-      preLoaderRoute: typeof AppFriendsRouteImport;
-      parentRoute: typeof AppRoute;
-    };
-    "/_app/decks": {
-      id: "/_app/decks";
-      path: "/decks";
-      fullPath: "/decks";
-      preLoaderRoute: typeof AppDecksRouteImport;
-      parentRoute: typeof AppRoute;
-    };
-    "/_app/binder": {
-      id: "/_app/binder";
-      path: "/binder";
-      fullPath: "/binder";
-      preLoaderRoute: typeof AppBinderRouteImport;
-      parentRoute: typeof AppRoute;
-    };
-    "/_game/play/$matchId": {
-      id: "/_game/play/$matchId";
-      path: "/play/$matchId";
-      fullPath: "/play/$matchId";
-      preLoaderRoute: typeof GamePlayMatchIdRouteImport;
-      parentRoute: typeof GameRoute;
-    };
-    "/_app/profile/$playerId": {
-      id: "/_app/profile/$playerId";
-      path: "/profile/$playerId";
-      fullPath: "/profile/$playerId";
-      preLoaderRoute: typeof AppProfilePlayerIdRouteImport;
-      parentRoute: typeof AppRoute;
-    };
-    "/_app/decks/builder/$deckId": {
-      id: "/_app/decks/builder/$deckId";
-      path: "/builder/$deckId";
-      fullPath: "/decks/builder/$deckId";
-      preLoaderRoute: typeof AppDecksBuilderDeckIdRouteImport;
-      parentRoute: typeof AppDecksRoute;
-    };
+    '/_game': {
+      id: '/_game'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof GameRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_app': {
+      id: '/_app'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_app/lunchtable': {
+      id: '/_app/lunchtable'
+      path: '/lunchtable'
+      fullPath: '/lunchtable'
+      preLoaderRoute: typeof AppLunchtableRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/guilds': {
+      id: '/_app/guilds'
+      path: '/guilds'
+      fullPath: '/guilds'
+      preLoaderRoute: typeof AppGuildsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/friends': {
+      id: '/_app/friends'
+      path: '/friends'
+      fullPath: '/friends'
+      preLoaderRoute: typeof AppFriendsRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/decks': {
+      id: '/_app/decks'
+      path: '/decks'
+      fullPath: '/decks'
+      preLoaderRoute: typeof AppDecksRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/binder': {
+      id: '/_app/binder'
+      path: '/binder'
+      fullPath: '/binder'
+      preLoaderRoute: typeof AppBinderRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_game/play/$matchId': {
+      id: '/_game/play/$matchId'
+      path: '/play/$matchId'
+      fullPath: '/play/$matchId'
+      preLoaderRoute: typeof GamePlayMatchIdRouteImport
+      parentRoute: typeof GameRoute
+    }
+    '/_app/results/$matchId': {
+      id: '/_app/results/$matchId'
+      path: '/results/$matchId'
+      fullPath: '/results/$matchId'
+      preLoaderRoute: typeof AppResultsMatchIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/profile/$playerId': {
+      id: '/_app/profile/$playerId'
+      path: '/profile/$playerId'
+      fullPath: '/profile/$playerId'
+      preLoaderRoute: typeof AppProfilePlayerIdRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/play/story': {
+      id: '/_app/play/story'
+      path: '/play/story'
+      fullPath: '/play/story'
+      preLoaderRoute: typeof AppPlayStoryRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/_app/play/story/$chapterId': {
+      id: '/_app/play/story/$chapterId'
+      path: '/$chapterId'
+      fullPath: '/play/story/$chapterId'
+      preLoaderRoute: typeof AppPlayStoryChapterIdRouteImport
+      parentRoute: typeof AppPlayStoryRoute
+    }
+    '/_app/decks/builder/$deckId': {
+      id: '/_app/decks/builder/$deckId'
+      path: '/builder/$deckId'
+      fullPath: '/decks/builder/$deckId'
+      preLoaderRoute: typeof AppDecksBuilderDeckIdRouteImport
+      parentRoute: typeof AppDecksRoute
+    }
   }
 }
 
 interface AppDecksRouteChildren {
-  AppDecksBuilderDeckIdRoute: typeof AppDecksBuilderDeckIdRoute;
+  AppDecksBuilderDeckIdRoute: typeof AppDecksBuilderDeckIdRoute
 }
 
 const AppDecksRouteChildren: AppDecksRouteChildren = {
   AppDecksBuilderDeckIdRoute: AppDecksBuilderDeckIdRoute,
-};
+}
 
-const AppDecksRouteWithChildren = AppDecksRoute._addFileChildren(AppDecksRouteChildren);
+const AppDecksRouteWithChildren = AppDecksRoute._addFileChildren(
+  AppDecksRouteChildren,
+)
+
+interface AppPlayStoryRouteChildren {
+  AppPlayStoryChapterIdRoute: typeof AppPlayStoryChapterIdRoute
+}
+
+const AppPlayStoryRouteChildren: AppPlayStoryRouteChildren = {
+  AppPlayStoryChapterIdRoute: AppPlayStoryChapterIdRoute,
+}
+
+const AppPlayStoryRouteWithChildren = AppPlayStoryRoute._addFileChildren(
+  AppPlayStoryRouteChildren,
+)
 
 interface AppRouteChildren {
-  AppBinderRoute: typeof AppBinderRoute;
-  AppDecksRoute: typeof AppDecksRouteWithChildren;
-  AppFriendsRoute: typeof AppFriendsRoute;
-  AppGuildsRoute: typeof AppGuildsRoute;
-  AppProfilePlayerIdRoute: typeof AppProfilePlayerIdRoute;
+  AppBinderRoute: typeof AppBinderRoute
+  AppDecksRoute: typeof AppDecksRouteWithChildren
+  AppFriendsRoute: typeof AppFriendsRoute
+  AppGuildsRoute: typeof AppGuildsRoute
+  AppLunchtableRoute: typeof AppLunchtableRoute
+  AppPlayStoryRoute: typeof AppPlayStoryRouteWithChildren
+  AppProfilePlayerIdRoute: typeof AppProfilePlayerIdRoute
+  AppResultsMatchIdRoute: typeof AppResultsMatchIdRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
@@ -241,26 +334,29 @@ const AppRouteChildren: AppRouteChildren = {
   AppDecksRoute: AppDecksRouteWithChildren,
   AppFriendsRoute: AppFriendsRoute,
   AppGuildsRoute: AppGuildsRoute,
+  AppLunchtableRoute: AppLunchtableRoute,
+  AppPlayStoryRoute: AppPlayStoryRouteWithChildren,
   AppProfilePlayerIdRoute: AppProfilePlayerIdRoute,
-};
+  AppResultsMatchIdRoute: AppResultsMatchIdRoute,
+}
 
-const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren);
+const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
 
 interface GameRouteChildren {
-  GamePlayMatchIdRoute: typeof GamePlayMatchIdRoute;
+  GamePlayMatchIdRoute: typeof GamePlayMatchIdRoute
 }
 
 const GameRouteChildren: GameRouteChildren = {
   GamePlayMatchIdRoute: GamePlayMatchIdRoute,
-};
+}
 
-const GameRouteWithChildren = GameRoute._addFileChildren(GameRouteChildren);
+const GameRouteWithChildren = GameRoute._addFileChildren(GameRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AppRoute: AppRouteWithChildren,
   GameRoute: GameRouteWithChildren,
-};
+}
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
-  ._addFileTypes<FileRouteTypes>();
+  ._addFileTypes<FileRouteTypes>()

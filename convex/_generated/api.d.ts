@@ -8,6 +8,8 @@
  * @module
  */
 
+import type * as admin_gameConfig from "../admin/gameConfig.js";
+import type * as admin_seedCard from "../admin/seedCard.js";
 import type * as auth_auth from "../auth/auth.js";
 import type * as auth_syncUser from "../auth/syncUser.js";
 import type * as chainResolver from "../chainResolver.js";
@@ -77,7 +79,6 @@ import type * as gameplay_games_lifecycle from "../gameplay/games/lifecycle.js";
 import type * as gameplay_games_lobby from "../gameplay/games/lobby.js";
 import type * as gameplay_games_queries from "../gameplay/games/queries.js";
 import type * as gameplay_games_spectator from "../gameplay/games/spectator.js";
-import type * as gameplay_games_stats from "../gameplay/games/stats.js";
 import type * as gameplay_legalMoves from "../gameplay/legalMoves.js";
 import type * as gameplay_phaseManager from "../gameplay/phaseManager.js";
 import type * as gameplay_replaySystem from "../gameplay/replaySystem.js";
@@ -87,6 +88,7 @@ import type * as gameplay_timeoutSystem from "../gameplay/timeoutSystem.js";
 import type * as gameplay_triggerSystem from "../gameplay/triggerSystem.js";
 import type * as gameplay_webhooks from "../gameplay/webhooks.js";
 import type * as http from "../http.js";
+import type * as http_admin from "../http/admin.js";
 import type * as http_agents from "../http/agents.js";
 import type * as http_chat from "../http/chat.js";
 import type * as http_decisions from "../http/decisions.js";
@@ -118,6 +120,7 @@ import type * as lib_convexAuth from "../lib/convexAuth.js";
 import type * as lib_debug from "../lib/debug.js";
 import type * as lib_deterministicRandom from "../lib/deterministicRandom.js";
 import type * as lib_errorCodes from "../lib/errorCodes.js";
+import type * as lib_gameConfig from "../lib/gameConfig.js";
 import type * as lib_gameHelpers from "../lib/gameHelpers.js";
 import type * as lib_gameValidation from "../lib/gameValidation.js";
 import type * as lib_helpers from "../lib/helpers.js";
@@ -137,6 +140,11 @@ import type * as livekit_internal_mutations from "../livekit/internal/mutations.
 import type * as livekit_public_queries from "../livekit/public/queries.js";
 import type * as livekit_public_tokens from "../livekit/public/tokens.js";
 import type * as presence from "../presence.js";
+import type * as progression_seedStory from "../progression/seedStory.js";
+import type * as progression_story from "../progression/story.js";
+import type * as progression_storyBattle from "../progression/storyBattle.js";
+import type * as progression_storyQueries from "../progression/storyQueries.js";
+import type * as progression_storyStages from "../progression/storyStages.js";
 import type * as router from "../router.js";
 import type * as setup from "../setup.js";
 import type * as setupSystem from "../setupSystem.js";
@@ -148,6 +156,8 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  "admin/gameConfig": typeof admin_gameConfig;
+  "admin/seedCard": typeof admin_seedCard;
   "auth/auth": typeof auth_auth;
   "auth/syncUser": typeof auth_syncUser;
   chainResolver: typeof chainResolver;
@@ -217,7 +227,6 @@ declare const fullApi: ApiFromModules<{
   "gameplay/games/lobby": typeof gameplay_games_lobby;
   "gameplay/games/queries": typeof gameplay_games_queries;
   "gameplay/games/spectator": typeof gameplay_games_spectator;
-  "gameplay/games/stats": typeof gameplay_games_stats;
   "gameplay/legalMoves": typeof gameplay_legalMoves;
   "gameplay/phaseManager": typeof gameplay_phaseManager;
   "gameplay/replaySystem": typeof gameplay_replaySystem;
@@ -227,6 +236,7 @@ declare const fullApi: ApiFromModules<{
   "gameplay/triggerSystem": typeof gameplay_triggerSystem;
   "gameplay/webhooks": typeof gameplay_webhooks;
   http: typeof http;
+  "http/admin": typeof http_admin;
   "http/agents": typeof http_agents;
   "http/chat": typeof http_chat;
   "http/decisions": typeof http_decisions;
@@ -258,6 +268,7 @@ declare const fullApi: ApiFromModules<{
   "lib/debug": typeof lib_debug;
   "lib/deterministicRandom": typeof lib_deterministicRandom;
   "lib/errorCodes": typeof lib_errorCodes;
+  "lib/gameConfig": typeof lib_gameConfig;
   "lib/gameHelpers": typeof lib_gameHelpers;
   "lib/gameValidation": typeof lib_gameValidation;
   "lib/helpers": typeof lib_helpers;
@@ -277,6 +288,11 @@ declare const fullApi: ApiFromModules<{
   "livekit/public/queries": typeof livekit_public_queries;
   "livekit/public/tokens": typeof livekit_public_tokens;
   presence: typeof presence;
+  "progression/seedStory": typeof progression_seedStory;
+  "progression/story": typeof progression_story;
+  "progression/storyBattle": typeof progression_storyBattle;
+  "progression/storyQueries": typeof progression_storyQueries;
+  "progression/storyStages": typeof progression_storyStages;
   router: typeof router;
   setup: typeof setup;
   setupSystem: typeof setupSystem;
@@ -8035,6 +8051,66 @@ export declare const components: {
         "internal",
         { stateId: string; updates: any },
         null
+      >;
+    };
+  };
+  lunchtable_tcg_match: {
+    mutations: {
+      createMatch: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          awayDeck: Array<string>;
+          awayId: string;
+          hostDeck: Array<string>;
+          hostId: string;
+          isAIOpponent: boolean;
+          mode: "pvp" | "story";
+        },
+        string
+      >;
+      startMatch: FunctionReference<
+        "mutation",
+        "internal",
+        { initialState: string; matchId: string },
+        null
+      >;
+      submitAction: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          cardLookup?: string;
+          command: string;
+          matchId: string;
+          seat: "host" | "away";
+        },
+        { events: string; version: number }
+      >;
+    };
+    queries: {
+      getMatchMeta: FunctionReference<
+        "query",
+        "internal",
+        { matchId: string },
+        any
+      >;
+      getOpenPrompt: FunctionReference<
+        "query",
+        "internal",
+        { matchId: string; seat: "host" | "away" },
+        any
+      >;
+      getPlayerView: FunctionReference<
+        "query",
+        "internal",
+        { matchId: string; seat: "host" | "away" },
+        string | null
+      >;
+      getRecentEvents: FunctionReference<
+        "query",
+        "internal",
+        { matchId: string; sinceVersion: number },
+        any
       >;
     };
   };

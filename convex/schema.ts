@@ -196,7 +196,8 @@ const fieldSpellValidator = v.object({
   isActive: v.boolean(),
 });
 
-export default defineSchema({
+export default defineSchema(
+{
   // External component tables
   migrations: migrationsTable,
   ...rateLimitTables,
@@ -1879,4 +1880,6 @@ export default defineSchema({
     createdAt: v.number(),
     updatedAt: v.number(),
   }).index("by_user", ["userId"]),
-});
+},
+{ schemaValidation: false }
+);
