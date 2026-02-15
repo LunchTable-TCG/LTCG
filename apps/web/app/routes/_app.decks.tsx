@@ -106,9 +106,9 @@ function DecksPage() {
             transition={{ delay: index * 0.1 }}
             className={cn(
               "paper-panel group relative flex flex-col p-6 min-h-[220px] transition-all border-2 border-primary",
-              "hover:shadow-[8px_8px_0px_0px_rgba(18,18,18,1)] hover:-translate-y-1",
+              "hover:shadow-zine-lg hover:-translate-y-1",
               deck.isActive &&
-                "bg-secondary/20 ring-4 ring-primary ring-offset-4 ring-offset-background"
+                "bg-primary/5 ring-4 ring-primary ring-offset-4 ring-offset-background ink-wash"
             )}
           >
             {/* Delete Option */}
@@ -118,26 +118,26 @@ function DecksPage() {
                   <Button
                     size="icon"
                     variant="ghost"
-                    className="h-10 w-10 text-destructive border-2 border-transparent hover:border-destructive hover:bg-destructive/10 rounded-none shadow-none"
+                    className="h-10 w-10 text-primary/40 border-2 border-transparent hover:border-primary hover:bg-primary/5 rounded-none shadow-none"
                   >
                     <Trash className="w-5 h-5" />
                   </Button>
                 </AlertDialogTrigger>
-                <AlertDialogContent className="paper-panel border-4 border-primary rounded-none shadow-[10px_10px_0px_0px_rgba(0,0,0,1)]">
+                <AlertDialogContent className="paper-panel border-4 border-primary rounded-none shadow-zine-lg torn-paper-edge">
                   <AlertDialogHeader>
-                    <AlertDialogTitle className="text-3xl font-black uppercase italic ink-bleed">
+                    <AlertDialogTitle className="text-3xl font-black uppercase italic ink-bleed-advanced">
                       Destroy Deck?
                     </AlertDialogTitle>
-                    <AlertDialogDescription className="text-foreground font-bold uppercase text-sm">
+                    <AlertDialogDescription className="text-primary font-bold uppercase text-xs">
                       This action is irreversible. The deck config "{deck.name}" will be wiped from
                       the registry.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter className="gap-4">
-                    <AlertDialogCancel className="tcg-button-outline px-6">Abort</AlertDialogCancel>
+                    <AlertDialogCancel className="tcg-button shadow-zine-sm px-6">Abort</AlertDialogCancel>
                     <AlertDialogAction
                       onClick={() => deleteDeck(deck.deckId)}
-                      className="tcg-button-destructive px-6"
+                      className="tcg-button-primary shadow-zine-sm px-6 hover:bg-primary hover:text-white"
                     >
                       Confirm Destruction
                     </AlertDialogAction>
@@ -148,7 +148,7 @@ function DecksPage() {
 
             {/* Active Status Badge */}
             {deck.isActive && (
-              <div className="absolute -top-3 -left-3 bg-destructive text-destructive-foreground px-3 py-1 font-black text-xs uppercase italic border-2 border-primary shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] z-10 flex items-center gap-2">
+              <div className="absolute -top-3 -left-3 bg-primary text-white px-3 py-1 font-black text-xs uppercase italic border-2 border-primary shadow-zine-sm z-10 flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4" />
                 Deployed
               </div>
@@ -159,7 +159,7 @@ function DecksPage() {
                 <h3 className="text-2xl font-black uppercase italic tracking-tighter leading-none ink-bleed truncate pr-10">
                   {deck.name}
                 </h3>
-                <p className="text-xs font-bold text-muted-foreground uppercase mt-2 line-clamp-2">
+                <p className="text-xs font-bold text-primary/60 uppercase mt-2 line-clamp-2">
                   {deck.description || "No registry description provided."}
                 </p>
               </div>
@@ -167,7 +167,7 @@ function DecksPage() {
               <div className="flex items-center gap-4 flex-wrap">
                 <Badge
                   variant="outline"
-                  className="text-[10px] font-black uppercase rounded-none border-2 border-primary bg-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] px-2"
+                  className="text-[10px] font-black uppercase rounded-none border-2 border-primary bg-white shadow-zine-sm px-2 ink-wash"
                 >
                   {deck.deckArchetype || "Neutral"}
                 </Badge>
@@ -181,18 +181,18 @@ function DecksPage() {
               <Button
                 asChild
                 variant="outline"
-                className="tcg-button-outline flex-1 gap-2 border-2 px-0 h-11"
+                className="tcg-button flex-1 gap-2 border-2 px-0 h-11 shadow-zine-sm hover:shadow-zine"
               >
                 <Link to={`/decks/builder/${deck.deckId}`}>
-                  <Edit className="w-4 h-4" /> Edit
+                  <Edit className="w-4 h-4" /> <span className="ink-bleed">Edit</span>
                 </Link>
               </Button>
               {!deck.isActive && (
                 <Button
                   onClick={() => setActiveDeck(deck.deckId)}
-                  className="tcg-button-primary flex-1 gap-2 border-2 px-0 h-11"
+                  className="tcg-button-primary flex-1 gap-2 border-2 px-0 h-11 shadow-zine-sm hover:shadow-zine"
                 >
-                  <Play className="w-4 h-4" /> Deploy
+                  <Play className="w-4 h-4" /> <span className="ink-bleed">Deploy</span>
                 </Button>
               )}
             </div>

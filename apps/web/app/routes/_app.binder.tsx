@@ -85,15 +85,15 @@ function BinderContent() {
               placeholder="Filter names/archetypes..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 bg-white border-2 border-primary shadow-[2px_2px_0px_0px_rgba(18,18,18,1)] text-xs font-bold uppercase rounded-none focus-visible:ring-0"
+              className="pl-9 bg-white border-2 border-primary shadow-zine-sm text-xs font-bold uppercase rounded-none focus-visible:ring-0 focus:shadow-zine transition-all"
             />
           </div>
           <Button
             variant="outline"
             onClick={() => setShowFilters(!showFilters)}
             className={cn(
-              "border-2 border-primary shadow-[2px_2px_0px_0px_rgba(18,18,18,1)] rounded-none h-10",
-              showFilters && "bg-primary text-white"
+              "border-2 border-primary shadow-zine-sm rounded-none h-10 hover:shadow-zine transition-all",
+              showFilters && "bg-primary text-white shadow-zine-sm"
             )}
           >
             <Filter className="w-4 h-4" />
@@ -102,16 +102,16 @@ function BinderContent() {
 
         <div className="flex items-center gap-4 w-full sm:w-auto">
           <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as any)}>
-            <TabsList className="bg-transparent border-2 border-primary p-1 h-auto rounded-none">
+            <TabsList className="bg-transparent border-2 border-primary p-1 h-auto rounded-none shadow-zine-sm">
               <TabsTrigger
                 value="collection"
-                className="rounded-none data-[state=active]:bg-primary data-[state=active]:text-white font-black uppercase text-[10px] px-4 py-2"
+                className="rounded-none data-[state=active]:bg-primary data-[state=active]:text-white font-black uppercase text-[10px] px-4 py-2 transition-all"
               >
                 Collection
               </TabsTrigger>
               <TabsTrigger
                 value="decks"
-                className="rounded-none data-[state=active]:bg-primary data-[state=active]:text-white font-black uppercase text-[10px] px-4 py-2"
+                className="rounded-none data-[state=active]:bg-primary data-[state=active]:text-white font-black uppercase text-[10px] px-4 py-2 transition-all"
               >
                 Decks
               </TabsTrigger>
@@ -120,10 +120,10 @@ function BinderContent() {
 
           <Button
             onClick={() => handleCreateDeck("New Deck")}
-            className="tcg-button-primary px-6 h-10 flex items-center gap-2 group"
+            className="tcg-button-primary px-6 h-10 flex items-center gap-2 group shadow-zine-sm hover:shadow-zine"
           >
             <Plus className="w-4 h-4 group-hover:rotate-90 transition-transform" />
-            <span>New Deck</span>
+            <span className="ink-bleed">New Deck</span>
           </Button>
         </div>
       </div>

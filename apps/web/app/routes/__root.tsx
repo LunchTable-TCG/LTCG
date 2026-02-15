@@ -36,6 +36,22 @@ function RootDocument({ children }: { children: ReactNode }) {
         />
       </head>
       <body className="antialiased min-h-screen bg-background font-sans overflow-x-hidden">
+        {/* Advanced Zine SVG Filters */}
+        <svg className="hidden">
+          <filter id="ink-bleed-subtle">
+            <feTurbulence type="fractalNoise" baseFrequency="0.01" numOctaves="3" result="noise" />
+            <feDisplacementMap in="SourceGraphic" in2="noise" scale="1.5" />
+          </filter>
+          <filter id="ink-bleed-heavy">
+            <feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="5" result="noise" />
+            <feDisplacementMap in="SourceGraphic" in2="noise" scale="3" />
+          </filter>
+          <filter id="paper-edge">
+            <feTurbulence type="fractalNoise" baseFrequency="0.05" numOctaves="5" result="noise" />
+            <feDisplacementMap in="SourceGraphic" in2="noise" scale="5" />
+          </filter>
+        </svg>
+
         <PrivyAuthProvider>
           <ConvexClientProvider>
             <QueryProvider>{children}</QueryProvider>

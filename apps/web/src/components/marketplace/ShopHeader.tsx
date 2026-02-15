@@ -47,19 +47,19 @@ export function ShopHeader({ activeTab, onTabChange, gold, gems }: ShopHeaderPro
         </div>
       </div>
 
-      <div className="flex p-1 bg-black/5 border-[3px] border-black gap-1">
+      <div className="flex p-1 bg-black/5 border-2 border-primary gap-1 shadow-zine-sm">
         <button
           type="button"
           onClick={() => onTabChange("shop")}
           className={cn(
             "flex-1 flex items-center justify-center gap-2 py-3 font-black uppercase tracking-wider transition-all",
             activeTab === "shop"
-              ? "bg-indigo-600 text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+              ? "bg-primary text-white shadow-zine-sm ink-wash"
               : "hover:bg-black/5 text-black/60 hover:text-black"
           )}
         >
           <Store className="w-5 h-5" />
-          Shop
+          <span className="ink-bleed">Shop</span>
         </button>
         <button
           type="button"
@@ -67,12 +67,12 @@ export function ShopHeader({ activeTab, onTabChange, gold, gems }: ShopHeaderPro
           className={cn(
             "flex-1 flex items-center justify-center gap-2 py-3 font-black uppercase tracking-wider transition-all",
             activeTab === "marketplace"
-              ? "bg-emerald-600 text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+              ? "bg-primary text-white shadow-zine-sm ink-wash"
               : "hover:bg-black/5 text-black/60 hover:text-black"
           )}
         >
           <ShoppingBag className="w-5 h-5" />
-          Marketplace
+          <span className="ink-bleed">Marketplace</span>
         </button>
         <button
           type="button"
@@ -80,12 +80,12 @@ export function ShopHeader({ activeTab, onTabChange, gold, gems }: ShopHeaderPro
           className={cn(
             "flex-1 flex items-center justify-center gap-2 py-3 font-black uppercase tracking-wider transition-all",
             activeTab === "myListings"
-              ? "bg-amber-600 text-white shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+              ? "bg-primary text-white shadow-zine-sm ink-wash"
               : "hover:bg-black/5 text-black/60 hover:text-black"
           )}
         >
           <LayoutGrid className="w-5 h-5" />
-          My Listings
+          <span className="ink-bleed">My Listings</span>
         </button>
       </div>
     </div>

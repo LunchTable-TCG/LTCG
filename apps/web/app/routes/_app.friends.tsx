@@ -85,7 +85,7 @@ function FriendsPage() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row items-end justify-between gap-6 mb-12">
           <div className="text-center sm:text-left">
-            <h1 className="text-6xl font-black text-black uppercase tracking-tighter ink-bleed relative z-10">
+            <h1 className="text-6xl font-black text-black uppercase tracking-tighter ink-bleed-advanced relative z-10">
               Social Circle
             </h1>
             <p className="text-primary/60 font-bold uppercase tracking-widest text-sm mt-2 border-l-4 border-primary pl-4">
@@ -94,10 +94,10 @@ function FriendsPage() {
           </div>
           <Button
             onClick={() => setShowAddFriend(true)}
-            className="h-14 px-8 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-lg uppercase tracking-wider border-zine shadow-zine hover:-translate-x-0.5 hover:-translate-y-0.5 hover:shadow-zine transition-all"
+            className="h-14 px-8 bg-primary hover:bg-primary/90 text-white font-black text-lg uppercase tracking-wider border-2 border-primary shadow-zine hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-zine-sm transition-all ink-wash"
           >
             <UserPlus className="w-6 h-6 mr-3" />
-            Add Friend
+            <span className="ink-bleed">Add Friend</span>
           </Button>
         </div>
 
@@ -113,13 +113,13 @@ function FriendsPage() {
                 <TabsTrigger
                   key={tab.id}
                   value={tab.id}
-                  className="data-[state=active]:bg-black data-[state=active]:text-white bg-white text-black border-zine px-6 py-3 font-black uppercase tracking-wider shadow-zine data-[state=active]:-translate-x-0.5 data-[state=active]:-translate-y-0.5 data-[state=active]:shadow-zine-lg hover:shadow-zine-lg hover:-translate-y-0.5 transition-all text-sm"
+                  className="data-[state=active]:bg-primary data-[state=active]:text-white bg-white text-black border-2 border-primary px-6 py-3 font-black uppercase tracking-wider shadow-zine-sm data-[state=active]:-translate-x-0.5 data-[state=active]:-translate-y-0.5 data-[state=active]:shadow-zine hover:shadow-zine hover:-translate-y-0.5 transition-all text-sm"
                 >
-                  {tab.label}
+                  <span className="ink-bleed">{tab.label}</span>
                   {tab.count > 0 && (
                     <Badge
                       variant="secondary"
-                      className="bg-amber-400 text-black border border-primary ml-2 px-1.5 min-w-5 font-bold shadow-zine-sm"
+                      className="bg-reputation text-primary border-2 border-primary ml-2 px-1.5 min-w-5 font-bold shadow-zine-sm"
                     >
                       {tab.count}
                     </Badge>
@@ -136,7 +136,7 @@ function FriendsPage() {
                   placeholder="SEARCH FRIENDS..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 h-10 bg-white border-zine rounded-none font-bold uppercase placeholder:text-primary/30 text-primary shadow-zine-sm focus-visible:ring-0 focus-visible:shadow-zine transition-all"
+                  className="pl-10 h-10 bg-white border-2 border-primary rounded-none font-bold uppercase placeholder:text-primary/30 text-primary shadow-zine-sm focus-visible:ring-0 focus-visible:shadow-zine transition-all"
                 />
               </div>
             )}

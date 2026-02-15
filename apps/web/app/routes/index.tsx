@@ -174,19 +174,19 @@ function Home() {
           transition={{ duration: 0.8 }}
           className="max-w-4xl mx-auto"
         >
-          <div className="paper-panel p-12 text-center relative rotate-1">
+          <div className="paper-panel p-12 text-center relative rotate-1 torn-paper-edge shadow-zine-lg ink-wash">
             <div className="relative z-10">
-              <h2 className="text-4xl md:text-5xl font-black uppercase mb-6 ink-bleed">
+              <h2 className="text-4xl md:text-5xl font-black uppercase mb-6 ink-bleed-advanced">
                 Final Enrollment
               </h2>
-              <p className="text-lg font-bold mb-10 max-w-lg mx-auto uppercase">
+              <p className="text-lg font-black mb-10 max-w-lg mx-auto uppercase tracking-tight">
                 Don't be a nobody. Join the hierarchy today and claim your locker.
               </p>
 
               <Link to="/signup">
                 <button
                   type="button"
-                  className="tcg-button-primary px-10 py-5 text-2xl font-black uppercase hover:scale-105 transition-transform"
+                  className="tcg-button-primary px-10 py-5 text-2xl font-black uppercase hover:scale-105 transition-transform shadow-zine-lg hover:shadow-zine ink-wash"
                 >
                   Join The In-Crowd
                 </button>
@@ -214,27 +214,36 @@ function FeatureCard({
 }) {
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 30 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
-      transition={{ delay, duration: 0.5 }}
-      whileHover={{ y: -5 }}
-      className={cn("paper-panel p-8 relative group", featured && "bg-white zine-border")}
+      transition={{ delay, duration: 0.6, ease: "easeOut" }}
+      whileHover={{ y: -8, rotate: featured ? 0 : 1 }}
+      className={cn(
+        "paper-panel p-8 relative group transition-all duration-300",
+        featured ? "bg-white zine-border shadow-zine-lg scale-105 z-10" : "hover:shadow-zine-lg"
+      )}
     >
-      <div className="mb-6 inline-flex p-4 border-2 border-primary bg-white shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] group-hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] transition-all">
+      <div className="mb-6 inline-flex p-4 border-2 border-primary bg-white shadow-zine-sm group-hover:shadow-zine transition-all group-hover:-rotate-3">
         <Icon
           className={cn(
             "w-8 h-8",
-            featured ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
+            featured ? "text-primary" : "text-primary/40 group-hover:text-primary"
           )}
         />
       </div>
 
-      <h3 className="text-2xl font-black mb-3 uppercase ink-bleed">{title}</h3>
+      <h3 className="text-2xl font-black mb-3 uppercase ink-bleed group-hover:ink-bleed-advanced transition-all">{title}</h3>
 
-      <p className="font-bold text-muted-foreground leading-tight uppercase text-xs">
+      <p className="font-bold text-primary/60 leading-tight uppercase text-xs group-hover:text-primary transition-colors">
         {description}
       </p>
+
+      {featured && (
+        <div className="absolute -top-3 -right-3 bg-reputation text-primary px-2 py-1 border-2 border-primary font-black text-[10px] uppercase rotate-12 shadow-zine-sm">
+          Highly Recommended
+        </div>
+      )}
     </motion.div>
   );
 }
