@@ -14,11 +14,12 @@
  *   await economy.currency.adjustPlayerCurrency(ctx, { ... });
  */
 
-import { components } from "../_generated/api";
 import { LTCGAdmin } from "@lunchtable-tcg/admin";
 import { LTCGEconomy } from "@lunchtable-tcg/economy";
+import { LTCGMatch } from "@lunchtable-tcg/match";
 import { LTCGPayments } from "@lunchtable-tcg/payments";
 import { LTCGProgression } from "@lunchtable-tcg/progression";
+import { components } from "../_generated/api";
 
 // biome-ignore lint/suspicious/noExplicitAny: generated types are stale — will resolve after `npx convex dev`
 const c = components as any;
@@ -42,3 +43,8 @@ export const payments = new LTCGPayments(c.ltcgPayments);
  * Progression component client — XP, achievements, quests, battle pass, badges.
  */
 export const progression = new LTCGProgression(c.ltcgProgression);
+
+/**
+ * Match component client — event-sourced match engine (decide/evolve/mask).
+ */
+export const match = new LTCGMatch(c.ltcgMatch);
